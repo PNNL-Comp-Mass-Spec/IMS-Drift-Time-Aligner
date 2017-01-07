@@ -241,34 +241,32 @@ namespace IMSDriftTimeAligner
         /// Keys are the aligned scan number, values are intensities by bin
         /// </param>
         private void AppendMergedFrame(
-            DataReader reader, 
-            DataWriter writer, 
-            int referenceFrameNum, 
-            int mergedFrameNum, 
-            Dictionary<int, double[]> mergedFrameScans)
+            DataReader reader,
+            DataWriter writer,
+            int referenceFrameNum,
+            int mergedFrameNum,
+            Dictionary<int, int[]> mergedFrameScans)
         {
+            Console.WriteLine();
+            ReportMessage($"Appending the merged frame data");
 
-            var frameParams = reader.GetFrameParams(referenceFrameNum);            
+            var frameParams = reader.GetFrameParams(referenceFrameNum);
 
             writer.InsertFrame(mergedFrameNum, frameParams);
 
             var binWidth = reader.GetGlobalParams().BinWidth;
+            var scansProcessed = 0;
 
-            foreach (var scanItem in (from item in mergedFrameScans orderby item.Key select item))
+            foreach (var scanItem in mergedFrameScans)
             {
+                if (scansProcessed % 250 == 0)
+                    ReportMessage($"  storing scan {scanItem.Key}");
+
                 var scanNumNew = scanItem.Key;
-                var intensitiesDbl = scanItem.Value;
+                var intensities = scanItem.Value;
+                writer.InsertScan(mergedFrameNum, frameParams, scanNumNew, intensities, binWidth);
 
-                var intensities = new int[intensitiesDbl.Length];
-                for (var i = 0; i < intensities.Length; i++)
-                {
-                    if (intensitiesDbl[i] > int.MaxValue)
-                        intensities[i] = int.MaxValue;
-                    else
-                        intensities[i] = (int)intensitiesDbl[i];
-                }
-
-                writer.InsertScan(mergedFrameNum, frameParams, scanNumNew, intensities, binWidth);                
+                scansProcessed++;
             }
 
         }
