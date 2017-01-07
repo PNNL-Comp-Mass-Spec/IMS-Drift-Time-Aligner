@@ -86,8 +86,16 @@ namespace IMSDriftTimeAligner
 
             try
             {
-                var baseFrameData = (from item in baseFrameScans select item.TIC).ToArray();
-                var frameData = (from item in frameScans select item.TIC).ToArray();
+                // Determine the first and last scan number with non-zero TIC values
+                var nonzeroScans1 = (from item in baseFrameScans where item.TIC > 0 orderby item.Scan select item.Scan).ToList();
+                var nonzeroScans2 = (from item in frameScans where item.TIC > 0 orderby item.Scan select item.Scan).ToList();
+
+                var scanStart = Math.Min(nonzeroScans1.First(), nonzeroScans2.First());
+                var scanEnd = Math.Max(nonzeroScans1.Last(), nonzeroScans2.Last());
+
+                // Populate the arrays, storing TIC values in the appropriate index of baseFrameData and frameData
+                var baseFrameData = StoreTICValues(BASE_FRAME_DESCRIPTION, scanStart, scanEnd, baseFrameScans, alignmentOptions);
+                var frameData = StoreTICValues("Frame " + frameNum, scanStart, scanEnd, frameScans, alignmentOptions);
 
                 var offset = 0;
                 var correlationByOffset = new Dictionary<int, double>();
@@ -106,9 +114,11 @@ namespace IMSDriftTimeAligner
                             frameDataShifted[targetIndex] = frameData[sourceIndex];
                         }
                         targetIndex++;
+                        if (targetIndex >= frameData.Length)
+                            break;
                     }
 
-                    var coeff = MathNet.Numerics.LinearRegression.SimpleRegression.Fit(baseFrameData, frameDataShifted);
+                    var coeff = MathNet.Numerics.LinearRegression.SimpleRegression.Fit(frameDataShifted, baseFrameData);
 
                     var slope = coeff.Item1;
                     var intercept = coeff.Item2;
@@ -130,6 +140,7 @@ namespace IMSDriftTimeAligner
                         Console.WriteLine("R-Squared: {0:0.000}  vs {1:0.000}", rSquared, rSquaredAlt);
                         Console.WriteLine();
                     }
+                    var rSquared = MathNet.Numerics.GoodnessOfFit.RSquared(frameDataShifted.Select(x => intercept + slope * x), baseFrameData);
 
                     correlationByOffset.Add(offset, rSquared);
 
@@ -141,6 +152,7 @@ namespace IMSDriftTimeAligner
                     else
                     {
                         offset = -offset;
+                        shiftPositive = true;
                     }
 
                     if (Math.Abs(offset) > alignmentOptions.MaxShiftScans)
@@ -165,13 +177,11 @@ namespace IMSDriftTimeAligner
 
                 var bestOffset = rankedOffsets.First().Key;
 
-                for (var sourceIndex = 0; sourceIndex < frameScans.Count; sourceIndex++)
+                for (var sourceScan = scanStart; sourceScan <= scanEnd; sourceScan++)
                 {
-
-                    if (sourceIndex + bestOffset >= 0)
+                    var targetScan = sourceScan - bestOffset;
+                    if (targetScan >= 0)
                     {
-                        var sourceScan = frameScans[sourceIndex].Scan;
-                        var targetScan = sourceScan + bestOffset;
                         frameScanAlignmentMap.Add(sourceScan, targetScan);
                     }
                 }
@@ -276,18 +286,44 @@ namespace IMSDriftTimeAligner
             if (baseFrameRange.Start == baseFrameRange.End)
                 return;
 
+            // Summing multiple frames
+            // Frames can have different scans, so use a dictionary to keep track of data on a per-scan basis
+            // Keys are scan number, values are the ScanInfo for that scan
+            var scanData = new Dictionary<int, ScanInfo>(frameScansSummed.Count);
+            foreach (var scanItem in frameScansSummed)
+            {
+                scanData.Add(scanItem.Scan, scanItem);
+            }
+
+            int frameMin;
+            int frameMax;
+            LookupValidFrameRange(reader, out frameMin, out frameMax);
+
             // Sum the TIC values by IMS frame
             for (var frameNum = baseFrameRange.Start + 1; frameNum <= baseFrameRange.End; frameNum++)
             {
+                if (frameNum < frameMin || frameNum > frameMax)
+                    continue;
+
                 var frameScans = reader.GetFrameScans(frameNum);
 
-                for (var scanIndex = 0; scanIndex < frameScans.Count; scanIndex++)
+                foreach (var sourceScanInfo in frameScans)
                 {
-                    frameScansSummed[scanIndex].NonZeroCount += frameScans[scanIndex].NonZeroCount;
-                    frameScansSummed[scanIndex].TIC += frameScans[scanIndex].TIC;
+                    ScanInfo targetScanInfo;
+                    if (scanData.TryGetValue(sourceScanInfo.Scan, out targetScanInfo))
+                    {
+                        targetScanInfo.NonZeroCount += sourceScanInfo.NonZeroCount;
+                        targetScanInfo.TIC += sourceScanInfo.TIC;
+                    } else
+                    {
+                        scanData.Add(sourceScanInfo.Scan, sourceScanInfo);
+                    }
                 }
 
             }
+
+            frameScansSummed.Clear();
+            frameScansSummed.AddRange(from item in scanData orderby item.Key select item.Value);
 
         }
 
@@ -489,6 +525,14 @@ namespace IMSDriftTimeAligner
             return outputFile;
         }
 
+        private void LookupValidFrameRange(DataReader reader, out int frameMin, out int frameMax)
+        {
+            var masterFrameList = reader.GetMasterFrameList();
+
+            frameMin = masterFrameList.Keys.Min();
+            frameMax = masterFrameList.Keys.Max();
+        }
+
         public bool ProcessFile(string inputFilePath, string outputFilePath)
         {
 
@@ -627,23 +671,37 @@ namespace IMSDriftTimeAligner
                 }
 
                 var binWidth = reader.GetGlobalParams().BinWidth;
+                var scansProcessed = 0;
 
                 foreach (var scanItem in frameScans)
                 {
+                    if (scansProcessed % 250 == 0)
+                        ReportMessage($"  storing scan {scanItem.Scan}");
+
                     var scanNumOld = scanItem.Scan;
                     int scanNumNew;
 
                     if (!frameScanAlignmentMap.TryGetValue(scanNumOld, out scanNumNew))
                         continue;
 
-                    var intensities = reader.GetSpectrumAsBins(frameNum, frameParams.FrameType, scanNumOld);
+                    int[] intensities;
+                    try
+                    {
+                        intensities = reader.GetSpectrumAsBins(frameNum, frameParams.FrameType, scanNumOld);
+                    }
+                    catch (Exception ex)
+                    {
+                        ReportError($"Error retrieving data for frame {frameNum}, scan {scanNumOld}: {ex.Message}");
+                        continue;
+                    }
+
 
                     if (insertFrame)
                     {
                         writer.InsertScan(frameNum, frameParams, scanNumNew, intensities, binWidth);
                     }
 
-                    double[] summedIntensities;
+                    int[] summedIntensities;
 
                     // Dictionary where Keys are the aligned scan number and values are intensities by bin
                     if (mergedFrameScans.TryGetValue(scanNumNew, out summedIntensities))
@@ -653,15 +711,20 @@ namespace IMSDriftTimeAligner
                             if (i >= intensities.Length)
                                 break;
 
-                            summedIntensities[i] += intensities[i];
+                            if (summedIntensities[i] + (long)intensities[i] > int.MaxValue)
+                                summedIntensities[i] = int.MaxValue;
+                            else
+                                summedIntensities[i] += intensities[i];
                         }
                     }
                     else
                     {
-                        summedIntensities = (from item in intensities select (double)item).ToArray();
-                        mergedFrameScans.Add(scanNumNew, summedIntensities);
+                        mergedFrameScans.Add(scanNumNew, intensities);
                     }
+
+                    scansProcessed++;
                 }
+
 
             }
             catch (Exception ex)
