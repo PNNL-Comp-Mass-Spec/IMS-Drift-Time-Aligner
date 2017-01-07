@@ -73,6 +73,11 @@ namespace IMSDriftTimeAligner
         public int MaxShiftScans { get; set; }
 
         /// <summary>
+        /// Number of points to use when smoothing TICs before aligning
+        /// </summary>
+        public int ScanSmoothCount { get; set; }
+
+        /// <summary>
         /// When true, the output file will have a single, merged frame
         /// When false, the output file will have all of the original frames, with their IMS drift times aligned
         /// </summary>
@@ -103,6 +108,7 @@ namespace IMSDriftTimeAligner
             FrameEnd = 0;
 
             MaxShiftScans = 15;
+            ScanSmoothCount = 7;
 
             MergeFrames = false;
 

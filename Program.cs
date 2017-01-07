@@ -95,10 +95,11 @@ namespace IMSDriftTimeAligner
             return System.Reflection.Assembly.GetExecutingAssembly().GetName().Version + " (" + PROGRAM_DATE + ")";
         }
 
-        private static bool RetrieveIntegerOption(clsParseCommandLine objParseCommandLine, string paramName, out int paramValue)
+        private static bool RetrieveIntegerOption(clsParseCommandLine objParseCommandLine, string paramName, out int paramValue, out bool isError)
         {
             string paramText;
             paramValue = 0;
+            isError = false;
 
             if (!objParseCommandLine.RetrieveValueForParameter(paramName, out paramText))
                 return false;
@@ -107,6 +108,7 @@ namespace IMSDriftTimeAligner
                 return true;
 
             ShowErrorMessage($"/{paramName} must specify an integer; {paramText} is not numeric");
+            isError = true;
             return false;
         }
 
@@ -116,7 +118,7 @@ namespace IMSDriftTimeAligner
             var lstValidParameters = new List<string> {
                 "I", "O", "Merge", "Append",
                 "BaseFrame", "BaseCount", "BaseStart", "BaseEnd",
-                "FrameStart", "FrameEnd",
+                "Start", "End", "Smooth",
                 "MaxShift", "Debug"};
 
             try
@@ -144,6 +146,7 @@ namespace IMSDriftTimeAligner
 
                 string paramValue;
                 int paramInteger;
+                bool isError;
 
                 if (objParseCommandLine.RetrieveValueForParameter("I", out paramValue))
                 {
@@ -162,47 +165,69 @@ namespace IMSDriftTimeAligner
                 if (objParseCommandLine.IsParameterPresent("Append"))
                     mAlignmentOptions.AppendMergedFrame = true;
 
-                if (RetrieveIntegerOption(objParseCommandLine, "BaseFrame", out paramInteger))
-                {                   
+                if (RetrieveIntegerOption(objParseCommandLine, "BaseFrame", out paramInteger, out isError))
+                {
                     mAlignmentOptions.BaseFrameSelectionMode = (FrameAlignmentOptions.BaseFrameSelectionModes)paramInteger;
                 }
+                else if (isError)
+                    return false;
 
-                if (RetrieveIntegerOption(objParseCommandLine, "BaseCount", out paramInteger))
+                if (RetrieveIntegerOption(objParseCommandLine, "BaseCount", out paramInteger, out isError))
                 {
                     mAlignmentOptions.BaseFrameSumCount = paramInteger;
                 }
+                else if (isError)
+                    return false;
 
                 // Note that BaseStart and BaseEnd are only used when BaseFrame is UserSpecifiedFrameRange (3)
-                if (RetrieveIntegerOption(objParseCommandLine, "BaseStart", out paramInteger))
+                if (RetrieveIntegerOption(objParseCommandLine, "BaseStart", out paramInteger, out isError))
                 {
                     mAlignmentOptions.BaseFrameStart = paramInteger;
                 }
+                else if (isError)
+                    return false;
 
-                if (RetrieveIntegerOption(objParseCommandLine, "BaseEnd", out paramInteger))
+                if (RetrieveIntegerOption(objParseCommandLine, "BaseEnd", out paramInteger, out isError))
                 {
                     mAlignmentOptions.BaseFrameStart = paramInteger;
                 }
+                else if (isError)
+                    return false;
 
-                if (RetrieveIntegerOption(objParseCommandLine, "FrameStart", out paramInteger))
+                if (RetrieveIntegerOption(objParseCommandLine, "Start", out paramInteger, out isError))
                 {
                     mAlignmentOptions.FrameStart = paramInteger;
                 }
+                else if (isError)
+                    return false;
 
-                if (RetrieveIntegerOption(objParseCommandLine, "FrameEnd", out paramInteger))
+                if (RetrieveIntegerOption(objParseCommandLine, "End", out paramInteger, out isError))
                 {
                     mAlignmentOptions.FrameEnd = paramInteger;
                 }
+                else if (isError)
+                    return false;
 
-                if (RetrieveIntegerOption(objParseCommandLine, "MaxShift", out paramInteger))
+                if (RetrieveIntegerOption(objParseCommandLine, "MaxShift", out paramInteger, out isError))
                 {
                     mAlignmentOptions.MaxShiftScans = paramInteger;
                 }
+                else if (isError)
+                    return false;
 
+                if (RetrieveIntegerOption(objParseCommandLine, "Smooth", out paramInteger, out isError))
+                {
+                    mAlignmentOptions.ScanSmoothCount = paramInteger;
+                }
+                else if (isError)
+                    return false;
+
+                
                 if (objParseCommandLine.IsParameterPresent("Debug"))
                 {
                     mShowDebugMessages = true;
                 }
-                
+
 
                 return true;
             }
@@ -256,12 +281,12 @@ namespace IMSDriftTimeAligner
             {
                 Console.WriteLine();
                 Console.WriteLine("This program processes IMS data in a UIMF file to align all frames to a base frame, " +
-                                  "adjusting the observed drift times of each frame to align with the base frame");                
+                                  "adjusting the observed drift times of each frame to align with the base frame.");
                 Console.WriteLine();
                 Console.WriteLine("Program syntax:" + Environment.NewLine + exeName);
                 Console.WriteLine(" InputFilePath [/O:OutputFilePath] [/Merge] [/Append] ");
-                Console.WriteLine(" [/BaseFrame] [/BaseCount] [/BaseStart] [/BaseEnd]");
-                Console.WriteLine(" [/FrameStart] [/FrameEnd] [/MaxShift] [/Debug]");
+                Console.WriteLine(" [/BaseFrame:N] [/BaseCount:N] [/BaseStart:N] [/BaseEnd:N]");
+                Console.WriteLine(" [/Start:N] [/End:N] [/MaxShift:N] [/Smooth:N] [/Debug]");
                 Console.WriteLine();
                 Console.WriteLine("InputFilePath is a path to the UIMF file to process");
                 Console.WriteLine();
@@ -275,15 +300,21 @@ namespace IMSDriftTimeAligner
 
                 foreach (var frameMode in Enum.GetValues(typeof(FrameAlignmentOptions.BaseFrameSelectionModes)))
                 {
-                    Console.WriteLine("  {0}: {1}", frameMode, Enum.GetName(typeof(FrameAlignmentOptions.BaseFrameSelectionModes), frameMode));
-                }                
+                    Console.WriteLine("  /BaseFrame:{0} for {1}", (int)frameMode, frameMode);
+                }
                 Console.WriteLine();
-                Console.WriteLine("Use /BaseCount to specify the number or frames or percent range to use when FrameMode is NFrame or NPercent based");
+                Console.WriteLine("Use /BaseCount to specify the number or frames or percent range to use when FrameMode is NFrame or NPercent based;");
+                Console.WriteLine("  default is /BaseCount:" + mAlignmentOptions.BaseFrameSumCount);
                 Console.WriteLine("Use /BaseStart and /BaseEnd to specify the range of frames to use as the base when using /BaseFrame:3 (aka UserSpecifiedFrameRange)");
-                Console.WriteLine();
                 Console.WriteLine("Use /FrameStart and /FrameEnd to limit the range of frames to align");
-                Console.WriteLine("Use /MaxShift to specify the maximum allowed shift (in scans) that scans in a frame can be adjusted");
-                Console.WriteLine("Use /Debug to show additional debug messages at the console");                
+                Console.WriteLine();
+                Console.WriteLine("Use /MaxShift to specify the maximum allowed shift (in scans) that scans in a frame can be adjusted;");
+                Console.WriteLine("  default is /MaxShift:" + mAlignmentOptions.MaxShiftScans);
+                Console.WriteLine("Use /Smooth to specify the number of data points (scans) in the TIC to use for moving average smoothing " +
+                                  "prior to aligning each frame to the base frame;");
+                Console.WriteLine("  default is /Smooth:" + mAlignmentOptions.ScanSmoothCount);
+                Console.WriteLine();
+                Console.WriteLine("Use /Debug to show additional debug messages at the console");
                 Console.WriteLine();
                 Console.WriteLine("Program written by Matthew Monroe for the Department of Energy (PNNL, Richland, WA) in 2016");
                 Console.WriteLine("Version: " + GetAppVersion());
