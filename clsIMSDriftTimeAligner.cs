@@ -1,16 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data.SQLite;
 using System.IO;
 using System.Linq;
-using System.Reflection;
-using System.Runtime.Remoting.Channels;
-using System.Text;
-using System.Threading.Tasks;
-using System.Xml.Linq;
 using FileProcessor;
 using UIMFLibrary;
-using LinReg = Statistics.LinearRegression;
 using MessageEventArgs = FileProcessor.MessageEventArgs;
 
 namespace IMSDriftTimeAligner
@@ -149,23 +142,6 @@ namespace IMSDriftTimeAligner
                     var slope = coeff.Item1;
                     var intercept = coeff.Item2;
 
-                    var rSquared = MathNet.Numerics.GoodnessOfFit.RSquared(frameData.Select(x => intercept + slope * x), baseFrameData);
-
-                    const bool TEST_LINREG = true;
-                    if (TEST_LINREG)
-                    {
-                        var regressor = new LinReg();
-                        var success = regressor.Start(baseFrameData, frameDataShifted, 1, UseLogY: false);
-
-                        var slopeAlt = regressor.Coefficients[0];
-                        var interceptAlt = regressor.Coefficients[1];
-                        var rSquaredAlt = regressor.CorrelationCoefficient;
-
-                        Console.WriteLine("Slope:     {0:0.000}  vs {1:0.000}", slope, slopeAlt);
-                        Console.WriteLine("Intercept: {0:0.000}  vs {1:0.000}", intercept, interceptAlt);
-                        Console.WriteLine("R-Squared: {0:0.000}  vs {1:0.000}", rSquared, rSquaredAlt);
-                        Console.WriteLine();
-                    }
                     var rSquared = MathNet.Numerics.GoodnessOfFit.RSquared(frameDataShifted.Select(x => intercept + slope * x), baseFrameData);
 
                     correlationByOffset.Add(offset, rSquared);
