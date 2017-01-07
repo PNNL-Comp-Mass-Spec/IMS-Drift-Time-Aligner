@@ -17,12 +17,28 @@ namespace IMSDriftTimeAligner
 {
     class DriftTimeAlignmentEngine
     {
+        #region "Constants"
+
+        private const string DEBUG_DATA_FILE = "DebugData.txt";
+
+        private const string BASE_FRAME_DESCRIPTION = "Base frame";
+
+        #endregion
+
         #region "Structs"
 
         private struct udtFrameRange
         {
             public int Start;
             public int End;
+
+            public override string ToString()
+            {
+                if (Start == End)
+                    return $"Frame {Start}";
+                else
+                    return $"Frames {Start} to {End}";
+            }
         }
 
         #endregion
@@ -69,16 +85,26 @@ namespace IMSDriftTimeAligner
         }
 
         private Dictionary<int, int> AlignFrameDataCOW(
-            List<ScanInfo> baseFrameScans,
-            List<ScanInfo> frameScans,
+            int frameNum,
+            IReadOnlyList<ScanInfo> baseFrameScans,
+            IReadOnlyList<ScanInfo> frameScans,
             FrameAlignmentOptions alignmentOptions)
         {
             throw new NotImplementedException();
         }
 
+        /// <summary>
+        /// Align the TIC data in frameData to baseFrameData using Linear Regression
+        /// </summary>
+        /// <param name="frameNum">Frame number (for logging purposes)</param>
+        /// <param name="baseFrameScans">Scans in the base frame</param>
+        /// <param name="frameScans">Scans in the frame that we're aligning</param>
+        /// <param name="alignmentOptions">Alignment options, including the alignment method</param>
+        /// <returns>Dictionary where keys are the old scan number and values are the new scan number</returns>
         private Dictionary<int, int> AlignFrameDataLinearRegression(
-            List<ScanInfo> baseFrameScans,
-            List<ScanInfo> frameScans,
+            int frameNum,
+            IReadOnlyList<ScanInfo> baseFrameScans,
+            IReadOnlyList<ScanInfo> frameScans,
             FrameAlignmentOptions alignmentOptions)
         {
             // Keys are the old scan number and values are the new scan number
@@ -166,11 +192,15 @@ namespace IMSDriftTimeAligner
 
                 if (ShowDebugMessages)
                 {
-                    ReportMessage("Top 5 offsets:");
-                    ReportMessage(string.Format("{0,-12} {1}", "Offset_Scans", "R-Squared"));
-                    for (var i = 0; i < 5; i++)
+                    Console.WriteLine();
+                    ReportMessage("Top 10 offsets:");
+                    ReportMessage(string.Format("{0,-12}  {1}", "Offset_Scans", "R-Squared"));
+                    for (var i = 0; i < 10; i++)
                     {
-                        ReportMessage(string.Format("{0,-12} {1:0.00}", rankedOffsets[i].Key, rankedOffsets[i].Value));
+                        if (i >= rankedOffsets.Count)
+                            break;
+
+                        ReportMessage(string.Format("{0,4:##0}          {1:n6}", rankedOffsets[i].Key, rankedOffsets[i].Value));
                     }
 
                 }
@@ -186,6 +216,11 @@ namespace IMSDriftTimeAligner
                     }
                 }
 
+                if (ShowDebugMessages)
+                {
+                    SaveFrameForDebug("Frame " + frameNum, baseFrameData, frameData, scanStart, frameScanAlignmentMap);
+                }
+
             }
             catch (Exception ex)
             {
@@ -198,13 +233,15 @@ namespace IMSDriftTimeAligner
         /// <summary>
         /// Align the TIC data in frameData to baseFrameData
         /// </summary>
-        /// <param name="baseFrameScans"></param>
-        /// <param name="frameScans"></param>
+        /// <param name="frameNum">Frame number (for logging purposes)</param>
+        /// <param name="baseFrameScans">Scans in the base frame</param>
+        /// <param name="frameScans">Scans in the frame that we're aligning</param>
         /// <param name="alignmentOptions">Alignment options, including the alignment method</param>
         /// <returns>Dictionary where keys are the old scan number and values are the new scan number</returns>
         public Dictionary<int, int> AlignFrameTICToBase(
-            List<ScanInfo> baseFrameScans,
-            List<ScanInfo> frameScans,
+            int frameNum,
+            IReadOnlyList<ScanInfo> baseFrameScans,
+            IReadOnlyList<ScanInfo> frameScans,
             FrameAlignmentOptions alignmentOptions)
         {
 
@@ -213,10 +250,10 @@ namespace IMSDriftTimeAligner
             switch (alignmentOptions.AlignmentMethod)
             {
                 case FrameAlignmentOptions.AlignmentMethods.LinearRegression:
-                    frameScanAlignmentMap = AlignFrameDataLinearRegression(baseFrameScans, frameScans, alignmentOptions);
+                    frameScanAlignmentMap = AlignFrameDataLinearRegression(frameNum, baseFrameScans, frameScans, alignmentOptions);
                     break;
                 case FrameAlignmentOptions.AlignmentMethods.COW:
-                    frameScanAlignmentMap = AlignFrameDataCOW(baseFrameScans, frameScans, alignmentOptions);
+                    frameScanAlignmentMap = AlignFrameDataCOW(frameNum, baseFrameScans, frameScans, alignmentOptions);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException(
@@ -748,6 +785,63 @@ namespace IMSDriftTimeAligner
             WarningMessages.Add(message);
         }
 
+        private void SaveFrameForDebug(
+            string frameDescription,
+            IReadOnlyList<double> baseFrameData,
+            IReadOnlyList<double> frameData,
+            int scanStart,
+            IReadOnlyDictionary<int, int> frameScanAlignmentMap)
+        {
+            try
+            {
+                var debugDataFile = new FileInfo(DEBUG_DATA_FILE);
+
+                using (var writer = new StreamWriter(new FileStream(debugDataFile.FullName, FileMode.Append, FileAccess.Write, FileShare.ReadWrite)))
+                {
+                    writer.WriteLine(frameDescription);
+                    writer.WriteLine("{0}\t{1}\t{2}\t{3}", "Scan", "TIC_Base", "TIC_Compare_Offset", "TIC_Compare_Original");
+
+                    // Construct a mapping of the existing indices in frameData to where the TIC value for that index would be shifted to using frameScanAlignmentMap
+                    var targetIndex = new int[frameData.Count];
+
+                    for (var i = 0; i < frameData.Count; i++)
+                    {
+                        var scanNumOld = scanStart + i;
+                        int scanNumNew;
+
+                        if (!frameScanAlignmentMap.TryGetValue(scanNumOld, out scanNumNew))
+                        {
+                            targetIndex[i] = -1;
+                            continue;
+                        }
+
+                        targetIndex[i] = scanNumNew - scanStart;
+
+                    }
+
+                    // Use the mapping in targetIndex to populate frameDataOffset
+                    var frameDataOffset = new double[frameData.Count];
+                    for (var i = 0; i < frameData.Count; i++)
+                    {
+                        if (targetIndex[i] < 0 || targetIndex[i] >= frameData.Count)
+                            continue;
+
+                        frameDataOffset[targetIndex[i]] = frameData[i];
+                    }
+
+                    for (var i = 0; i < frameData.Count; i++)
+                    {
+                        writer.WriteLine("{0}\t{1}\t{2}\t{3}", scanStart + i, baseFrameData[i], frameDataOffset[i], frameData[i]);
+                    }
+                    writer.WriteLine();
+                }
+
+            }
+            catch (Exception ex)
+            {
+                ReportError("Error in SaveFrameForDebug: " + ex.Message);
+            }
+        }
 
         private void SaveSmoothedDataForDebug(
             string frameDescription, 
