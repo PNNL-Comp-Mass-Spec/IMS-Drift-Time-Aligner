@@ -29,6 +29,7 @@ namespace IMSDriftTimeAligner
 
         #region "Classwide variables"
 
+        private bool mSmoothedBaseFrameDataWritten;
         #endregion
 
         #region "Properties"
@@ -500,6 +501,14 @@ namespace IMSDriftTimeAligner
                     return false;
                 }
 
+                mSmoothedBaseFrameDataWritten = false;
+                if (ShowDebugMessages)
+                {
+                    var debugDataFile = new FileInfo(DEBUG_DATA_FILE);
+                    if (debugDataFile.Exists)
+                        debugDataFile.Delete();
+                }
+
                 ReportMessage(string.Format("Opening {0}\n in folder {1}", sourceFile.Name, sourceFile.Directory));
                 var outputFile = InitializeOutputFile(sourceFile, outputFilePath);
 
@@ -677,6 +686,93 @@ namespace IMSDriftTimeAligner
             OnWarningMessage(new MessageEventArgs(message));
             WarningMessages.Add(message);
         }
+
+
+        private void SaveSmoothedDataForDebug(
+            string frameDescription, 
+            int scanStart, 
+            IReadOnlyList<double> frameData, 
+            IReadOnlyList<double> frameDataSmoothed)
+        {
+            try
+            {
+                var debugDataFile = new FileInfo(DEBUG_DATA_FILE);
+
+                using (var writer = new StreamWriter(new FileStream(debugDataFile.FullName, FileMode.Append, FileAccess.Write, FileShare.ReadWrite)))
+                {
+                    writer.WriteLine("Data smoothing comparison for " + frameDescription);
+                    writer.WriteLine("{0}\t{1}\t{2}", "Scan", "TIC_Original", "TIC_Smoothed");
+
+                    for (var i = 0; i < frameData.Count; i++)
+                    {
+                        writer.WriteLine("{0}\t{1}\t{2}", scanStart + i, frameData[i], frameDataSmoothed[i]);
+                    }
+                    writer.WriteLine();
+                }
+
+            }
+            catch (Exception ex)
+            {
+                ReportError("Error in SaveSmoothedDataForDebug: " + ex.Message);
+            }
+        }
+
+        private double[] StoreTICValues(
+            string frameDescription, 
+            int scanStart, 
+            int scanEnd, 
+            IEnumerable<ScanInfo> baseFrameScans,
+            FrameAlignmentOptions alignmentOptions)
+        {
+            var scanCount = scanEnd - scanStart + 1;
+            var frameData = new double[scanCount];
+
+            foreach (var scan in baseFrameScans)
+            {
+                if (scan.Scan == 0)
+                {
+                    ReportWarning("Skipping scan 0 in " + frameDescription);
+                    continue;
+                }
+
+                if (scan.Scan < scanStart || scan.Scan > scanEnd)
+                {
+                    continue;
+                }
+
+                frameData[scan.Scan - scanStart] = scan.TIC;
+            }
+
+            if (alignmentOptions.ScanSmoothCount <= 1)
+                return frameData;
+
+            // Apply a moving average smooth
+            var frameDataSmoothed = MathNet.Numerics.Statistics.Statistics.MovingAverage(frameData, alignmentOptions.ScanSmoothCount).ToArray();
+
+            if (!ShowDebugMessages)
+                return frameDataSmoothed;
+
+            var writeData = true;
+            if (frameDescription == BASE_FRAME_DESCRIPTION)
+            {
+                if (mSmoothedBaseFrameDataWritten)
+                {
+                    writeData = false;
+                }
+                else
+                {
+                    mSmoothedBaseFrameDataWritten = true;
+                }
+            }
+
+            if (writeData)
+            {
+                SaveSmoothedDataForDebug(frameDescription, scanStart, frameData, frameDataSmoothed);
+            }
+
+            return frameDataSmoothed;
+        }
+       
 
         #endregion
 
