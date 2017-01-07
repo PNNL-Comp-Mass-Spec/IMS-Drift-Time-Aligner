@@ -18,7 +18,7 @@ namespace IMSDriftTimeAligner
     /// </remarks>
     internal static class Program
     {
-        public const string PROGRAM_DATE = "January 5, 2017";
+        public const string PROGRAM_DATE = "January 6, 2017";
 
         /// <summary>
         /// UIMF File to process
@@ -66,6 +66,7 @@ namespace IMSDriftTimeAligner
                     ShowDebugMessages = mShowDebugMessages
                 };
 
+                processor.ErrorEvent += Processor_ErrorEvent;
                 processor.MessageEvent += Processor_MessageEvent;
                 processor.WarningEvent += Processor_WarningEvent;
 
@@ -367,14 +368,20 @@ namespace IMSDriftTimeAligner
 
 
         #region "Event handlers"
-        private static void Processor_WarningEvent(object sender, MessageEventArgs e)
+
+        private static void Processor_ErrorEvent(object sender, MessageEventArgs e)
         {
             ShowErrorMessage(e.Message);
         }
 
         private static void Processor_MessageEvent(object sender, MessageEventArgs e)
         {
-            Console.WriteLine(e.Message);            
+            Console.WriteLine(e.Message);
+        }
+
+        private static void Processor_WarningEvent(object sender, MessageEventArgs e)
+        {
+            Console.WriteLine(e.Message);
         }
 
         #endregion
