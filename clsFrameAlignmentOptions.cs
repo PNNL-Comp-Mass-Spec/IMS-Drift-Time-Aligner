@@ -98,9 +98,9 @@ namespace IMSDriftTimeAligner
         {
             AlignmentMethod = AlignmentMethods.LinearRegression;
             
-            BaseFrameSelectionMode = BaseFrameSelectionModes.MaxTICFrame;
+            BaseFrameSelectionMode = BaseFrameSelectionModes.SumMidNFrames;
 
-            BaseFrameSumCount = 5;
+            BaseFrameSumCount = 15;
             BaseFrameStart = 0;
             BaseFrameEnd = 0;
 
