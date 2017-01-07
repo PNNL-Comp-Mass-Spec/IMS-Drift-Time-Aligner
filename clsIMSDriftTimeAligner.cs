@@ -613,7 +613,7 @@ namespace IMSDriftTimeAligner
                     List<ScanInfo> baseFrameScans;
                     GetSummedFrameScans(reader, baseFrameRange, out baseFrameScans);
 
-                    var mergedFrameScans = new Dictionary<int, double[]>();
+                    var mergedFrameScans = new Dictionary<int, int[]>();
 
                     using (var writer = new UIMFLibrary.DataWriter(outputFile.FullName))
                     {
@@ -627,7 +627,7 @@ namespace IMSDriftTimeAligner
                             const int referenceFrameNum = 1;
 
                             var mergedFrameNum = 0;
-                            
+
                             if (Options.AppendMergedFrame)
                             {
                                 // Append a merged frame
@@ -668,9 +668,10 @@ namespace IMSDriftTimeAligner
             DataReader reader,
             DataWriter writer,
             int frameNum,
-            List<ScanInfo> baseFrameScans,
-            Dictionary<int, double[]> mergedFrameScans)
+            IReadOnlyList<ScanInfo> baseFrameScans,
+            Dictionary<int, int[]> mergedFrameScans)
         {
+            Console.WriteLine();
             ReportMessage($"Process frame {frameNum}");
 
             try
