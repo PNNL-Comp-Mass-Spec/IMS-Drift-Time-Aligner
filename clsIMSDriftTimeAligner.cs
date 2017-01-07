@@ -384,10 +384,9 @@ namespace IMSDriftTimeAligner
             int baseFrameStart;
             int baseFrameEnd;
 
-            var masterFrameList = reader.GetMasterFrameList();
-
-            var frameMin = masterFrameList.Keys.Min();
-            var frameMax = masterFrameList.Keys.Max();
+            int frameMin;
+            int frameMax;
+            LookupValidFrameRange(reader, out frameMin, out frameMax);
 
             var baseFrameSumCount = frameAlignmentOptions.BaseFrameSumCount;
             if (baseFrameSumCount < 1)
@@ -518,15 +517,17 @@ namespace IMSDriftTimeAligner
 
         private void GetFrameRangeToProcess(DataReader reader, out int frameStart, out int frameEnd)
         {
-            var masterFrameList = reader.GetMasterFrameList();
+            int frameMin;
+            int frameMax;
+            LookupValidFrameRange(reader, out frameMin, out frameMax);
 
-            frameStart = masterFrameList.Keys.Min();
-            frameEnd = masterFrameList.Keys.Max();
+            frameStart = frameMin;
+            frameEnd = frameMax;
 
-            if (Options.FrameStart > 0 && Options.FrameStart >= masterFrameList.Keys.Min())
+            if (Options.FrameStart > 0 && Options.FrameStart >= frameMin)
                 frameStart = Options.FrameStart;
 
-            if (Options.FrameEnd > 0 && Options.FrameEnd <= masterFrameList.Keys.Max())
+            if (Options.FrameEnd > 0 && Options.FrameEnd <= frameMax)
                 frameEnd = Options.FrameEnd;
         }
 
@@ -686,7 +687,7 @@ namespace IMSDriftTimeAligner
                 GetSummedFrameScans(reader, udtCurrentFrameRange, out frameScans);
 
                 // Dictionary where keys are the old scan number and values are the new scan number
-                var frameScanAlignmentMap = AlignFrameTICToBase(baseFrameScans, frameScans, Options);
+                var frameScanAlignmentMap = AlignFrameTICToBase(frameNum, baseFrameScans, frameScans, Options);
 
                 var frameParams = reader.GetFrameParams(frameNum);
                 bool insertFrame;
