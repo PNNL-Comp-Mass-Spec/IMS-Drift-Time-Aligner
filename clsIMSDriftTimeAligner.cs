@@ -777,10 +777,11 @@ namespace IMSDriftTimeAligner
                 using (var writer = new StreamWriter(new FileStream(debugDataFile.FullName, FileMode.Append, FileAccess.Write, FileShare.ReadWrite)))
                 {
                     writer.WriteLine(frameDescription);
-                    writer.WriteLine("{0}\t{1}\t{2}\t{3}", "Scan", "TIC_Base", "TIC_Compare_Offset", "TIC_Compare_Original");
 
                     // Construct a mapping of the existing indices in frameData to where the TIC value for that index would be shifted to using frameScanAlignmentMap
                     var targetIndex = new int[frameData.Count];
+
+                    var scanShiftStats = new Dictionary<int, int>();
 
                     for (var i = 0; i < frameData.Count; i++)
                     {
@@ -793,9 +794,41 @@ namespace IMSDriftTimeAligner
                             continue;
                         }
 
+                        var scanShift = scanNumNew - scanStart;
+                        int scanShiftCount;
+                        if (scanShiftStats.TryGetValue(scanShift, out scanShiftCount))
+                        {
+                            scanShiftStats[scanShift] = scanShiftCount + 1;
+                        }
+                        else
+                        {
+                            scanShiftStats.Add(scanShift, 1);
+                        }
+
                         targetIndex[i] = scanNumNew - scanStart;
 
                     }
+
+                    var highestScanShiftCount = scanShiftStats.Values.Max();
+                    var scanShiftApplied = (from item in scanShiftStats where item.Value == highestScanShiftCount select item.Key).First();
+
+                    switch (scanShiftApplied)
+                    {
+                        case 0:
+                            ReportMessage($"Data in {frameDescription} will not be shifted");
+                            break;
+                        case 1:
+                            ReportMessage($"Data in {frameDescription} be shifted by 1 scan");
+                            break;
+                        default:
+                            ReportMessage($"Data in {frameDescription} will be shifted by {scanShiftApplied} scans");
+                            break;
+                    }
+
+
+                    writer.WriteLine("ScanShift\t{0}\tscans", scanShiftApplied);
+
+                    writer.WriteLine("{0}\t{1}\t{2}\t{3}", "Scan", "TIC_Base", "TIC_Compare_Offset", "TIC_Compare_Original");
 
                     // Use the mapping in targetIndex to populate frameDataOffset
                     var frameDataOffset = new double[frameData.Count];
@@ -848,64 +881,24 @@ namespace IMSDriftTimeAligner
             {
                 ReportError("Error in SaveSmoothedDataForDebug: " + ex.Message);
             }
-        }
+        }        
 
-        private double[] StoreTICValues(
-            string frameDescription, 
-            int scanStart, 
-            int scanEnd, 
-            IEnumerable<ScanInfo> baseFrameScans,
-            FrameAlignmentOptions alignmentOptions)
+        private void ZeroValuesBelowThreshold(IList<double> frameData, FrameAlignmentOptions alignmentOptions)
         {
-            var scanCount = scanEnd - scanStart + 1;
-            var frameData = new double[scanCount];
+            var thresholdFraction = alignmentOptions.MinimumIntensityThresholdFraction;
+            if (thresholdFraction <= 0)
+                return;
 
-            foreach (var scan in baseFrameScans)
+            var maxIntensity = frameData.Max();
+            var intensityThreshold = maxIntensity * thresholdFraction;
+
+            for (var i = 0; i < frameData.Count; i++)
             {
-                if (scan.Scan == 0)
-                {
-                    ReportWarning("Skipping scan 0 in " + frameDescription);
-                    continue;
-                }
-
-                if (scan.Scan < scanStart || scan.Scan > scanEnd)
-                {
-                    continue;
-                }
-
-                frameData[scan.Scan - scanStart] = scan.TIC;
+                if (frameData[i] < intensityThreshold)
+                    frameData[i] = 0;
             }
 
-            if (alignmentOptions.ScanSmoothCount <= 1)
-                return frameData;
-
-            // Apply a moving average smooth
-            var frameDataSmoothed = MathNet.Numerics.Statistics.Statistics.MovingAverage(frameData, alignmentOptions.ScanSmoothCount).ToArray();
-
-            if (!ShowDebugMessages)
-                return frameDataSmoothed;
-
-            var writeData = true;
-            if (frameDescription == BASE_FRAME_DESCRIPTION)
-            {
-                if (mSmoothedBaseFrameDataWritten)
-                {
-                    writeData = false;
-                }
-                else
-                {
-                    mSmoothedBaseFrameDataWritten = true;
-                }
-            }
-
-            if (writeData)
-            {
-                SaveSmoothedDataForDebug(frameDescription, scanStart, frameData, frameDataSmoothed);
-            }
-
-            return frameDataSmoothed;
         }
-       
 
         #endregion
 

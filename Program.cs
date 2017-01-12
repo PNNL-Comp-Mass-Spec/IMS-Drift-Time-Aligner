@@ -119,7 +119,7 @@ namespace IMSDriftTimeAligner
             var lstValidParameters = new List<string> {
                 "I", "O", "Merge", "Append",
                 "BaseFrame", "BaseCount", "BaseStart", "BaseEnd",
-                "Start", "End", "Smooth",
+                "Start", "End", "Smooth", "ZeroThreshold",
                 "MaxShift", "Debug"};
 
             try
@@ -223,7 +223,21 @@ namespace IMSDriftTimeAligner
                 else if (isError)
                     return false;
 
-                
+
+                if (objParseCommandLine.RetrieveValueForParameter("ZeroThreshold", out paramValue))
+                {
+                    double paramValueDbl;
+                    if (double.TryParse(paramValue, out paramValueDbl) && paramValueDbl >=0 && paramValueDbl <= 1)
+                    {
+                        mAlignmentOptions.MinimumIntensityThresholdFraction = paramValueDbl;
+                    }
+                    else
+                    {
+                        ShowErrorMessage($"/ZeroThreshold must specify a value between 0 and 1; {paramValue} is invalid");
+                        return false;
+                    }
+                }
+
                 if (objParseCommandLine.IsParameterPresent("Debug"))
                 {
                     mShowDebugMessages = true;

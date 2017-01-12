@@ -73,6 +73,12 @@ namespace IMSDriftTimeAligner
         public int MaxShiftScans { get; set; }
 
         /// <summary>
+        /// Value to multiple the maximum TIC value by to determine an intensity threshold,
+        /// below which intensity values will be set to 0
+        /// </summary>
+        public double MinimumIntensityThresholdFraction { get; set; }
+
+        /// <summary>
         /// Number of points to use when smoothing TICs before aligning
         /// </summary>
         public int ScanSmoothCount { get; set; }
@@ -107,7 +113,8 @@ namespace IMSDriftTimeAligner
             FrameStart = 0;
             FrameEnd = 0;
 
-            MaxShiftScans = 15;
+            MaxShiftScans = 150;
+            MinimumIntensityThresholdFraction = 0.1;
             ScanSmoothCount = 7;
 
             MergeFrames = false;
