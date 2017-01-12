@@ -728,6 +728,10 @@ namespace IMSDriftTimeAligner
 
                             AppendMergedFrame(reader, writer, referenceFrameNum, mergedFrameNum, mergedFrameScans);
                         }
+
+                        // Make sure the frame count in Global_Params is up-to-date
+                        writer.UpdateGlobalFrameCount();
+
                     }
                 }
 
