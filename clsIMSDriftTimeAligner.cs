@@ -77,12 +77,37 @@ namespace IMSDriftTimeAligner
             WarningMessages = new List<string>();
         }
 
+        /// <summary>
+        /// Align the data using piecewise linear correlation optimised warping (COW)
+        /// </summary>
+        /// <param name="frameNum"></param>
+        /// <param name="baseFrameScans"></param>
+        /// <param name="frameScans"></param>
+        /// <param name="alignmentOptions"></param>
+        /// <returns></returns>
         private Dictionary<int, int> AlignFrameDataCOW(
             int frameNum,
             IReadOnlyList<ScanInfo> baseFrameScans,
             IReadOnlyList<ScanInfo> frameScans,
             FrameAlignmentOptions alignmentOptions)
         {
+            // TODO: Implement the method shown in the Appendix at http://www.sciencedirect.com/science/article/pii/S0021967398000211
+
+            // See also:
+            // http://bmcbioinformatics.biomedcentral.com/articles/10.1186/1471-2105-9-375
+            // http://www.sciencedirect.com/science/article/pii/S0021967306007059
+            // http://onlinelibrary.wiley.com/doi/10.1002/pmic.200700791/epdf
+            // http://onlinelibrary.wiley.com/doi/10.1002/cem.859/epdf
+            // http://pubs.acs.org/doi/full/10.1021/ac800920h
+            // http://bioinformatics.oxfordjournals.org/content/25/6/758.full
+
+            // COW requires two input parameters: 
+            // 1) section length m 
+            // 2) flexibility t/m, where t is the allowed deformation of an individual section
+
+            // m can be estimated from the peak width (as a starting point, use half the peak width of the broadest peak) 
+            // flexibility should be based on how widely the retention times drift between data to be aligned
+
             throw new NotImplementedException();
         }
 
@@ -113,8 +138,8 @@ namespace IMSDriftTimeAligner
                 var scanEnd = Math.Max(nonzeroScans1.Last(), nonzeroScans2.Last());
 
                 // Populate the arrays, storing TIC values in the appropriate index of baseFrameData and frameData
-                var baseFrameData = StoreTICValues(BASE_FRAME_DESCRIPTION, scanStart, scanEnd, baseFrameScans, alignmentOptions);
-                var frameData = StoreTICValues("Frame " + frameNum, scanStart, scanEnd, frameScans, alignmentOptions);
+                var baseFrameData = GetTICValues(BASE_FRAME_DESCRIPTION, scanStart, scanEnd, baseFrameScans, alignmentOptions);
+                var frameData = GetTICValues("Frame " + frameNum, scanStart, scanEnd, frameScans, alignmentOptions);
 
                 var offset = 0;
                 var correlationByOffset = new Dictionary<int, double>();
@@ -505,6 +530,91 @@ namespace IMSDriftTimeAligner
 
             if (Options.FrameEnd > 0 && Options.FrameEnd <= frameMax)
                 frameEnd = Options.FrameEnd;
+        }
+
+        /// <summary>
+        /// Populate an array of doubles using the TIC values from the scans in frameScans
+        /// </summary>
+        /// <param name="frameDescription">Description of this frame</param>
+        /// <param name="scanStart">Start scan number for the TIC values to return</param>
+        /// <param name="scanEnd">End scan number for the TIC values to return</param>
+        /// <param name="frameScans">Scan data for this frame</param>
+        /// <param name="alignmentOptions">Alignment options</param>
+        /// <returns>TIC values for this frame (possibly smoothed)</returns>
+        /// <remarks>
+        /// The data in frameScans may have missing scans, but the data in the returned array 
+        /// will have one point for every scan (0 for the scans that were missing)
+        /// </remarks>
+        private double[] GetTICValues(
+            string frameDescription,
+            int scanStart,
+            int scanEnd,
+            IEnumerable<ScanInfo> frameScans,
+            FrameAlignmentOptions alignmentOptions)
+        {
+            var scanCount = scanEnd - scanStart + 1;
+            var frameData = new double[scanCount];
+
+            foreach (var scan in frameScans)
+            {
+                if (scan.Scan == 0)
+                {
+                    ReportWarning("Skipping scan 0 in " + frameDescription);
+                    continue;
+                }
+
+                if (scan.Scan < scanStart || scan.Scan > scanEnd)
+                {
+                    // Scan is out of range
+                    // Provided the calling procedure defined scanStart and scanEnd properly, this code should not be reached
+                    continue;
+                }
+
+                frameData[scan.Scan - scanStart] = scan.TIC;
+            }
+
+            if (alignmentOptions.ScanSmoothCount <= 1)
+            {
+                // Not using smoothing, but we may need to zero-out falues below a threshold
+                ZeroValuesBelowThreshold(frameData, alignmentOptions);
+                return frameData;
+            }
+
+            // Apply a moving average smooth
+            var frameDataSmoothed = MathNet.Numerics.Statistics.Statistics.MovingAverage(frameData, alignmentOptions.ScanSmoothCount).ToArray();
+
+            // The smoothing algorithm results in some negative values very close to 0 (like -4.07E-12)
+            // Change these to 0
+            for (var i = 0; i < frameDataSmoothed.Length; i++)
+            {
+                if (frameDataSmoothed[i] < 0)
+                    frameDataSmoothed[i] = 0;
+            }
+
+            ZeroValuesBelowThreshold(frameDataSmoothed, alignmentOptions);
+
+            if (!ShowDebugMessages)
+                return frameDataSmoothed;
+
+            var writeData = true;
+            if (frameDescription == BASE_FRAME_DESCRIPTION)
+            {
+                if (mSmoothedBaseFrameDataWritten)
+                {
+                    writeData = false;
+                }
+                else
+                {
+                    mSmoothedBaseFrameDataWritten = true;
+                }
+            }
+
+            if (writeData)
+            {
+                SaveSmoothedDataForDebug(frameDescription, scanStart, frameData, frameDataSmoothed);
+            }
+
+            return frameDataSmoothed;
         }
 
         private FileInfo InitializeOutputFile(FileInfo sourceFile, string outputFilePath)
