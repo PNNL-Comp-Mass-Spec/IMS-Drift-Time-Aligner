@@ -776,6 +776,14 @@ namespace IMSDriftTimeAligner
                 var frameScanAlignmentMap = AlignFrameTICToBase(frameNum, baseFrameScans, frameScans, Options);
 
                 var frameParams = reader.GetFrameParams(frameNum);
+
+                // Assure that the frame type is not 0
+                var frameType = frameParams.GetValueInt32(FrameParamKeyType.FrameType, 0);
+                if (frameType == 0)
+                {
+                    frameParams.AddUpdateValue(FrameParamKeyType.FrameType, (int)DataReader.FrameType.MS1);
+                }
+
                 bool insertFrame;
 
                 if (Options.MergeFrames && !Options.AppendMergedFrame)
