@@ -1,4 +1,7 @@
 IMSDriftTimeAligner Revision History
 
+Version 1.0.6228; January 19, 2017
+	- Validate that the base frame start and end frames are within the actual frame range in the input file
+
 Version 1.0.6215; January 6, 2017
 	- Initial release

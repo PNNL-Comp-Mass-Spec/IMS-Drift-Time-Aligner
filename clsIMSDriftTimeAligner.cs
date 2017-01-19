@@ -411,7 +411,8 @@ namespace IMSDriftTimeAligner
                     {
                         targetScanInfo.NonZeroCount += sourceScanInfo.NonZeroCount;
                         targetScanInfo.TIC += sourceScanInfo.TIC;
-                    } else
+                    }
+                    else
                     {
                         scanData.Add(sourceScanInfo.Scan, sourceScanInfo);
                     }
@@ -549,6 +550,12 @@ namespace IMSDriftTimeAligner
 
             if (baseFrameEnd < baseFrameStart)
                 baseFrameEnd = baseFrameStart;
+
+            if (baseFrameStart < frameMin)
+                baseFrameStart = frameMin;
+
+            if (baseFrameEnd > frameMax)
+                baseFrameEnd = frameMax;
 
             var frameRange = new udtFrameRange
             {
@@ -801,6 +808,7 @@ namespace IMSDriftTimeAligner
             catch (Exception ex)
             {
                 ReportError("Error in ProcessFile: " + ex.Message);
+                ReportMessage(ex.StackTrace);
                 return false;
             }
         }
@@ -1038,9 +1046,9 @@ namespace IMSDriftTimeAligner
         }
 
         private void SaveSmoothedDataForDebug(
-            string frameDescription, 
-            int scanStart, 
-            IReadOnlyList<double> frameData, 
+            string frameDescription,
+            int scanStart,
+            IReadOnlyList<double> frameData,
             IReadOnlyList<double> frameDataSmoothed)
         {
             try
@@ -1064,7 +1072,7 @@ namespace IMSDriftTimeAligner
             {
                 ReportError("Error in SaveSmoothedDataForDebug: " + ex.Message);
             }
-        }        
+        }
 
         private void ZeroValuesBelowThreshold(IList<double> frameData, FrameAlignmentOptions alignmentOptions)
         {

@@ -18,7 +18,7 @@ namespace IMSDriftTimeAligner
     /// </remarks>
     internal static class Program
     {
-        public const string PROGRAM_DATE = "January 6, 2017";
+        public const string PROGRAM_DATE = "January 19, 2017";
 
         /// <summary>
         /// UIMF File to process
