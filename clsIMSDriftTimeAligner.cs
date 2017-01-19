@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Linq.Expressions;
 using FileProcessor;
 using UIMFLibrary;
 using MessageEventArgs = FileProcessor.MessageEventArgs;
@@ -108,8 +109,68 @@ namespace IMSDriftTimeAligner
             // m can be estimated from the peak width (as a starting point, use half the peak width of the broadest peak) 
             // flexibility should be based on how widely the retention times drift between data to be aligned
 
+            //var N = 50;
+            //var LT = 50;
+            //var m = 10;
+            //var delta = 1;
+            //var t = 5;
+
+            //var F = new double[10, 10];
+            //var U = new double[10, 10];
+
+            //// Perform dynamic programming
+
+            //for (var i = 0; i < N; i++)
+            //{
+            //    for (var x = 0; x < LT; x++)
+            //    {
+            //        F[i, x] = double.MaxValue;
+            //    }
+            //}
+
+            //F[0, 0] = 0;
+
+            //for (var i = N - 1; i >= 0; i--)
+            //{
+            //    var xstart = Math.Max(i * (m + delta - t), LT - (N - i) * (m + delta + t));
+
+            //    var xend = Math.Min(i * (m + delta + t), LT - (N - i) * (m + delta - t));
+
+            //    for (var x = xstart; x <= xend; x++)
+            //    {
+            //        for (var u = delta - t; u <= delta + t; u++)
+            //        {
+            //            var fsum = F[i+1, x+m+u] + unknownFunc(x);
+
+            //            if (fsum > F[i, x])
+            //            {
+            //                F[i, x] = fsum;
+            //                U[i, x] = u;
+            //            }
+            //        }
+            //    }
+            //}
+
+            //// Reconstruct optimal solution
+            //var xData = new int[10];
+            //xData[0] = 0;
+
+            //var uData = new int[10];
+
+            //for (var i = 0; i < N; i++)
+            //{
+            //    uData[i] = U[i, xData[i]];
+
+            //    xData[i + 1] = xData[i] + m + uData[i];
+            //}
+
             throw new NotImplementedException();
         }
+
+        //private double unknownFunc(double x)
+        //{
+        //    return x + m + u;
+        //}
 
         /// <summary>
         /// Align the TIC data in frameData to baseFrameData using Linear Regression
