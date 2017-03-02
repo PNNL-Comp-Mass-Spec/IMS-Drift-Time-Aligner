@@ -3,6 +3,10 @@ namespace IMSDriftTimeAligner
 {
     public class FrameAlignmentOptions
     {
+        public const BaseFrameSelectionModes DEFAULT_FRAME_SELECTION_MODE = BaseFrameSelectionModes.SumMidNFrames;
+        public const int DEFAULT_FRAME_SUM_COUNT = 15;
+        public const int DEFAULT_MAX_SHIFT_SCANS = 150;
+        public const int DEFAULT_SMOOTH_COUNT = 7;
 
         #region "Enums"
 
@@ -104,18 +108,18 @@ namespace IMSDriftTimeAligner
         {
             AlignmentMethod = AlignmentMethods.LinearRegression;
             
-            BaseFrameSelectionMode = BaseFrameSelectionModes.SumMidNFrames;
+            BaseFrameSelectionMode = DEFAULT_FRAME_SELECTION_MODE;
 
-            BaseFrameSumCount = 15;
+            BaseFrameSumCount = DEFAULT_FRAME_SUM_COUNT;
             BaseFrameStart = 0;
             BaseFrameEnd = 0;
 
             FrameStart = 0;
             FrameEnd = 0;
 
-            MaxShiftScans = 150;
+            MaxShiftScans = DEFAULT_MAX_SHIFT_SCANS;
             MinimumIntensityThresholdFraction = 0.1;
-            ScanSmoothCount = 7;
+            ScanSmoothCount = DEFAULT_SMOOTH_COUNT;
 
             MergeFrames = false;
 

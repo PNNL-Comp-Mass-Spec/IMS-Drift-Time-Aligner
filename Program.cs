@@ -317,17 +317,21 @@ namespace IMSDriftTimeAligner
                 {
                     Console.WriteLine("  /BaseFrame:{0} for {1}", (int)frameMode, frameMode);
                 }
+                Console.WriteLine("The default is /BaseFrame:" + (int)FrameAlignmentOptions.DEFAULT_FRAME_SELECTION_MODE);
+                
                 Console.WriteLine();
                 Console.WriteLine("Use /BaseCount to specify the number or frames or percent range to use when FrameMode is NFrame or NPercent based;");
-                Console.WriteLine("  default is /BaseCount:" + mAlignmentOptions.BaseFrameSumCount);
+                Console.WriteLine("  default is /BaseCount:" + FrameAlignmentOptions.DEFAULT_FRAME_SUM_COUNT);
+                Console.WriteLine();
                 Console.WriteLine("Use /BaseStart and /BaseEnd to specify the range of frames to use as the base when using /BaseFrame:3 (aka UserSpecifiedFrameRange)");
-                Console.WriteLine("Use /FrameStart and /FrameEnd to limit the range of frames to align");
+                Console.WriteLine();
+                Console.WriteLine("Use /Start and /End to limit the range of frames to align");
                 Console.WriteLine();
                 Console.WriteLine("Use /MaxShift to specify the maximum allowed shift (in scans) that scans in a frame can be adjusted;");
-                Console.WriteLine("  default is /MaxShift:" + mAlignmentOptions.MaxShiftScans);
+                Console.WriteLine("  default is /MaxShift:" + FrameAlignmentOptions.DEFAULT_MAX_SHIFT_SCANS);
                 Console.WriteLine("Use /Smooth to specify the number of data points (scans) in the TIC to use for moving average smoothing " +
                                   "prior to aligning each frame to the base frame;");
-                Console.WriteLine("  default is /Smooth:" + mAlignmentOptions.ScanSmoothCount);
+                Console.WriteLine("  default is /Smooth:" + FrameAlignmentOptions.DEFAULT_SMOOTH_COUNT);
                 Console.WriteLine();
                 Console.WriteLine("Use /Debug to show additional debug messages at the console");
                 Console.WriteLine();
