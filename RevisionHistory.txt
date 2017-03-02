@@ -1,5 +1,9 @@
 IMSDriftTimeAligner Revision History
 
+Version 1.0.6270; March 2, 2017
+	- Add support for older .UIMF files that have columns IFT columns instead of HPF columns
+		- For example, voltEntranceIFTOut instead of voltEntranceHPFOut
+
 Version 1.0.6228; January 19, 2017
 	- Validate that the base frame start and end frames are within the actual frame range in the input file
 

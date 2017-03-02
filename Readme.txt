@@ -28,15 +28,17 @@ Use /BaseFrame to specify how the base frame is selected; options are:
   /BaseFrame:6 for SumFirstNPercent
   /BaseFrame:7 for SumMidNPercent
   /BaseFrame:8 for SumAll
+The default is /BaseFrame:5
 
 Use /BaseCount to specify the number or frames or percent range to use when FrameMode is NFrame or NPercent based;
   default is /BaseCount:15
 
 Use /BaseStart and /BaseEnd to specify the range of frames to use as the base when using /BaseFrame:3 (aka UserSpecifiedFrameRange)
-Use /FrameStart and /FrameEnd to limit the range of frames to align
+
+Use /Start and /End to limit the range of frames to align
 
 Use /MaxShift to specify the maximum allowed shift (in scans) that scans in a frame can be adjusted;
-  default is /MaxShift:15
+  default is /MaxShift:150
 Use /Smooth to specify the number of data points (scans) in the TIC to use for moving average smoothing 
 prior to aligning each frame to the base frame;
   default is /Smooth:7
