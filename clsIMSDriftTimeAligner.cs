@@ -750,7 +750,7 @@ namespace IMSDriftTimeAligner
                 {
                     reader.ErrorEvent += UIMFReader_ErrorEvent;
 
-                    ReportMessage(string.Format("Cloning the .UIMF file"));
+                    ReportMessage("Cloning the .UIMF file");
                     var success = CloneUimf(reader, sourceFile, outputFile);
                     if (!success)
                     {
@@ -772,6 +772,9 @@ namespace IMSDriftTimeAligner
 
                     using (var writer = new UIMFLibrary.DataWriter(outputFile.FullName))
                     {
+                        if (writer.HasLegacyParameterTables)
+                            writer.ValidateLegacyHPFColumnsExist();
+
                         for (var frameNum = frameStart; frameNum <= frameEnd; frameNum++)
                         {
                             ProcessFrame(reader, writer, frameNum, baseFrameScans, mergedFrameScans);
@@ -1009,7 +1012,7 @@ namespace IMSDriftTimeAligner
                             ReportMessage($"Data in {frameDescription} will not be shifted");
                             break;
                         case 1:
-                            ReportMessage($"Data in {frameDescription} be shifted by 1 scan");
+                            ReportMessage($"Data in {frameDescription} will be shifted by 1 scan");
                             break;
                         default:
                             ReportMessage($"Data in {frameDescription} will be shifted by {scanShiftApplied} scans");
