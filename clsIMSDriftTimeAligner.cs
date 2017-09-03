@@ -1072,8 +1072,7 @@ namespace IMSDriftTimeAligner
                     End = frameNum
                 };
 
-                List<ScanInfo> frameScans;
-                GetSummedFrameScans(reader, udtCurrentFrameRange, out frameScans);
+                GetSummedFrameScans(reader, udtCurrentFrameRange, out var scanNumsInFrame, out var frameScans);
 
                 // Dictionary where keys are the old scan number and values are the new scan number
                 var frameScanAlignmentMap = AlignFrameTICToBase(frameNum, baseFrameScans, frameScans, scanNumsInFrame, statsWriter);
@@ -1109,15 +1108,14 @@ namespace IMSDriftTimeAligner
                 var binWidth = reader.GetGlobalParams().BinWidth;
                 var scansProcessed = 0;
 
-                foreach (var scanItem in frameScans)
+                foreach (var scanNumber in scanNumsInFrame)
                 {
                     if (scansProcessed % 250 == 0)
-                        ReportMessage($"  storing scan {scanItem.Scan}");
+                        ReportMessage($"  storing scan {scanNumber}");
 
-                    var scanNumOld = scanItem.Scan;
-                    int scanNumNew;
+                    var scanNumOld = scanNumber;
 
-                    if (!frameScanAlignmentMap.TryGetValue(scanNumOld, out scanNumNew))
+                    if (!frameScanAlignmentMap.TryGetValue(scanNumOld, out var scanNumNew))
                         continue;
 
                     int[] intensities;
@@ -1130,7 +1128,6 @@ namespace IMSDriftTimeAligner
                         ReportError($"Error retrieving data for frame {frameNum}, scan {scanNumOld}: {ex.Message}");
                         continue;
                     }
-
 
                     if (insertFrame)
                     {
