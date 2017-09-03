@@ -31,18 +31,19 @@ namespace IMSDriftTimeAligner
             {
                 ProgramInfo = "This program processes IMS data in a UIMF file to align all frames " +
                               "to a base frame, adjusting the observed drift times of each frame " +
-                              "to align with the base frame. \n\n Options for BaseFrame are:\n" +
-                              " 0 for FirstFrame \n" +
-                              " 1 for MidpointFrame \n" +
-                              " 2 for MaxTICFrame \n" +
-                              " 3 for UserSpecifiedFrameRange \n" +
-                              " 4 for SumFirstNFrames \n" +
-                              " 5 for SumMidNFrames \n" +
-                              " 6 for SumFirstNPercent \n" +
-                              " 7 for SumMidNPercent \n" +
+                              "to align with the base frame. \n\n" +
+                              "Options for BaseFrame are:\n" +
+                              " 0 for FirstFrame\n" +
+                              " 1 for MidpointFrame\n" +
+                              " 2 for MaxTICFrame\n" +
+                              " 3 for UserSpecifiedFrameRange\n" +
+                              " 4 for SumFirstNFrames\n" +
+                              " 5 for SumMidNFrames\n" +
+                              " 6 for SumFirstNPercent\n" +
+                              " 7 for SumMidNPercent\n" +
                               " 8 for SumAll",
 
-                ContactInfo = "Program written by Matthew Monroe for the Department of Energy (PNNL, Richland, WA) in 2017" +
+                ContactInfo = "Program written by Matthew Monroe for the Department of Energy\n(PNNL, Richland, WA) in 2017" +
                               Environment.NewLine + Environment.NewLine +
                               "E-mail: matthew.monroe@pnnl.gov or proteomics@pnnl.gov" + Environment.NewLine +
                               "Website: http://panomics.pnnl.gov/ or http://omics.pnl.gov or http://www.sysbio.org/resources/staff/",
