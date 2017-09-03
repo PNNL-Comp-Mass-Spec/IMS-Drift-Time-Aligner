@@ -8,7 +8,10 @@ adjusting the observed drift times of each frame to align with the base frame.
 IMSDriftTimeAligner.exe
  InputFilePath [/O:OutputFilePath] [/Merge] [/Append]
  [/BaseFrame:N] [/BaseCount:N] [/BaseStart:N] [/BaseEnd:N]
- [/Start:N] [/End:N] [/MaxShift:N] [/Smooth:N] [/Debug]
+ [/Start:N] [/End:N] 
+ [/ScanMin:N] [/ScanMax:N]
+ [/MaxShift:N] [/Smooth:N] 
+ [/Debug]
 
 InputFilePath is a path to the UIMF file to process
 
@@ -36,6 +39,8 @@ Use /BaseCount to specify the number or frames or percent range to use when Fram
 Use /BaseStart and /BaseEnd to specify the range of frames to use as the base when using /BaseFrame:3 (aka UserSpecifiedFrameRange)
 
 Use /Start and /End to limit the range of frames to align
+
+Use /ScanMin and /ScanMax to limit the range of drift scans to use for generation of the TIC data to align
 
 Use /MaxShift to specify the maximum allowed shift (in scans) that scans in a frame can be adjusted;
   default is /MaxShift:150
