@@ -376,13 +376,66 @@ namespace IMSDriftTimeAligner
         /// </summary>
         /// <param name="reader"></param>
         /// <param name="baseFrameRange"></param>
+        /// <param name="scanNumsInFrame">Full list of scan numbers (unfiltered)</param>
         /// <param name="frameScansSummed">Scan info from the first frame, but with NonZeroCount and TIC values summed across the frames</param>
-        private void GetSummedFrameScans(DataReader reader, udtFrameRange baseFrameRange, out List<ScanInfo> frameScansSummed)
+        /// <remarks>frameScansSummed will be a subset of scans if DriftScanFilterMin or DriftScanFilterMax are greater than 0</remarks>
+        private void GetSummedFrameScans(
+            DataReader reader,
+            udtFrameRange baseFrameRange,
+            out List<int> scanNumsInFrame,
+            out List<ScanInfo> frameScansSummed)
         {
 
-            frameScansSummed = reader.GetFrameScans(baseFrameRange.Start);
+            var scanMin = Options.DriftScanFilterMin;
+            var scanMax = Options.DriftScanFilterMax;
+            var scanFilterEnabled = scanMin > 0 || scanMax > 0;
+
+            //var mzMin = Options.MzFilterMin;
+            //var mzMax = Options.MzFilterMax;
+            // var mzFilterEnabled = mzMin > 0 || mzMax > 0;
+
+            scanNumsInFrame = new List<int>();
+            frameScansSummed = new List<ScanInfo>();
+
+            var baseFrameNum = baseFrameRange.Start;
+            var frameScansStart = reader.GetFrameScans(baseFrameNum);
+
+            var calibrator = reader.GetMzCalibrator(reader.GetFrameParams(baseFrameNum));
+
+            //var baseIntensityBlock = GetIntensityBlock(
+            //    reader, baseFrameNum,
+            //    mzFilterEnabled, calibrator,
+            //    scanMin, scanMax, frameScansStart,
+            //    mzMin, mzMax,
+            //    out int baseIntensityBlockBinCount);
+
+            foreach (var sourceScanInfo in frameScansStart)
+            {
+
+                var scanNumber = sourceScanInfo.Scan;
+                scanNumsInFrame.Add(scanNumber);
+
+                if (scanFilterEnabled && (scanNumber < scanMin || scanNumber > scanMax))
+                    continue;
+
+                ComputeTIC(
+                    // scanNumber, scanMin,
+                    sourceScanInfo,
+                    // mzFilterEnabled, baseIntensityBlock, baseIntensityBlockBinCount,
+                    out int nonZeroCount, out double totalIntensity);
+
+                sourceScanInfo.NonZeroCount = nonZeroCount;
+                sourceScanInfo.TIC = totalIntensity;
+
+                frameScansSummed.Add(sourceScanInfo);
+
+            }
+
+            //if (baseFrameRange.Start == baseFrameRange.End && !mzFilterEnabled)
             if (baseFrameRange.Start == baseFrameRange.End)
+            {
                 return;
+            }
 
             // Summing multiple frames
             // Frames can have different scans, so use a dictionary to keep track of data on a per-scan basis
@@ -393,9 +446,7 @@ namespace IMSDriftTimeAligner
                 scanData.Add(scanItem.Scan, scanItem);
             }
 
-            int frameMin;
-            int frameMax;
-            LookupValidFrameRange(reader, out frameMin, out frameMax);
+            LookupValidFrameRange(reader, out var frameMin, out var frameMax);
 
             // Sum the TIC values by IMS frame
             for (var frameNum = baseFrameRange.Start + 1; frameNum <= baseFrameRange.End; frameNum++)
@@ -405,18 +456,40 @@ namespace IMSDriftTimeAligner
 
                 var frameScans = reader.GetFrameScans(frameNum);
 
+                //var intensityBlock = GetIntensityBlock(
+                //    reader, baseFrameNum,
+                //    mzFilterEnabled, calibrator,
+                //    scanMin, scanMax, frameScans,
+                //    mzMin, mzMax,
+                //    out int intensityBlockBinCount);
+
+
                 foreach (var sourceScanInfo in frameScans)
                 {
-                    ScanInfo targetScanInfo;
-                    if (scanData.TryGetValue(sourceScanInfo.Scan, out targetScanInfo))
+
+                    var scanNumber = sourceScanInfo.Scan;
+
+                    if (scanFilterEnabled && (scanNumber < scanMin || scanNumber > scanMax))
+                        continue;
+
+                    ComputeTIC(
+                        // scanNumber, scanMin,
+                        sourceScanInfo,
+                        // mzFilterEnabled, intensityBlock, intensityBlockBinCount,
+                        out int nonZeroCount, out double totalIntensity);
+
+                    if (scanData.TryGetValue(scanNumber, out var targetScanInfo))
                     {
-                        targetScanInfo.NonZeroCount += sourceScanInfo.NonZeroCount;
-                        targetScanInfo.TIC += sourceScanInfo.TIC;
+                        targetScanInfo.NonZeroCount += nonZeroCount;
+                        targetScanInfo.TIC += totalIntensity;
                     }
                     else
                     {
-                        scanData.Add(sourceScanInfo.Scan, sourceScanInfo);
+                        sourceScanInfo.NonZeroCount = nonZeroCount;
+                        sourceScanInfo.TIC = totalIntensity;
+                        scanData.Add(scanNumber, sourceScanInfo);
                     }
+
                 }
 
             }
