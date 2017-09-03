@@ -42,6 +42,11 @@ namespace IMSDriftTimeAligner
         private int mBinCount;
 
         private bool mSmoothedBaseFrameDataWritten;
+
+        private bool mWarnedScanZeroInBaseFrame;
+
+        private int mWarnCountScanZeroDataFrames;
+
         #endregion
 
         #region "Properties"
@@ -798,18 +803,49 @@ namespace IMSDriftTimeAligner
             var scanCount = scanEnd - scanStart + 1;
             var frameData = new double[scanCount];
 
+            var warningCountEarly = 0;
+            var warningCountLater = 0;
+
             foreach (var scan in frameScans)
             {
                 if (scan.Scan == 0)
                 {
-                    ReportWarning("Skipping scan 0 in " + frameDescription);
+                    if (frameDescription == BASE_FRAME_DESCRIPTION)
+                    {
+                        if (!mWarnedScanZeroInBaseFrame)
+                            ReportWarning("Skipping scan 0 in " + BASE_FRAME_DESCRIPTION);
+
+                        mWarnedScanZeroInBaseFrame = true;
+                        continue;
+                    }
+
+                    mWarnCountScanZeroDataFrames++;
+                    if (mWarnCountScanZeroDataFrames <= 5)
+                    {
+                        var msg = "Skipping scan 0 in " + frameDescription;
+
+                        if (mWarnCountScanZeroDataFrames == 5)
+                            msg += "; Suppressing additional warnings";
+
+                        ReportWarning(msg);
+                    }
+
                     continue;
                 }
 
-                if (scan.Scan < scanStart || scan.Scan > scanEnd)
+                if (scan.Scan < scanStart)
                 {
-                    // Scan is out of range
-                    // Provided the calling procedure defined scanStart and scanEnd properly, this code should not be reached
+                    warningCountEarly++;
+                    if (warningCountEarly < 5)
+                        ReportWarning(string.Format("Scan {0} is less than {1} in {2}; this represents a programming bug", scan.Scan, scanStart, frameDescription));
+                    continue;
+                }
+
+                if (scan.Scan > scanEnd)
+                {
+                    warningCountLater++;
+                    if (warningCountLater < 5)
+                        ReportWarning(string.Format("Scan {0} is greater than {1} in {2}; this represents a programming bug", scan.Scan, scanEnd, frameDescription));
                     continue;
                 }
 
