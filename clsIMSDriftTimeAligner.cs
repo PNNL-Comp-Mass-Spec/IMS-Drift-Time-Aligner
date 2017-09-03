@@ -199,88 +199,115 @@ namespace IMSDriftTimeAligner
                 var nonzeroScans1 = (from item in baseFrameScans where item.TIC > 0 orderby item.Scan select item.Scan).ToList();
                 var nonzeroScans2 = (from item in frameScans where item.TIC > 0 orderby item.Scan select item.Scan).ToList();
 
-                var scanStart = Math.Min(nonzeroScans1.First(), nonzeroScans2.First());
-                var scanEnd = Math.Max(nonzeroScans1.Last(), nonzeroScans2.Last());
+                int bestOffset;
+                double bestRSquared;
+                double[] baseFrameData;
+                double[] frameData;
+                int scanStart;
 
-                // Populate the arrays, storing TIC values in the appropriate index of baseFrameData and frameData
-                var baseFrameData = GetTICValues(BASE_FRAME_DESCRIPTION, scanStart, scanEnd, baseFrameScans, alignmentOptions);
-                var frameData = GetTICValues("Frame " + frameNum, scanStart, scanEnd, frameScans, alignmentOptions);
-
-                var offset = 0;
-                var correlationByOffset = new Dictionary<int, double>();
-
-                var shiftPositive = true;
-
-                while (true)
+                if (nonzeroScans1.Count == 0 || nonzeroScans2.Count == 0)
                 {
-                    var frameDataShifted = new double[baseFrameData.Length];
-                    var targetIndex = 0;
+                    // Either (or both) of the arrays have all zeroes; nothing to align
+                    bestOffset = 0;
+                    bestRSquared = 0;
 
-                    for (var sourceIndex = offset; sourceIndex < frameData.Length; sourceIndex++)
+                    scanStart = baseFrameScans.First().Scan;
+                    var scanEnd = baseFrameScans.Last().Scan;
+
+                    // Populate the arrays, storing TIC values in the appropriate index of baseFrameData and frameData
+                    baseFrameData = GetTICValues(BASE_FRAME_DESCRIPTION, scanStart, scanEnd, baseFrameScans);
+                    frameData = GetTICValues("Frame " + frameNum, scanStart, scanEnd, frameScans);
+
+                }
+                else
+                {
+
+                    scanStart = Math.Min(nonzeroScans1.First(), nonzeroScans2.First());
+                    var scanEnd = Math.Max(nonzeroScans1.Last(), nonzeroScans2.Last());
+
+                    // Populate the arrays, storing TIC values in the appropriate index of baseFrameData and frameData
+                    baseFrameData = GetTICValues(BASE_FRAME_DESCRIPTION, scanStart, scanEnd, baseFrameScans);
+                    frameData = GetTICValues("Frame " + frameNum, scanStart, scanEnd, frameScans);
+
+                    var offset = 0;
+                    var correlationByOffset = new Dictionary<int, double>();
+
+                    var shiftPositive = true;
+
+                    while (true)
                     {
-                        if (sourceIndex >= 0)
+                        var frameDataShifted = new double[baseFrameData.Length];
+                        var targetIndex = 0;
+
+                        for (var sourceIndex = offset; sourceIndex < frameData.Length; sourceIndex++)
                         {
-                            frameDataShifted[targetIndex] = frameData[sourceIndex];
+                            if (sourceIndex >= 0)
+                            {
+                                frameDataShifted[targetIndex] = frameData[sourceIndex];
+                            }
+                            targetIndex++;
+                            if (targetIndex >= frameData.Length)
+                                break;
                         }
-                        targetIndex++;
-                        if (targetIndex >= frameData.Length)
+
+                        var coeff = MathNet.Numerics.LinearRegression.SimpleRegression.Fit(frameDataShifted, baseFrameData);
+
+                        var slope = coeff.Item1;
+                        var intercept = coeff.Item2;
+
+                        var rSquared = MathNet.Numerics.GoodnessOfFit.RSquared(frameDataShifted.Select(x => intercept + slope * x), baseFrameData);
+
+                        correlationByOffset.Add(offset, rSquared);
+
+                        if (shiftPositive)
+                        {
+                            offset = Math.Abs(offset) + 1;
+                            shiftPositive = false;
+                        }
+                        else
+                        {
+                            offset = -offset;
+                            shiftPositive = true;
+                        }
+
+                        if (Math.Abs(offset) > Options.MaxShiftScans)
+                        {
+                            // Exit the while loop
                             break;
+                        }
                     }
 
-                    var coeff = MathNet.Numerics.LinearRegression.SimpleRegression.Fit(frameDataShifted, baseFrameData);
+                    var rankedOffsets = (from item in correlationByOffset orderby item.Value descending select item).ToList();
 
-                    var slope = coeff.Item1;
-                    var intercept = coeff.Item2;
-
-                    var rSquared = MathNet.Numerics.GoodnessOfFit.RSquared(frameDataShifted.Select(x => intercept + slope * x), baseFrameData);
-
-                    correlationByOffset.Add(offset, rSquared);
-
-                    if (shiftPositive)
+                    if (ShowDebugMessages)
                     {
-                        offset = Math.Abs(offset) + 1;
-                        shiftPositive = false;
-                    }
-                    else
-                    {
-                        offset = -offset;
-                        shiftPositive = true;
+                        Console.WriteLine();
+                        ReportMessage("Top 10 offsets:");
+                        ReportMessage(string.Format("{0,-12}  {1}", "Offset_Scans", "R-Squared"));
+                        for (var i = 0; i < 10; i++)
+                        {
+                            if (i >= rankedOffsets.Count)
+                                break;
+
+                            ReportMessage(string.Format("{0,4:##0}          {1:n6}", rankedOffsets[i].Key, rankedOffsets[i].Value));
+                        }
+
                     }
 
-                    if (Math.Abs(offset) > alignmentOptions.MaxShiftScans)
-                    {
-                        // Exit the while loop
-                        break;
-                    }
+                    bestOffset = rankedOffsets.First().Key;
+                    bestRSquared = rankedOffsets.First().Value;
                 }
 
-                var rankedOffsets = (from item in correlationByOffset orderby item.Value descending select item).ToList();
-
-                if (ShowDebugMessages)
+                foreach (var scanNumber in scanNumsInFrame)
                 {
-                    Console.WriteLine();
-                    ReportMessage("Top 10 offsets:");
-                    ReportMessage(string.Format("{0,-12}  {1}", "Offset_Scans", "R-Squared"));
-                    for (var i = 0; i < 10; i++)
-                    {
-                        if (i >= rankedOffsets.Count)
-                            break;
-
-                        ReportMessage(string.Format("{0,4:##0}          {1:n6}", rankedOffsets[i].Key, rankedOffsets[i].Value));
-                    }
-
-                }
-
-                var bestOffset = rankedOffsets.First().Key;
-
-                for (var sourceScan = scanStart; sourceScan <= scanEnd; sourceScan++)
-                {
-                    var targetScan = sourceScan - bestOffset;
+                    var targetScan = scanNumber - bestOffset;
                     if (targetScan >= 0)
                     {
-                        frameScanAlignmentMap.Add(sourceScan, targetScan);
+                        frameScanAlignmentMap.Add(scanNumber, targetScan);
                     }
                 }
+
+                statsWriter.WriteLine("{0,-8} {1,-6} {2,-8:F5}", frameNum, bestOffset, bestRSquared);
 
                 if (ShowDebugMessages)
                 {
@@ -291,6 +318,7 @@ namespace IMSDriftTimeAligner
             catch (Exception ex)
             {
                 ReportError("Error in AlignFrameDataLinearRegression: " + ex.Message);
+                ReportWarning(PRISM.clsStackTraceFormatter.GetExceptionStackTraceMultiLine(ex));
             }
 
             return frameScanAlignmentMap;
