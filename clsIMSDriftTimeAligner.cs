@@ -72,8 +72,9 @@ namespace IMSDriftTimeAligner
         /// <summary>
         /// Constructor
         /// </summary>
-        public DriftTimeAlignmentEngine()
+        public DriftTimeAlignmentEngine(FrameAlignmentOptions options)
         {
+            Options = options;
             ErrorMessages = new List<string>();
             WarningMessages = new List<string>();
         }
