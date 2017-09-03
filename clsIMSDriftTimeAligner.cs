@@ -54,7 +54,7 @@ namespace IMSDriftTimeAligner
         /// <summary>
         /// Alignment options
         /// </summary>
-        public FrameAlignmentOptions Options { get; set; }
+        public FrameAlignmentOptions Options { get; }
 
         public bool ShowDebugMessages { get; set; }
 
@@ -85,13 +85,12 @@ namespace IMSDriftTimeAligner
         /// <param name="frameNum"></param>
         /// <param name="baseFrameScans"></param>
         /// <param name="frameScans"></param>
-        /// <param name="alignmentOptions"></param>
         /// <returns></returns>
+        [Obsolete("Not implemented")]
         private Dictionary<int, int> AlignFrameDataCOW(
             int frameNum,
             IReadOnlyList<ScanInfo> baseFrameScans,
-            IReadOnlyList<ScanInfo> frameScans,
-            FrameAlignmentOptions alignmentOptions)
+            IReadOnlyList<ScanInfo> frameScans)
         {
             // TODO: Implement the method shown in the Appendix at http://www.sciencedirect.com/science/article/pii/S0021967398000211
 
@@ -179,13 +178,15 @@ namespace IMSDriftTimeAligner
         /// <param name="frameNum">Frame number (for logging purposes)</param>
         /// <param name="baseFrameScans">Scans in the base frame</param>
         /// <param name="frameScans">Scans in the frame that we're aligning</param>
-        /// <param name="alignmentOptions">Alignment options, including the alignment method</param>
+        /// <param name="scanNumsInFrame">Full list of scan numbers in the frame (since frameScans might be filtered)</param>
+        /// <param name="statsWriter">Stats file writer</param>
         /// <returns>Dictionary where keys are the old scan number and values are the new scan number</returns>
         private Dictionary<int, int> AlignFrameDataLinearRegression(
             int frameNum,
             IReadOnlyList<ScanInfo> baseFrameScans,
             IReadOnlyList<ScanInfo> frameScans,
-            FrameAlignmentOptions alignmentOptions)
+            IReadOnlyList<int> scanNumsInFrame,
+            TextWriter statsWriter)
         {
             // Keys are the old scan number and values are the new scan number
             var frameScanAlignmentMap = new Dictionary<int, int>();
@@ -299,29 +300,31 @@ namespace IMSDriftTimeAligner
         /// <param name="frameNum">Frame number (for logging purposes)</param>
         /// <param name="baseFrameScans">Scans in the base frame</param>
         /// <param name="frameScans">Scans in the frame that we're aligning</param>
-        /// <param name="alignmentOptions">Alignment options, including the alignment method</param>
+        /// <param name="scanNumsInFrame">Full list of scan numbers in the frame (since frameScans might be filtered)</param>
+        /// <param name="statsWriter">Stats file writer</param>
         /// <returns>Dictionary where keys are the old scan number and values are the new scan number</returns>
         public Dictionary<int, int> AlignFrameTICToBase(
             int frameNum,
             IReadOnlyList<ScanInfo> baseFrameScans,
             IReadOnlyList<ScanInfo> frameScans,
-            FrameAlignmentOptions alignmentOptions)
+            IReadOnlyList<int> scanNumsInFrame,
+            TextWriter statsWriter)
         {
 
             Dictionary<int, int> frameScanAlignmentMap;
 
-            switch (alignmentOptions.AlignmentMethod)
+            switch (Options.AlignmentMethod)
             {
                 case FrameAlignmentOptions.AlignmentMethods.LinearRegression:
-                    frameScanAlignmentMap = AlignFrameDataLinearRegression(frameNum, baseFrameScans, frameScans, alignmentOptions);
+                    frameScanAlignmentMap = AlignFrameDataLinearRegression(frameNum, baseFrameScans, frameScans, scanNumsInFrame, statsWriter);
                     break;
                 case FrameAlignmentOptions.AlignmentMethods.COW:
-                    frameScanAlignmentMap = AlignFrameDataCOW(frameNum, baseFrameScans, frameScans, alignmentOptions);
-                    break;
+                    ReportError("Alignment method COW is not implemented");
+                    // frameScanAlignmentMap = AlignFrameDataCOW(frameNum, baseFrameScans, frameScans, alignmentOptions);
+                    return null;
                 default:
-                    throw new ArgumentOutOfRangeException(
-                        nameof(alignmentOptions.AlignmentMethod),
-                        "Unrecognized alignment method");
+                    throw new InvalidEnumArgumentException(
+                        "AlignmentMethod");
             }
 
 
@@ -681,18 +684,16 @@ namespace IMSDriftTimeAligner
         /// <param name="scanStart">Start scan number for the TIC values to return</param>
         /// <param name="scanEnd">End scan number for the TIC values to return</param>
         /// <param name="frameScans">Scan data for this frame</param>
-        /// <param name="alignmentOptions">Alignment options</param>
         /// <returns>TIC values for this frame (possibly smoothed)</returns>
         /// <remarks>
-        /// The data in frameScans may have missing scans, but the data in the returned array 
+        /// The data in frameScans may have missing scans, but the data in the returned array
         /// will have one point for every scan (0 for the scans that were missing)
         /// </remarks>
         private double[] GetTICValues(
             string frameDescription,
             int scanStart,
             int scanEnd,
-            IEnumerable<ScanInfo> frameScans,
-            FrameAlignmentOptions alignmentOptions)
+            IEnumerable<ScanInfo> frameScans)
         {
             var scanCount = scanEnd - scanStart + 1;
             var frameData = new double[scanCount];
@@ -715,15 +716,15 @@ namespace IMSDriftTimeAligner
                 frameData[scan.Scan - scanStart] = scan.TIC;
             }
 
-            if (alignmentOptions.ScanSmoothCount <= 1)
+            if (Options.ScanSmoothCount <= 1)
             {
-                // Not using smoothing, but we may need to zero-out falues below a threshold
-                ZeroValuesBelowThreshold(frameData, alignmentOptions);
+                // Not using smoothing, but we may need to zero-out values below a threshold
+                ZeroValuesBelowThreshold(frameData);
                 return frameData;
             }
 
             // Apply a moving average smooth
-            var frameDataSmoothed = MathNet.Numerics.Statistics.Statistics.MovingAverage(frameData, alignmentOptions.ScanSmoothCount).ToArray();
+            var frameDataSmoothed = MathNet.Numerics.Statistics.Statistics.MovingAverage(frameData, Options.ScanSmoothCount).ToArray();
 
             // The smoothing algorithm results in some negative values very close to 0 (like -4.07E-12)
             // Change these to 0
@@ -733,7 +734,7 @@ namespace IMSDriftTimeAligner
                     frameDataSmoothed[i] = 0;
             }
 
-            ZeroValuesBelowThreshold(frameDataSmoothed, alignmentOptions);
+            ZeroValuesBelowThreshold(frameDataSmoothed);
 
             if (!ShowDebugMessages)
                 return frameDataSmoothed;
@@ -1151,9 +1152,9 @@ namespace IMSDriftTimeAligner
             }
         }
 
-        private void ZeroValuesBelowThreshold(IList<double> frameData, FrameAlignmentOptions alignmentOptions)
+        private void ZeroValuesBelowThreshold(IList<double> frameData)
         {
-            var thresholdFraction = alignmentOptions.MinimumIntensityThresholdFraction;
+            var thresholdFraction = Options.MinimumIntensityThresholdFraction;
             if (thresholdFraction <= 0)
                 return;
 
