@@ -591,10 +591,7 @@ namespace IMSDriftTimeAligner
         {
             int baseFrameStart;
             int baseFrameEnd;
-
-            int frameMin;
-            int frameMax;
-            LookupValidFrameRange(reader, out frameMin, out frameMax);
+            LookupValidFrameRange(reader, out var frameMin, out var frameMax);
 
             var baseFrameSumCount = frameAlignmentOptions.BaseFrameSumCount;
             if (baseFrameSumCount < 1)
@@ -768,9 +765,7 @@ namespace IMSDriftTimeAligner
 
         private void GetFrameRangeToProcess(DataReader reader, out int frameStart, out int frameEnd)
         {
-            int frameMin;
-            int frameMax;
-            LookupValidFrameRange(reader, out frameMin, out frameMax);
+            LookupValidFrameRange(reader, out var frameMin, out var frameMax);
 
             frameStart = frameMin;
             frameEnd = frameMax;
@@ -978,15 +973,11 @@ namespace IMSDriftTimeAligner
                         return false;
                     }
 
-                    int frameStart;
-                    int frameEnd;
-
-                    GetFrameRangeToProcess(reader, out frameStart, out frameEnd);
+                    GetFrameRangeToProcess(reader, out var frameStart, out var frameEnd);
 
                     var baseFrameRange = GetBaseFrameRange(reader);
 
-                    List<ScanInfo> baseFrameScans;
-                    GetSummedFrameScans(reader, baseFrameRange, out baseFrameScans);
+                    GetSummedFrameScans(reader, baseFrameRange, out _, out var baseFrameScans);
 
                     var mergedFrameScans = new Dictionary<int, int[]>();
 
@@ -1134,10 +1125,8 @@ namespace IMSDriftTimeAligner
                         writer.InsertScan(frameNum, frameParams, scanNumNew, intensities, binWidth);
                     }
 
-                    int[] summedIntensities;
-
                     // Dictionary where Keys are the aligned scan number and values are intensities by bin
-                    if (mergedFrameScans.TryGetValue(scanNumNew, out summedIntensities))
+                    if (mergedFrameScans.TryGetValue(scanNumNew, out var summedIntensities))
                     {
                         for (var i = 0; i < summedIntensities.Length; i++)
                         {
@@ -1206,17 +1195,15 @@ namespace IMSDriftTimeAligner
                     for (var i = 0; i < frameData.Count; i++)
                     {
                         var scanNumOld = scanStart + i;
-                        int scanNumNew;
 
-                        if (!frameScanAlignmentMap.TryGetValue(scanNumOld, out scanNumNew))
+                        if (!frameScanAlignmentMap.TryGetValue(scanNumOld, out var scanNumNew))
                         {
                             targetIndex[i] = -1;
                             continue;
                         }
 
                         var scanShift = scanNumNew - scanStart;
-                        int scanShiftCount;
-                        if (scanShiftStats.TryGetValue(scanShift, out scanShiftCount))
+                        if (scanShiftStats.TryGetValue(scanShift, out var scanShiftCount))
                         {
                             scanShiftStats[scanShift] = scanShiftCount + 1;
                         }
