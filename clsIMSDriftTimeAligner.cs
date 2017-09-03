@@ -39,6 +39,8 @@ namespace IMSDriftTimeAligner
 
         #region "Classwide variables"
 
+        private int mBinCount;
+
         private bool mSmoothedBaseFrameDataWritten;
         #endregion
 
@@ -374,6 +376,39 @@ namespace IMSDriftTimeAligner
 
         }
 
+        private void ComputeTIC(
+            //int scanNumber, int scanMin,
+            ScanInfo sourceScanInfo,
+            //bool mzFilterEnabled,
+            //IReadOnlyList<int[][]> intensityBlock,
+            //int intensityBlockBinCount,
+            out int nonZeroCount, out double totalIntensity)
+        {
+
+            //if (mzFilterEnabled)
+            //{
+            //    var scanNumIndexInBlock = scanNumber - scanMin;
+
+            //    nonZeroCount = 0;
+            //    totalIntensity = 0.0;
+
+            //    for (var bin = 0; bin < intensityBlockBinCount; bin++)
+            //    {
+            //        if (intensityBlock[0][scanNumIndexInBlock][bin] <= 0)
+            //            continue;
+
+            //        nonZeroCount++;
+            //        totalIntensity += intensityBlock[0][scanNumIndexInBlock][bin];
+            //    }
+
+            //}
+            //else
+            //{
+                nonZeroCount = sourceScanInfo.NonZeroCount;
+                totalIntensity = sourceScanInfo.TIC;
+            //}
+        }
+
         /// <summary>
         /// Compute the IMS-based TIC value across scans
         /// </summary>
@@ -643,7 +678,44 @@ namespace IMSDriftTimeAligner
             return frameRange;
         }
 
-        private bool CloneUimf(DataReader reader, FileInfo sourceFile, FileInfo outputFile)
+        [Obsolete("Unused")]
+        private int[][][] GetIntensityBlock(
+            DataReader reader,
+            int baseFrameNum,
+            bool mzFilterEnabled,
+            MzCalibrator calibrator,
+            int scanMin,
+            int scanMax,
+            IReadOnlyCollection<ScanInfo> scanList,
+            double mzMin,
+            double mzMax,
+            out int intensityBlockBinCount)
+        {
+            if (mzFilterEnabled)
+            {
+
+                var binStart = Math.Max(0, (int)Math.Floor(calibrator.MZtoBin(mzMin)));
+                var binEnd = Math.Min(mBinCount, (int)Math.Ceiling(calibrator.MZtoBin(mzMax)));
+                intensityBlockBinCount = binEnd - binStart + 1;
+
+                var firstScan = scanList.First().Scan;
+                var lastScan = scanList.Last().Scan;
+
+                if (scanMin < firstScan)
+                    scanMin = firstScan;
+
+                if (scanMax == 0 || scanMax > lastScan)
+                    scanMax = lastScan;
+
+                // Array of intensities; dimensions are Frame, Scan, Bin
+                return reader.GetIntensityBlock(baseFrameNum, baseFrameNum, DataReader.FrameType.MS1, scanMin, scanMax, binStart, binEnd);
+            }
+
+            intensityBlockBinCount = 0;
+            return new int[0][][];
+        }
+
+        private bool CloneUimf(DataReader reader, FileSystemInfo sourceFile, FileSystemInfo outputFile)
         {
             var tablesToSkip = new List<string> {
                         "Frame_Parameters",
@@ -824,6 +896,10 @@ namespace IMSDriftTimeAligner
                 using (var reader = new UIMFLibrary.DataReader(sourceFile.FullName))
                 {
                     reader.ErrorEvent += UIMFReader_ErrorEvent;
+
+                    var globalParams = reader.GetGlobalParams();
+
+                    mBinCount = globalParams.Bins;
 
                     ReportMessage("Cloning the .UIMF file");
                     var success = CloneUimf(reader, sourceFile, outputFile);

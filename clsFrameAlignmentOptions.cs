@@ -78,9 +78,14 @@ namespace IMSDriftTimeAligner
         [Option("ITF", HelpText = "Value to multiply the maximum TIC value by to determine an intensity threshold, below which intensity values will be set to 0")]
         public double MinimumIntensityThresholdFraction { get; set; }
 
-        /// <summary>
-        /// Number of points to use when smoothing TICs before aligning
-        /// </summary>
+        [Option("MzMin", HelpText = "Optional minimum m/z to filter data by when obtaining data to align")]
+        [Obsolete("Filtering by m/z results in not enough data to align")]
+        public double MzFilterMin { get; set; }
+
+        [Option("MzMax", HelpText = "Optional maximum m/z to filter data by when obtaining data to align")]
+        [Obsolete("Filtering by m/z results in not enough data to align")]
+        public double MzFilterMax { get; set; }
+
         [Option("ScanMin", HelpText = "Optional minimum drift scan number to filter data by when obtaining data to align")]
         public int DriftScanFilterMin { get; set; }
 
@@ -124,6 +129,9 @@ namespace IMSDriftTimeAligner
             MaxShiftScans = DEFAULT_MAX_SHIFT_SCANS;
 
             MinimumIntensityThresholdFraction = 0.1;
+
+            // MzFilterMin = 0;
+            // MzFilterMax = 0;
 
             DriftScanFilterMin = 0;
             DriftScanFilterMax = 0;
@@ -171,6 +179,19 @@ namespace IMSDriftTimeAligner
 
             Console.WriteLine(" Maximum shift: {0} scans", MaxShiftScans);
             Console.WriteLine(" Minimum Intensity hreshold Fraction: {0}", MinimumIntensityThresholdFraction);
+
+            //if (MzFilterMin > 0 || MzFilterMax > 0 || DriftScanFilterMin > 0 || DriftScanFilterMax > 0)
+            if (DriftScanFilterMin > 0 || DriftScanFilterMax > 0)
+            {
+                Console.WriteLine();
+                Console.WriteLine(" Data selection restrictions for generating the drift time TIC");
+
+                //if (MzFilterMin > 0 || MzFilterMax > 0)
+                //{
+                //    Console.WriteLine(" Minimum m/z: {0}", MzFilterMin);
+                //    Console.WriteLine(" Maximum m/z: {0}", MzFilterMax);
+                //}
+
                 if (DriftScanFilterMin > 0 || DriftScanFilterMax > 0)
                 {
                     Console.WriteLine(" Minimum drift time scan: {0}", DriftScanFilterMin);
