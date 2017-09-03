@@ -957,7 +957,12 @@ namespace IMSDriftTimeAligner
                 ReportMessage(string.Format("Opening {0}\n in folder {1}", sourceFile.Name, sourceFile.Directory));
                 var outputFile = InitializeOutputFile(sourceFile, outputFilePath);
 
-                using (var reader = new UIMFLibrary.DataReader(sourceFile.FullName))
+                if (outputFile.DirectoryName == null)
+                    throw new DirectoryNotFoundException("Cannot determine the parent directory of " + outputFile.FullName);
+
+                var statsFilePath = Path.Combine(outputFile.DirectoryName, Path.GetFileNameWithoutExtension(outputFile.Name) + "_stats.txt");
+
+                using (var reader = new DataReader(sourceFile.FullName))
                 {
                     reader.ErrorEvent += UIMFReader_ErrorEvent;
 
@@ -985,14 +990,18 @@ namespace IMSDriftTimeAligner
 
                     var mergedFrameScans = new Dictionary<int, int[]>();
 
-                    using (var writer = new UIMFLibrary.DataWriter(outputFile.FullName))
+                    using (var statsWriter = new StreamWriter(new FileStream(statsFilePath, FileMode.Create, FileAccess.Write, FileShare.Read)))
+                    using (var writer = new DataWriter(outputFile.FullName))
                     {
+                        statsWriter.AutoFlush = true;
+                        statsWriter.WriteLine("{0,-8} {1,-6} {2,-8}", "Frame", "Shift", "Best RSquared");
+
                         if (writer.HasLegacyParameterTables)
                             writer.ValidateLegacyHPFColumnsExist();
 
                         for (var frameNum = frameStart; frameNum <= frameEnd; frameNum++)
                         {
-                            ProcessFrame(reader, writer, frameNum, baseFrameScans, mergedFrameScans);
+                            ProcessFrame(reader, writer, frameNum, baseFrameScans, mergedFrameScans, statsWriter);
                         }
 
                         if (Options.AppendMergedFrame || Options.MergeFrames)
@@ -1042,12 +1051,15 @@ namespace IMSDriftTimeAligner
         /// Single frame of data where scan intensities are accumulated (summed) as each frame is processed
         /// Keys are the aligned scan number, values are intensities by bin
         /// </param>
+        /// <param name="statsWriter">Stats file writer</param>
         private void ProcessFrame(
             DataReader reader,
             DataWriter writer,
             int frameNum,
             IReadOnlyList<ScanInfo> baseFrameScans,
-            Dictionary<int, int[]> mergedFrameScans)
+            IDictionary<int, int[]> mergedFrameScans,
+            TextWriter statsWriter
+            )
         {
             Console.WriteLine();
             ReportMessage($"Process frame {frameNum}");
@@ -1064,7 +1076,9 @@ namespace IMSDriftTimeAligner
                 GetSummedFrameScans(reader, udtCurrentFrameRange, out frameScans);
 
                 // Dictionary where keys are the old scan number and values are the new scan number
-                var frameScanAlignmentMap = AlignFrameTICToBase(frameNum, baseFrameScans, frameScans, Options);
+                var frameScanAlignmentMap = AlignFrameTICToBase(frameNum, baseFrameScans, frameScans, scanNumsInFrame, statsWriter);
+                if (frameScanAlignmentMap == null)
+                    return;
 
                 var frameParams = reader.GetFrameParams(frameNum);
 
