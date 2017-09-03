@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
-using System.Linq.Expressions;
 using FileProcessor;
 using UIMFLibrary;
 using MessageEventArgs = FileProcessor.MessageEventArgs;
@@ -63,7 +63,7 @@ namespace IMSDriftTimeAligner
         /// </summary>
         public FrameAlignmentOptions Options { get; }
 
-        public bool ShowDebugMessages { get; set; }
+        private bool ShowDebugMessages => Options.DebugMode;
 
         /// <summary>
         /// List of recent warning messages
@@ -109,11 +109,11 @@ namespace IMSDriftTimeAligner
             // http://pubs.acs.org/doi/full/10.1021/ac800920h
             // http://bioinformatics.oxfordjournals.org/content/25/6/758.full
 
-            // COW requires two input parameters: 
-            // 1) section length m 
+            // COW requires two input parameters:
+            // 1) section length m
             // 2) flexibility t/m, where t is the allowed deformation of an individual section
 
-            // m can be estimated from the peak width (as a starting point, use half the peak width of the broadest peak) 
+            // m can be estimated from the peak width (as a starting point, use half the peak width of the broadest peak)
             // flexibility should be based on how widely the retention times drift between data to be aligned
 
             //var N = 50;
@@ -653,13 +653,16 @@ namespace IMSDriftTimeAligner
                 case FrameAlignmentOptions.BaseFrameSelectionModes.SumMidNFrames:
                 case FrameAlignmentOptions.BaseFrameSelectionModes.SumMidNPercent:
 
-                    // First call this function to determine the midpoint frame number 
+                    // First call this function to determine the midpoint frame number
                     // (Start and End in midpointFrameRange will be identical)
                     var tempOptions = frameAlignmentOptions.ShallowCopy();
                     tempOptions.BaseFrameSelectionMode = FrameAlignmentOptions.BaseFrameSelectionModes.MidpointFrame;
                     var midpointFrameRange = GetBaseFrameRange(reader, tempOptions);
 
+                    // ReSharper disable once TooWideLocalVariableScope
                     int leftCount;
+
+                    // ReSharper disable once TooWideLocalVariableScope
                     int rightCount;
 
                     if (frameAlignmentOptions.BaseFrameSelectionMode == FrameAlignmentOptions.BaseFrameSelectionModes.SumMidNFrames)
@@ -752,7 +755,7 @@ namespace IMSDriftTimeAligner
                         "Frame_Params",
                         "Frame_Scans" };
 
-            var frameTypesToAlwaysCopy = new List<UIMFLibrary.DataReader.FrameType>();
+            var frameTypesToAlwaysCopy = new List<DataReader.FrameType>();
 
             var success = reader.CloneUIMF(outputFile.FullName, tablesToSkip, frameTypesToAlwaysCopy);
 
@@ -995,7 +998,7 @@ namespace IMSDriftTimeAligner
                             ProcessFrame(reader, writer, frameNum, baseFrameScans, mergedFrameScans, statsWriter);
                         }
 
-                        if (Options.AppendMergedFrame || Options.MergeFrames)
+                        if ((Options.AppendMergedFrame || Options.MergeFrames) && mergedFrameScans.Count > 0)
                         {
                             const int referenceFrameNum = 1;
 
