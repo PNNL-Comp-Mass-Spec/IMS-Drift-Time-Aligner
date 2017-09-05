@@ -1,5 +1,8 @@
 IMSDriftTimeAligner Revision History
 
+Version 1.0.6457; September 5, 2017
+	- When parameter /Start is used to start at frame 2 or higher, renumber frames in the output file to still start at frame 1
+
 Version 1.0.6455; September 3, 2017
 	- Add arguments /ScanMin and /ScanMax
 	- Create a text file with Frame, Shift, and R-Squared for the TIC alignment that determined the shift

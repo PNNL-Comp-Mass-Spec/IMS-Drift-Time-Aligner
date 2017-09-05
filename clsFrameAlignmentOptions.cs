@@ -1,5 +1,4 @@
-﻿
-using System;
+﻿using System;
 using System.Reflection;
 using PRISM;
 
@@ -7,7 +6,7 @@ namespace IMSDriftTimeAligner
 {
     public class FrameAlignmentOptions
     {
-        public const string PROGRAM_DATE = "September 3, 2017";
+        public const string PROGRAM_DATE = "September 5, 2017";
 
         public const BaseFrameSelectionModes DEFAULT_FRAME_SELECTION_MODE = BaseFrameSelectionModes.SumMidNFrames;
         public const int DEFAULT_FRAME_SUM_COUNT = 15;

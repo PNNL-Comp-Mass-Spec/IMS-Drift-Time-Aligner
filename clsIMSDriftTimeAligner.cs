@@ -384,7 +384,7 @@ namespace IMSDriftTimeAligner
             Dictionary<int, int[]> mergedFrameScans)
         {
             Console.WriteLine();
-            ReportMessage($"Appending the merged frame data");
+            ReportMessage("Appending the merged frame data");
 
             var frameParams = reader.GetFrameParams(referenceFrameNum);
 
@@ -886,29 +886,32 @@ namespace IMSDriftTimeAligner
                         if (writer.HasLegacyParameterTables)
                             writer.ValidateLegacyHPFColumnsExist();
 
+                        var nextFrameNumOutfile = 1;
+                        bool insertEachFrame;
+
+                        if (Options.MergeFrames && !Options.AppendMergedFrame)
+                        {
+                            // The output file will only have a single, merged frame
+                            insertEachFrame = false;
+                        }
+                        else
+                        {
+                            insertEachFrame = true;
+                        }
+
+
                         for (var frameNum = frameStart; frameNum <= frameEnd; frameNum++)
                         {
-                            ProcessFrame(reader, writer, frameNum, baseFrameScans, mergedFrameScans, statsWriter);
+                            ProcessFrame(reader, writer, frameNum, baseFrameScans, mergedFrameScans, statsWriter, insertEachFrame, nextFrameNumOutfile);
+                            if (insertEachFrame)
+                                nextFrameNumOutfile++;
                         }
 
                         if ((Options.AppendMergedFrame || Options.MergeFrames) && mergedFrameScans.Count > 0)
                         {
                             const int referenceFrameNum = 1;
 
-                            var mergedFrameNum = 0;
-
-                            if (Options.AppendMergedFrame)
-                            {
-                                // Append a merged frame
-                                mergedFrameNum = frameEnd + 1;
-                            }
-                            else if (Options.MergeFrames)
-                            {
-                                // The output file will only have a single, merged frame
-                                mergedFrameNum = 1;
-                            }
-
-                            AppendMergedFrame(reader, writer, referenceFrameNum, mergedFrameNum, mergedFrameScans);
+                            AppendMergedFrame(reader, writer, referenceFrameNum, nextFrameNumOutfile, mergedFrameScans);
                         }
 
                         // Make sure the frame count in Global_Params is up-to-date
@@ -939,13 +942,16 @@ namespace IMSDriftTimeAligner
         /// Keys are the aligned scan number, values are intensities by bin
         /// </param>
         /// <param name="statsWriter">Stats file writer</param>
+        /// <param name="nextFrameNumOutfile">Next frame number for the writer to use</param>
         private void ProcessFrame(
             DataReader reader,
             DataWriter writer,
             int frameNum,
             IReadOnlyList<ScanInfo> baseFrameScans,
             IDictionary<int, int[]> mergedFrameScans,
-            TextWriter statsWriter
+            TextWriter statsWriter,
+            bool insertFrame,
+            int nextFrameNumOutfile
             )
         {
             Console.WriteLine();
@@ -955,8 +961,8 @@ namespace IMSDriftTimeAligner
             {
                 var udtCurrentFrameRange = new udtFrameRange
                 {
-                    Start = frameNum,
-                    End = frameNum
+                    Start = nextFrameNumOutfile,
+                    End = nextFrameNumOutfile
                 };
 
                 GetSummedFrameScans(reader, udtCurrentFrameRange, out var scanNumsInFrame, out var frameScans);
@@ -975,21 +981,9 @@ namespace IMSDriftTimeAligner
                     frameParams.AddUpdateValue(FrameParamKeyType.FrameType, (int)DataReader.FrameType.MS1);
                 }
 
-                bool insertFrame;
-
-                if (Options.MergeFrames && !Options.AppendMergedFrame)
-                {
-                    // The output file will only have a single, merged frame
-                    insertFrame = false;
-                }
-                else
-                {
-                    insertFrame = true;
-                }
-
                 if (insertFrame)
                 {
-                    writer.InsertFrame(frameNum, frameParams);
+                    writer.InsertFrame(nextFrameNumOutfile, frameParams);
                 }
 
                 var binWidth = reader.GetGlobalParams().BinWidth;
@@ -1018,7 +1012,7 @@ namespace IMSDriftTimeAligner
 
                     if (insertFrame)
                     {
-                        writer.InsertScan(frameNum, frameParams, scanNumNew, intensities, binWidth);
+                        writer.InsertScan(nextFrameNumOutfile, frameParams, scanNumNew, intensities, binWidth);
                     }
 
                     // Dictionary where Keys are the aligned scan number and values are intensities by bin
@@ -1042,7 +1036,6 @@ namespace IMSDriftTimeAligner
 
                     scansProcessed++;
                 }
-
 
             }
             catch (Exception ex)
