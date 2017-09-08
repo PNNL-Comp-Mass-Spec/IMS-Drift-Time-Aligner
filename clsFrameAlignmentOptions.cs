@@ -38,52 +38,67 @@ namespace IMSDriftTimeAligner
 
         #region "Properties"
 
-        [Option("Align", HelpText = "Method for aligning the data for each frame to the base frame")]
+        [Option("Align", DoNotListEnumValues = true, HelpShowsDefault = false, HelpText =
+            "Method for aligning the data for each frame to the base frame; LinearRegression (0) is the only method available at present")]
         public AlignmentMethods AlignmentMethod { get; set; }
 
         [Option("BaseFrame", HelpText =
-            "Method for selecting the base frame to align all the other frames to. Default is /BaseFrame:5")]
+            "Method for selecting the base frame to align all the other frames to")]
         public BaseFrameSelectionModes BaseFrameSelectionMode { get; set; }
 
         [Option("BaseCount", HelpText =
             "Number of frames to use, or percentage of frames to use, when the BaseFrameSelection mode is NFrames or NPercent. " +
-            "When specifying a percentage, must be a value between 1 and 100. Default is 15 frames")]
+            "When specifying a percentage, must be a value between 1 and 100")]
         public int BaseFrameSumCount { get; set; }
 
-        [Option("BaseStart", HelpText = "First frame to use when the BaseFrameSelection mode is 3, aka UserSpecifiedFrameRange")]
+        [Option("BaseStart", HelpShowsDefault = false, HelpText =
+            "First frame to use when the BaseFrameSelection mode is 3, aka UserSpecifiedFrameRange")]
         public int BaseFrameStart { get; set; }
 
-        [Option("BaseEnd", HelpText = "Last frame to use when the BaseFrameSelection mode is 3, aka UserSpecifiedFrameRange")]
+        [Option("BaseEnd", HelpShowsDefault = false, HelpText =
+            "Last frame to use when the BaseFrameSelection mode is 3, aka UserSpecifiedFrameRange")]
         public int BaseFrameEnd { get; set; }
 
-        [Option("Debug", HelpText = "True to show additional debug messages at the console")]
+        [Option("Debug", HelpShowsDefault = false, HelpText =
+            "True to show additional debug messages at the console")]
         public bool DebugMode { get; set; }
 
-        [Option("Start", HelpText = "Frame to start processing at (0 to start at the first frame)")]
+        [Option("Start", HelpShowsDefault = false, HelpText =
+            "Frame to start processing at (0 to start at the first frame)")]
         public int FrameStart { get; set; }
 
-        [Option("End", HelpText = "Frame to stop processing at (Set FrameStart and FrameEnd to 0 to process all frames)")]
+        [Option("End", HelpShowsDefault = false, HelpText =
+            "Frame to stop processing at (Set FrameStart and FrameEnd to 0 to process all frames)")]
         public int FrameEnd { get; set; }
 
-        [Option("i", "input", ArgPosition = 1, HelpText = "Input file path (UIMF File)")]
+        [Option("i", "input", ArgPosition = 1, HelpShowsDefault = false, HelpText =
+            "Input file path (UIMF File)")]
         public string InputFilePath { get; set; }
 
-        [Option("o", "output", ArgPosition = 2, HelpText = "Output file path")]
+        [Option("o", "output", ArgPosition = 2, HelpShowsDefault = false, HelpText =
+            "Output file path")]
         public string OutputFilePath { get; set; }
 
-        [Option("MaxShift", HelpText = "Maximum number of scans that data in a frame is allowed to be shifted when aligning to the base frame data")]
+        [Option("MaxShift", HelpText =
+            "Maximum number of scans that data in a frame is allowed to be shifted when aligning to the base frame data")]
         public int MaxShiftScans { get; set; }
 
-        [Option("ITF", HelpText = "Value to multiply the maximum TIC value by to determine an intensity threshold, below which intensity values will be set to 0")]
+        [Option("ITF", HelpText =
+            "Value to multiply the maximum TIC value by to determine an intensity threshold, " +
+            "below which intensity values will be set to 0")]
         public double MinimumIntensityThresholdFraction { get; set; }
 
-        [Option("ScanMin", HelpText = "Optional minimum drift scan number to filter data by when obtaining data to align")]
+        [Option("ScanMin", HelpShowsDefault = false, HelpText =
+            "Optional minimum drift scan number to filter data by when obtaining data to align")]
         public int DriftScanFilterMin { get; set; }
 
-        [Option("ScanMax", HelpText = "Optional maximum drift scan number to filter data by when obtaining data to align")]
+        [Option("ScanMax", HelpShowsDefault = false, HelpText =
+            "Optional maximum drift scan number to filter data by when obtaining data to align")]
         public int DriftScanFilterMax { get; set; }
 
-        [Option("Smooth", HelpText = "Number of points to use when smoothing TICs before aligning.  If 0 or 1; no smoothing is applied")]
+        [Option("Smooth", HelpText =
+            "Number of points to use when smoothing TICs before aligning. " +
+            "If 0 or 1; no smoothing is applied.")]
         public int ScanSmoothCount { get; set; }
 
         [Option("Merge", HelpText =
