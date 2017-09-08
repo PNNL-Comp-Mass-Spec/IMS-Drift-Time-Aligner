@@ -170,14 +170,28 @@ namespace IMSDriftTimeAligner
             if (BaseFrameStart > 0 || BaseFrameEnd > 0)
             {
                 Console.WriteLine(" Base Frame Start: {0}", BaseFrameStart);
-                Console.WriteLine(" Base Frame End: {0}", BaseFrameEnd);
+                if (BaseFrameEnd > 0)
+                {
+                    Console.WriteLine(" Base Frame End: {0}", BaseFrameEnd);
+                }
+                else
+                {
+                    Console.WriteLine(" Base Frame End: last frame in file");
+                }
             }
 
             Console.WriteLine();
             if (FrameStart > 0 || FrameEnd > 0)
             {
                 Console.WriteLine(" First frame to process {0}", FrameStart);
-                Console.WriteLine(" Last frame to process: {0}", FrameEnd);
+                if (FrameEnd > 0)
+                {
+                    Console.WriteLine(" Last frame to process: {0}", FrameEnd);
+                }
+                else
+                {
+                    Console.WriteLine(" Last frame to process: last frame in file");
+                }
             }
 
             Console.WriteLine(" Maximum shift: {0} scans", MaxShiftScans);
@@ -191,7 +205,14 @@ namespace IMSDriftTimeAligner
                 if (DriftScanFilterMin > 0 || DriftScanFilterMax > 0)
                 {
                     Console.WriteLine(" Minimum drift time scan: {0}", DriftScanFilterMin);
-                    Console.WriteLine(" Maximum drift time scan: {0}", DriftScanFilterMax);
+                    if (DriftScanFilterMax > 0)
+                    {
+                        Console.WriteLine(" Maximum drift time scan: {0}", DriftScanFilterMax);
+                    }
+                    else
+                    {
+                        Console.WriteLine(" Maximum drift time scan: last scan in frame");
+                    }
                 }
             }
 
