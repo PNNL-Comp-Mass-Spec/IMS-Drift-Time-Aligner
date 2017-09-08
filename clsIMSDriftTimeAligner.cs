@@ -593,10 +593,7 @@ namespace IMSDriftTimeAligner
                     tempOptions.BaseFrameSelectionMode = FrameAlignmentOptions.BaseFrameSelectionModes.MidpointFrame;
                     var midpointFrameRange = GetBaseFrameRange(reader, tempOptions);
 
-                    // ReSharper disable once TooWideLocalVariableScope
                     int leftCount;
-
-                    // ReSharper disable once TooWideLocalVariableScope
                     int rightCount;
 
                     if (frameAlignmentOptions.BaseFrameSelectionMode == FrameAlignmentOptions.BaseFrameSelectionModes.SumMidNFrames)

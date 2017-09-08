@@ -165,19 +165,39 @@ namespace IMSDriftTimeAligner
             Console.WriteLine();
             Console.WriteLine(" Alignment Method: {0}", AlignmentMethod);
             Console.WriteLine(" Base Frame Selection Mode: {0}", BaseFrameSelectionMode);
-            Console.WriteLine(" Base Frames to Sum: {0}", BaseFrameSumCount);
 
-            if (BaseFrameStart > 0 || BaseFrameEnd > 0)
+            switch (BaseFrameSelectionMode)
             {
-                Console.WriteLine(" Base Frame Start: {0}", BaseFrameStart);
-                if (BaseFrameEnd > 0)
-                {
-                    Console.WriteLine(" Base Frame End: {0}", BaseFrameEnd);
-                }
-                else
-                {
-                    Console.WriteLine(" Base Frame End: last frame in file");
-                }
+                case BaseFrameSelectionModes.FirstFrame:
+                case BaseFrameSelectionModes.MidpointFrame:
+                case BaseFrameSelectionModes.MaxTICFrame:
+                    // Only a single frame is chosen; do not show BaseFrameSumCount, BaseFrameStart, or BaseFrameEnd
+                    break;
+
+                case BaseFrameSelectionModes.UserSpecifiedFrameRange:
+
+                    Console.WriteLine(" Base Frame Start: {0}", BaseFrameStart);
+                    if (BaseFrameEnd > 0)
+                    {
+                        Console.WriteLine(" Base Frame End: {0}", BaseFrameEnd);
+                    }
+                    else
+                    {
+                        Console.WriteLine(" Base Frame End: last frame in file");
+                    }
+
+                    break;
+
+                case BaseFrameSelectionModes.SumFirstNFrames:
+                case BaseFrameSelectionModes.SumMidNFrames:
+                    Console.WriteLine(" Base Frames to Sum: {0}", BaseFrameSumCount);
+                    break;
+
+                case BaseFrameSelectionModes.SumFirstNPercent:
+                case BaseFrameSelectionModes.SumMidNPercent:
+                    Console.WriteLine(" Base Frames to Sum: {0}%", BaseFrameSumCount);
+                    break;
+
             }
 
             Console.WriteLine();

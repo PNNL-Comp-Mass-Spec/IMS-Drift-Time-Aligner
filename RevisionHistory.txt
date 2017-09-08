@@ -1,5 +1,8 @@
 IMSDriftTimeAligner Revision History
 
+Version 1.0.6460; September 8, 2017
+	- Updated PRISM.dll that supports enum-based arguments and shows valid enum names / values in the help text
+
 Version 1.0.6457; September 5, 2017
 	- When parameter /Start is used to start at frame 2 or higher, renumber frames in the output file to still start at frame 1
 
