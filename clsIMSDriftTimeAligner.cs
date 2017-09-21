@@ -960,6 +960,7 @@ namespace IMSDriftTimeAligner
         /// Keys are the aligned scan number, values are intensities by bin
         /// </param>
         /// <param name="statsWriter">Stats file writer</param>
+        /// <param name="insertFrame">True to insert a new frame</param>
         /// <param name="nextFrameNumOutfile">Next frame number for the writer to use</param>
         private void ProcessFrame(
             DataReader reader,
@@ -996,13 +997,15 @@ namespace IMSDriftTimeAligner
                 var frameType = frameParams.GetValueInt32(FrameParamKeyType.FrameType, 0);
                 if (frameType == 0)
                 {
-                    frameParams.AddUpdateValue(FrameParamKeyType.FrameType, (int)DataReader.FrameType.MS1);
+                    frameParams.AddUpdateValue(FrameParamKeyType.FrameType, (int)UIMFData.FrameType.MS1);
                 }
 
                 if (insertFrame)
                 {
                     writer.InsertFrame(nextFrameNumOutfile, frameParams);
                 }
+
+                var scanFilterEnabled = Options.DriftScanFilterMin > 0 || Options.DriftScanFilterMax > 0;
 
                 var binWidth = reader.GetGlobalParams().BinWidth;
                 var scansProcessed = 0;
@@ -1033,6 +1036,17 @@ namespace IMSDriftTimeAligner
                         writer.InsertScan(nextFrameNumOutfile, frameParams, scanNumNew, intensities, binWidth);
                     }
 
+                    scansProcessed++;
+
+                    if (!Options.AppendMergedFrame && !Options.MergeFrames)
+                        continue;
+
+                    if (scanFilterEnabled)
+                    {
+                        if (scanNumNew < Options.DriftScanFilterMin || scanNumNew > Options.DriftScanFilterMax)
+                            continue;
+                    }
+
                     // Dictionary where Keys are the aligned scan number and values are intensities by bin
                     if (mergedFrameScans.TryGetValue(scanNumNew, out var summedIntensities))
                     {
@@ -1052,7 +1066,6 @@ namespace IMSDriftTimeAligner
                         mergedFrameScans.Add(scanNumNew, intensities);
                     }
 
-                    scansProcessed++;
                 }
 
             }
