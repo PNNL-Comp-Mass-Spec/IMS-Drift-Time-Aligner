@@ -872,6 +872,27 @@ namespace IMSDriftTimeAligner
 
                     GetSummedFrameScans(reader, baseFrameRange, out _, out var baseFrameScans);
 
+                    if (baseFrameScans.Count == 0)
+                    {
+                        if (Options.DriftScanFilterMin > 0 || Options.DriftScanFilterMax > 0)
+                        {
+                            ReportError(string.Format(
+                                            "Unable to define the base frame scans. Perhaps the drift scan range is invalid (currently {0} to {1})",
+                                            Options.DriftScanFilterMin, Options.DriftScanFilterMax));
+                        }
+                        else
+                        {
+                            if (Options.BaseFrameStart > 0 || Options.BaseFrameEnd > 0)
+                                ReportError(string.Format(
+                                                "Unable to define the base frame scans. Perhaps the base frame range is invalid (currently {0} to {1})",
+                                                Options.BaseFrameStart, Options.BaseFrameEnd));
+                            else
+                                ReportError("Unable to define the base frame scans; check the parameters");
+
+                        }
+
+                        return false;
+                    }
                     var mergedFrameScans = new Dictionary<int, int[]>();
 
                     using (var statsWriter = new StreamWriter(new FileStream(statsFilePath, FileMode.Create, FileAccess.Write, FileShare.Read)))
