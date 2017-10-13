@@ -563,10 +563,30 @@ namespace IMSDriftTimeAligner
                         {
                             baseFrameList.Add(frameNum);
                         }
+                    }
+                    else
                     {
-                        throw new ArgumentOutOfRangeException(
-                            nameof(frameAlignmentOptions.BaseFrameEnd),
-                            "BaseFrameEnd must be non-zero when the BaseFrameSelectionMode is UserSpecifiedFrameRange");
+                        // Split the frame list on commas
+                        var baseFrames = frameAlignmentOptions.BaseFrameList.Split(',');
+                        baseFrameList = new List<int>();
+                        foreach (var baseFrame in baseFrames)
+                        {
+                            if (int.TryParse(baseFrame, out var frameNum))
+                            {
+                                baseFrameList.Add(frameNum);
+                            }
+                            else
+                            {
+                                ReportWarning("Ignoring invalid base frame number: " + baseFrame);
+                            }
+                        }
+
+                        if (baseFrameList.Count == 0)
+                        {
+                            throw new ArgumentException(
+                                "BaseFrameList must contain a comma-separated list of integers",
+                                nameof(frameAlignmentOptions.BaseFrameList));
+                        }
                     }
                     break;
 

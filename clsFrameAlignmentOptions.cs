@@ -52,12 +52,16 @@ namespace IMSDriftTimeAligner
         public int BaseFrameSumCount { get; set; }
 
         [Option("BaseStart", HelpShowsDefault = false, HelpText =
-            "First frame to use when the BaseFrameSelection mode is 3, aka UserSpecifiedFrameRange")]
+            "First frame to use when the BaseFrameSelection mode is 3 (UserSpecifiedFrameRange); ignored if /BaseFrameList is defined")]
         public int BaseFrameStart { get; set; }
 
         [Option("BaseEnd", HelpShowsDefault = false, HelpText =
-            "Last frame to use when the BaseFrameSelection mode is 3, aka UserSpecifiedFrameRange")]
+            "Last frame to use when the BaseFrameSelection mode is 3 (UserSpecifiedFrameRange); ignored if /BaseFrameList is defined")]
         public int BaseFrameEnd { get; set; }
+
+        [Option("BaseFrameList", "BaseFrames", HelpShowsDefault = false, HelpText =
+            "List of frames to use when the BaseFrameSelection mode is 3 (UserSpecifiedFrameRange)")]
+        public string BaseFrameList { get; set; }
 
         [Option("Debug", HelpShowsDefault = false, HelpText =
             "True to show additional debug messages at the console")]
@@ -128,6 +132,7 @@ namespace IMSDriftTimeAligner
             BaseFrameSumCount = DEFAULT_FRAME_SUM_COUNT;
             BaseFrameStart = 0;
             BaseFrameEnd = 0;
+            BaseFrameList = "";
 
             FrameStart = 0;
             FrameEnd = 0;
@@ -176,16 +181,22 @@ namespace IMSDriftTimeAligner
 
                 case BaseFrameSelectionModes.UserSpecifiedFrameRange:
 
-                    Console.WriteLine(" Base Frame Start: {0}", BaseFrameStart);
-                    if (BaseFrameEnd > 0)
+                    if (string.IsNullOrWhiteSpace(BaseFrameList))
                     {
-                        Console.WriteLine(" Base Frame End: {0}", BaseFrameEnd);
+                        Console.WriteLine(" Base Frame Start: {0}", BaseFrameStart);
+                        if (BaseFrameEnd > 0)
+                        {
+                            Console.WriteLine(" Base Frame End: {0}", BaseFrameEnd);
+                        }
+                        else
+                        {
+                            Console.WriteLine(" Base Frame End: last frame in file");
+                        }
                     }
                     else
                     {
-                        Console.WriteLine(" Base Frame End: last frame in file");
+                        Console.WriteLine(" Base Frame List: {0}", BaseFrameList);
                     }
-
                     break;
 
                 case BaseFrameSelectionModes.SumFirstNFrames:
