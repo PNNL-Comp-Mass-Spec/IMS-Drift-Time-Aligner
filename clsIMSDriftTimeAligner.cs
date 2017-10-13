@@ -19,24 +19,6 @@ namespace IMSDriftTimeAligner
 
         #endregion
 
-        #region "Structs"
-
-        private struct udtFrameRange
-        {
-            public int Start;
-            public int End;
-
-            public override string ToString()
-            {
-                if (Start == End)
-                    return $"Frame {Start}";
-                else
-                    return $"Frames {Start} to {End}";
-            }
-        }
-
-        #endregion
-
         #region "Classwide variables"
 
         private bool mSmoothedBaseFrameDataWritten;
@@ -419,13 +401,13 @@ namespace IMSDriftTimeAligner
         /// Compute the IMS-based TIC value across scans
         /// </summary>
         /// <param name="reader"></param>
-        /// <param name="baseFrameRange"></param>
+        /// <param name="baseFrameList">Frame numbers to sum when creating the base frame</param>
         /// <param name="scanNumsInFrame">Full list of scan numbers (unfiltered)</param>
         /// <param name="frameScansSummed">Scan info from the first frame, but with NonZeroCount and TIC values summed across the frames</param>
         /// <remarks>frameScansSummed will be a subset of scans if DriftScanFilterMin or DriftScanFilterMax are greater than 0</remarks>
         private void GetSummedFrameScans(
             DataReader reader,
-            udtFrameRange baseFrameRange,
+            IReadOnlyCollection<int> baseFrameList,
             out List<int> scanNumsInFrame,
             out List<ScanInfo> frameScansSummed)
         {
@@ -437,7 +419,10 @@ namespace IMSDriftTimeAligner
             scanNumsInFrame = new List<int>();
             frameScansSummed = new List<ScanInfo>();
 
-            var baseFrameNum = baseFrameRange.Start;
+            if (baseFrameList.Count == 0)
+                throw new ArgumentException("base frame list cannot be empty", nameof(baseFrameList));
+
+            var baseFrameNum = baseFrameList.First();
             var frameScansStart = reader.GetFrameScans(baseFrameNum);
 
             foreach (var sourceScanInfo in frameScansStart)
@@ -453,7 +438,7 @@ namespace IMSDriftTimeAligner
 
             }
 
-            if (baseFrameRange.Start == baseFrameRange.End)
+            if (baseFrameList.Count == 1)
             {
                 return;
             }
@@ -470,7 +455,7 @@ namespace IMSDriftTimeAligner
             LookupValidFrameRange(reader, out var frameMin, out var frameMax);
 
             // Sum the TIC values by IMS frame
-            for (var frameNum = baseFrameRange.Start + 1; frameNum <= baseFrameRange.End; frameNum++)
+            foreach (var frameNum in baseFrameList.Skip(1))
             {
                 if (frameNum < frameMin || frameNum > frameMax)
                     continue;
@@ -505,26 +490,26 @@ namespace IMSDriftTimeAligner
         }
 
         /// <summary>
-        /// Determine the base frame range
+        /// Determine the frames to use when constructing the base frame
         /// </summary>
         /// <param name="reader"></param>
-        /// <returns>Pair of integers representing the start frame and end frame to use for the base frame</returns>
+        /// <returns>List of frame numbers</returns>
         /// <remarks>Uses Options.BaseFrameSelectionMode</remarks>
-        private udtFrameRange GetBaseFrameRange(DataReader reader)
+        private List<int> GetBaseFrames(DataReader reader)
         {
-            return GetBaseFrameRange(reader, Options);
+            return GetBaseFrames(reader, Options);
         }
 
         /// <summary>
-        /// Determine the base frame range
+        /// Determine the frames to use when constructing the base frame
         /// </summary>
         /// <param name="reader"></param>
         /// <param name="frameAlignmentOptions">Base frame alignment options</param>
-        /// <returns>Pair of integers representing the start frame and end frame to use for the base frame</returns>
-        private udtFrameRange GetBaseFrameRange(DataReader reader, FrameAlignmentOptions frameAlignmentOptions)
+        /// <returns>List of frame numbers</returns>
+        private List<int> GetBaseFrames(DataReader reader, FrameAlignmentOptions frameAlignmentOptions)
         {
-            int baseFrameStart;
-            int baseFrameEnd;
+            List<int> baseFrameList;
+
             LookupValidFrameRange(reader, out var frameMin, out var frameMax);
 
             var baseFrameSumCount = frameAlignmentOptions.BaseFrameSumCount;
@@ -538,35 +523,46 @@ namespace IMSDriftTimeAligner
             switch (frameAlignmentOptions.BaseFrameSelectionMode)
             {
                 case FrameAlignmentOptions.BaseFrameSelectionModes.FirstFrame:
-                    baseFrameStart = frameMin;
-                    baseFrameEnd = frameMin;
+                    baseFrameList = new List<int> { frameMin };
                     break;
 
                 case FrameAlignmentOptions.BaseFrameSelectionModes.MidpointFrame:
-                    baseFrameStart = frameMin + (frameMax - frameMin) / 2;
-                    if (baseFrameStart > frameMax)
+                    var midpointFrameNum = frameMin + (frameMax - frameMin) / 2;
+                    if (midpointFrameNum > frameMax)
                     {
-                        baseFrameStart = frameMax;
+                        midpointFrameNum = frameMax;
                     }
-                    baseFrameEnd = baseFrameStart;
+                    baseFrameList = new List<int> { midpointFrameNum };
                     break;
 
                 case FrameAlignmentOptions.BaseFrameSelectionModes.MaxTICFrame:
                     var ticByFrame = reader.GetTICByFrame(frameMin, frameMax, 0, 0);
                     var frameMaxTIC = (from item in ticByFrame orderby item.Value descending select item).First();
-                    baseFrameStart = frameMaxTIC.Key;
-                    baseFrameEnd = frameMaxTIC.Key;
+                    baseFrameList = new List<int> { frameMaxTIC.Key };
                     break;
 
                 case FrameAlignmentOptions.BaseFrameSelectionModes.UserSpecifiedFrameRange:
-                    baseFrameStart = frameAlignmentOptions.BaseFrameStart;
-                    baseFrameEnd = frameAlignmentOptions.BaseFrameEnd;
-                    if (baseFrameStart > 0 && (baseFrameEnd <= 0 || baseFrameEnd < baseFrameStart))
+                    if (string.IsNullOrWhiteSpace(frameAlignmentOptions.BaseFrameList))
                     {
-                        baseFrameEnd = baseFrameStart;
-                    }
+                        var baseFrameStart = frameAlignmentOptions.BaseFrameStart;
+                        var baseFrameEnd = frameAlignmentOptions.BaseFrameEnd;
+                        if (baseFrameStart > 0 && (baseFrameEnd <= 0 || baseFrameEnd < baseFrameStart))
+                        {
+                            baseFrameEnd = baseFrameStart;
+                        }
 
-                    if (baseFrameStart <= 0 && baseFrameEnd <= 0)
+                        if (baseFrameStart <= 0 && baseFrameEnd <= 0)
+                        {
+                            throw new ArgumentOutOfRangeException(
+                                nameof(frameAlignmentOptions.BaseFrameEnd),
+                                "BaseFrameEnd must be non-zero when the BaseFrameSelectionMode is UserSpecifiedFrameRange; alternatively, use /BaseFrameList");
+                        }
+
+                        baseFrameList = new List<int>();
+                        for (var frameNum = baseFrameStart; frameNum <= baseFrameEnd; frameNum++)
+                        {
+                            baseFrameList.Add(frameNum);
+                        }
                     {
                         throw new ArgumentOutOfRangeException(
                             nameof(frameAlignmentOptions.BaseFrameEnd),
@@ -575,23 +571,20 @@ namespace IMSDriftTimeAligner
                     break;
 
                 case FrameAlignmentOptions.BaseFrameSelectionModes.SumFirstNFrames:
-                    baseFrameStart = frameMin;
-                    baseFrameEnd = frameMin + baseFrameSumCount - 1;
+                    baseFrameList = GetFrameRange(frameMin, frameMin + baseFrameSumCount - 1, frameMin, frameMax);
                     break;
 
                 case FrameAlignmentOptions.BaseFrameSelectionModes.SumFirstNPercent:
-                    baseFrameStart = frameMin;
-                    baseFrameEnd = frameMin + frameCountFromPercent - 1;
+                    baseFrameList = GetFrameRange(frameMin, frameMin + frameCountFromPercent - 1, frameMin, frameMax);
                     break;
 
                 case FrameAlignmentOptions.BaseFrameSelectionModes.SumMidNFrames:
                 case FrameAlignmentOptions.BaseFrameSelectionModes.SumMidNPercent:
 
                     // First call this function to determine the midpoint frame number
-                    // (Start and End in midpointFrameRange will be identical)
                     var tempOptions = frameAlignmentOptions.ShallowCopy();
                     tempOptions.BaseFrameSelectionMode = FrameAlignmentOptions.BaseFrameSelectionModes.MidpointFrame;
-                    var midpointFrameRange = GetBaseFrameRange(reader, tempOptions);
+                    var midpointFrame = GetBaseFrames(reader, tempOptions).First();
 
                     int leftCount;
                     int rightCount;
@@ -609,13 +602,13 @@ namespace IMSDriftTimeAligner
                         rightCount = frameCountFromPercent - leftCount - 1;
                     }
 
-                    baseFrameStart = midpointFrameRange.Start - leftCount;
-                    baseFrameEnd = midpointFrameRange.Start + rightCount;
+                    var midpointBasedStart = midpointFrame - leftCount;
+                    var midpointBasedEnd = midpointFrame + rightCount;
+                    baseFrameList = GetFrameRange(midpointBasedStart, midpointBasedEnd, frameMin, frameMax);
                     break;
 
                 case FrameAlignmentOptions.BaseFrameSelectionModes.SumAll:
-                    baseFrameStart = frameMin;
-                    baseFrameEnd = frameMax;
+                    baseFrameList = GetFrameRange(frameMin, frameMax, frameMin, frameMax);
                     break;
 
                 default:
@@ -624,22 +617,29 @@ namespace IMSDriftTimeAligner
                         "Unrecognized value for BaseFrameSelectionMode");
             }
 
-            if (baseFrameEnd < baseFrameStart)
-                baseFrameEnd = baseFrameStart;
 
-            if (baseFrameStart < frameMin)
-                baseFrameStart = frameMin;
+            return baseFrameList;
+        }
 
-            if (baseFrameEnd > frameMax)
-                baseFrameEnd = frameMax;
+        private static List<int> GetFrameRange(int frameStart, int frameEnd, int frameMin, int frameMax)
+        {
 
-            var frameRange = new udtFrameRange
+            if (frameEnd < frameStart)
+                frameEnd = frameStart;
+
+            if (frameStart < frameMin)
+                frameStart = frameMin;
+
+            if (frameEnd > frameMax)
+                frameEnd = frameMax;
+
+            var frameList = new List<int>();
+            for (var frameNum = frameStart; frameNum <= frameEnd; frameNum++)
             {
-                Start = baseFrameStart,
-                End = baseFrameEnd
-            };
+                frameList.Add(frameNum);
+            }
 
-            return frameRange;
+            return frameList;
         }
 
         private bool CloneUimf(DataReader reader, FileSystemInfo sourceFile, FileSystemInfo outputFile)
@@ -649,7 +649,7 @@ namespace IMSDriftTimeAligner
                         "Frame_Params",
                         "Frame_Scans" };
 
-            var frameTypesToAlwaysCopy = new List<DataReader.FrameType>();
+            var frameTypesToAlwaysCopy = new List<UIMFData.FrameType>();
 
             var success = reader.CloneUIMF(outputFile.FullName, tablesToSkip, frameTypesToAlwaysCopy);
 
@@ -868,9 +868,10 @@ namespace IMSDriftTimeAligner
 
                     GetFrameRangeToProcess(reader, out var frameStart, out var frameEnd);
 
-                    var baseFrameRange = GetBaseFrameRange(reader);
+                    var baseFrameList = GetBaseFrames(reader);
 
-                    GetSummedFrameScans(reader, baseFrameRange, out _, out var baseFrameScans);
+                    // Retrieve the base frame scan data (baseFrameScans)
+                    GetSummedFrameScans(reader, baseFrameList, out _, out var baseFrameScans);
 
                     if (baseFrameScans.Count == 0)
                     {
@@ -978,13 +979,9 @@ namespace IMSDriftTimeAligner
 
             try
             {
-                var udtCurrentFrameRange = new udtFrameRange
-                {
-                    Start = nextFrameNumOutfile,
-                    End = nextFrameNumOutfile
-                };
+                var currentFrameList = new List<int> { nextFrameNumOutfile };
 
-                GetSummedFrameScans(reader, udtCurrentFrameRange, out var scanNumsInFrame, out var frameScans);
+                GetSummedFrameScans(reader, currentFrameList, out var scanNumsInFrame, out var frameScans);
 
                 // Dictionary where keys are the old scan number and values are the new scan number
                 var frameScanAlignmentMap = AlignFrameTICToBase(frameNum, baseFrameScans, frameScans, scanNumsInFrame, statsWriter);
