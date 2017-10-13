@@ -1,5 +1,8 @@
 IMSDriftTimeAligner Revision History
 
+Version 1.0.6495; October 13, 2017
+	- Add switch /BaseFrameList
+
 Version 1.0.6472; September 20, 2017
 	- Reduce memory footprint when tracking the merged frame data and .DriftScanFilterMin or DriftScanFilterMax are non-zero
 

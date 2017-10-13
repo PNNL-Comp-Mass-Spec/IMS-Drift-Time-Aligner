@@ -6,7 +6,7 @@ namespace IMSDriftTimeAligner
 {
     public class FrameAlignmentOptions
     {
-        public const string PROGRAM_DATE = "September 11, 2017";
+        public const string PROGRAM_DATE = "October 13, 2017";
 
         public const BaseFrameSelectionModes DEFAULT_FRAME_SELECTION_MODE = BaseFrameSelectionModes.SumMidNFrames;
         public const int DEFAULT_FRAME_SUM_COUNT = 15;
