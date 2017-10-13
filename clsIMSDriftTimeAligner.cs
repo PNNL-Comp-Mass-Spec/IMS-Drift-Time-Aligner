@@ -373,18 +373,19 @@ namespace IMSDriftTimeAligner
             writer.InsertFrame(mergedFrameNum, frameParams);
 
             var binWidth = reader.GetGlobalParams().BinWidth;
-            var scansProcessed = 0;
+            var lastProgressTime = DateTime.UtcNow;
 
             foreach (var scanItem in mergedFrameScans)
             {
-                if (scansProcessed % 250 == 0)
+                if (scanItem.Key % 10 == 0 && DateTime.UtcNow.Subtract(lastProgressTime).TotalMilliseconds >= 500)
+                {
+                    lastProgressTime = DateTime.UtcNow;
                     ReportMessage($"  storing scan {scanItem.Key}");
+                }
 
                 var scanNumNew = scanItem.Key;
                 var intensities = scanItem.Value;
                 writer.InsertScan(mergedFrameNum, frameParams, scanNumNew, intensities, binWidth);
-
-                scansProcessed++;
             }
 
         }
@@ -1025,13 +1026,15 @@ namespace IMSDriftTimeAligner
                 var scanFilterEnabled = Options.DriftScanFilterMin > 0 || Options.DriftScanFilterMax > 0;
 
                 var binWidth = reader.GetGlobalParams().BinWidth;
-                var scansProcessed = 0;
+                var lastProgressTime = DateTime.UtcNow;
 
                 foreach (var scanNumber in scanNumsInFrame)
                 {
-                    if (scansProcessed % 250 == 0)
+                    if (scanNumber % 10 == 0 && DateTime.UtcNow.Subtract(lastProgressTime).TotalMilliseconds >= 500)
+                    {
+                        lastProgressTime = DateTime.UtcNow;
                         ReportMessage($"  storing scan {scanNumber}");
-
+                    }
                     var scanNumOld = scanNumber;
 
                     if (!frameScanAlignmentMap.TryGetValue(scanNumOld, out var scanNumNew))
@@ -1052,8 +1055,6 @@ namespace IMSDriftTimeAligner
                     {
                         writer.InsertScan(nextFrameNumOutfile, frameParams, scanNumNew, intensities, binWidth);
                     }
-
-                    scansProcessed++;
 
                     if (!Options.AppendMergedFrame && !Options.MergeFrames)
                         continue;
