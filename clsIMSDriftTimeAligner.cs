@@ -465,13 +465,13 @@ namespace IMSDriftTimeAligner
         /// Compute the IMS-based TIC value across scans
         /// </summary>
         /// <param name="reader"></param>
-        /// <param name="baseFrameList">Frame numbers to sum when creating the base frame</param>
+        /// <param name="framesToSum">Frame numbers to sum while populating frameScansSummed</param>
         /// <param name="scanNumsInFrame">Full list of scan numbers (unfiltered)</param>
         /// <param name="frameScansSummed">Scan info from the first frame, but with NonZeroCount and TIC values summed across the frames</param>
-        /// <remarks>frameScansSummed will be a subset of scans if DriftScanFilterMin or DriftScanFilterMax are greater than 0</remarks>
+        /// <remarks>frameScansSummed will be a subset of scans if DriftScanFilterMin, DriftScanFilterMax, MzFilterMin, or MzFilterMax are non-zero</remarks>
         private void GetSummedFrameScans(
             DataReader reader,
-            IReadOnlyCollection<int> baseFrameList,
+            IReadOnlyCollection<int> framesToSum,
             out List<int> scanNumsInFrame,
             out List<ScanInfo> frameScansSummed)
         {
@@ -487,11 +487,11 @@ namespace IMSDriftTimeAligner
             scanNumsInFrame = new List<int>();
             frameScansSummed = new List<ScanInfo>();
 
-            if (baseFrameList.Count == 0)
-                throw new ArgumentException("base frame list cannot be empty", nameof(baseFrameList));
+            if (framesToSum.Count == 0)
+                throw new ArgumentException("frame list cannot be empty", nameof(framesToSum));
 
-            var baseFrameNum = baseFrameList.First();
-            var frameScansStart = reader.GetFrameScans(baseFrameNum);
+            var firstFrameNum = framesToSum.First();
+            var frameScansStart = reader.GetFrameScans(firstFrameNum);
 
             foreach (var sourceScanInfo in frameScansStart)
             {
@@ -518,7 +518,7 @@ namespace IMSDriftTimeAligner
                 frameScansSummed.Add(scanInfoToStore);
             }
 
-            if (baseFrameList.Count == 1)
+            if (framesToSum.Count == 1)
             {
                 return;
             }
@@ -535,7 +535,8 @@ namespace IMSDriftTimeAligner
             LookupValidFrameRange(reader, out var frameMin, out var frameMax);
 
             // Sum the TIC values by IMS frame
-            foreach (var frameNum in baseFrameList.Skip(1))
+            // (skipping the first frame since it has already been processed)
+            foreach (var frameNum in framesToSum.Skip(1))
             {
                 if (frameNum < frameMin || frameNum > frameMax)
                     continue;
