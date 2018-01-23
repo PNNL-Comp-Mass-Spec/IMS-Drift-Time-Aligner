@@ -92,11 +92,11 @@ namespace IMSDriftTimeAligner
             "below which intensity values will be set to 0")]
         public double MinimumIntensityThresholdFraction { get; set; }
 
-        [Option("ScanMin", HelpShowsDefault = false, HelpText =
+        [Option("ScanMin", "MinScan", HelpShowsDefault = false, HelpText =
             "Optional minimum drift scan number to filter data by when obtaining data to align")]
         public int DriftScanFilterMin { get; set; }
 
-        [Option("ScanMax", HelpShowsDefault = false, HelpText =
+        [Option("ScanMax", "MaxScan" ,HelpShowsDefault = false, HelpText =
             "Optional maximum drift scan number to filter data by when obtaining data to align")]
         public int DriftScanFilterMax { get; set; }
 
