@@ -937,12 +937,39 @@ namespace IMSDriftTimeAligner
                 outputFile.Directory.Create();
             }
 
-            if (outputFile.Exists)
-            {
-                outputFile.Delete();
-            }
+            if (!outputFile.Exists)
+                return outputFile;
 
-            return outputFile;
+            try
+            {
+
+                if (outputFile.Directory != null)
+                {
+                    var backupFilePath = Path.Combine(
+                        outputFile.Directory.FullName,
+                        Path.GetFileNameWithoutExtension(outputFile.Name) + "_bak" + Path.GetExtension(outputFile.Name));
+
+                    var backupFile = new FileInfo(backupFilePath);
+
+                    if (backupFile.Exists)
+                        backupFile.Delete();
+
+                    File.Move(outputFile.FullName, backupFile.FullName);
+                    ReportMessage("Existing output file found; renamed to: " + backupFile.Name);
+                }
+                else
+                {
+                    outputFile.Delete();
+                }
+
+                return outputFile;
+            }
+            catch (Exception ex)
+            {
+                ReportError("Error in InitializeOutputFile: " + ex.Message);
+                ReportMessage(ex.StackTrace);
+                return null;
+            }
         }
 
         private void LookupValidFrameRange(DataReader reader, out int frameMin, out int frameMax)
@@ -977,6 +1004,9 @@ namespace IMSDriftTimeAligner
 
                 ReportMessage(string.Format("Opening {0}\n in folder {1}", sourceFile.Name, sourceFile.Directory));
                 var outputFile = InitializeOutputFile(sourceFile, outputFilePath);
+
+                if (outputFile == null)
+                    return false;
 
                 if (outputFile.DirectoryName == null)
                     throw new DirectoryNotFoundException("Cannot determine the parent directory of " + outputFile.FullName);
