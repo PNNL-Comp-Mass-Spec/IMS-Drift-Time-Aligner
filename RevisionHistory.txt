@@ -1,5 +1,8 @@
 IMSDriftTimeAligner Revision History
 
+Version 1.0.6597; January 23, 2018
+	- Add switches /MzMin and /MzMax
+
 Version 1.0.6495; October 13, 2017
 	- Add switch /BaseFrameList
 
