@@ -86,7 +86,7 @@ namespace IMSDriftTimeAligner
             IReadOnlyList<ScanInfo> baseFrameScans,
             IReadOnlyList<ScanInfo> frameScans)
         {
-            // TODO: Implement the method shown in the Appendix at http://www.sciencedirect.com/science/article/pii/S0021967398000211
+            // Possibly future task: Implement the method shown in the Appendix at http://www.sciencedirect.com/science/article/pii/S0021967398000211
 
             // See also:
             // http://bmcbioinformatics.biomedcentral.com/articles/10.1186/1471-2105-9-375
@@ -384,7 +384,7 @@ namespace IMSDriftTimeAligner
 
             foreach (var scanItem in mergedFrameScans)
             {
-                if (scanItem.Key % 10 == 0 && DateTime.UtcNow.Subtract(lastProgressTime).TotalMilliseconds >= 500)
+                if (scanItem.Key % 10 == 0 && DateTime.UtcNow.Subtract(lastProgressTime).TotalMilliseconds >= 1000)
                 {
                     lastProgressTime = DateTime.UtcNow;
                     ReportMessage($"  storing scan {scanItem.Key}");
@@ -999,7 +999,8 @@ namespace IMSDriftTimeAligner
 
                     var baseFrameList = GetBaseFrames(reader);
 
-                    // Retrieve the base frame scan data (baseFrameScans)
+                    ReportMessage("Retrieving base frame scan data");
+
                     GetSummedFrameScans(reader, baseFrameList, out _, out var baseFrameScans);
 
                     if (baseFrameScans.Count == 0)
@@ -1138,7 +1139,7 @@ namespace IMSDriftTimeAligner
 
                 foreach (var scanNumber in scanNumsInFrame)
                 {
-                    if (scanNumber % 10 == 0 && DateTime.UtcNow.Subtract(lastProgressTime).TotalMilliseconds >= 500)
+                    if (scanNumber % 10 == 0 && DateTime.UtcNow.Subtract(lastProgressTime).TotalMilliseconds >= 1000)
                     {
                         lastProgressTime = DateTime.UtcNow;
                         ReportMessage($"  storing scan {scanNumber}");
