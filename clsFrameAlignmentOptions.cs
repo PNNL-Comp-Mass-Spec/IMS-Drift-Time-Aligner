@@ -6,7 +6,7 @@ namespace IMSDriftTimeAligner
 {
     public class FrameAlignmentOptions
     {
-        public const string PROGRAM_DATE = "October 13, 2017";
+        public const string PROGRAM_DATE = "January 23, 2018";
 
         public const BaseFrameSelectionModes DEFAULT_FRAME_SELECTION_MODE = BaseFrameSelectionModes.SumMidNFrames;
         public const int DEFAULT_FRAME_SUM_COUNT = 15;
@@ -100,6 +100,14 @@ namespace IMSDriftTimeAligner
             "Optional maximum drift scan number to filter data by when obtaining data to align")]
         public int DriftScanFilterMax { get; set; }
 
+        [Option("MzMin", "MinMZ", HelpShowsDefault = false, HelpText =
+            "Optional minimum m/z to filter data by when obtaining data to align")]
+        public int MzFilterMin { get; set; }
+
+        [Option("MzMax", "MaxMZ", HelpShowsDefault = false, HelpText =
+            "Optional maximum m/z to filter data by when obtaining data to align")]
+        public int MzFilterMax { get; set; }
+
         [Option("Smooth", HelpText =
             "Number of points to use when smoothing TICs before aligning. " +
             "If 0 or 1; no smoothing is applied.")]
@@ -143,6 +151,9 @@ namespace IMSDriftTimeAligner
 
             DriftScanFilterMin = 0;
             DriftScanFilterMax = 0;
+
+            MzFilterMin = 0;
+            MzFilterMax = 0;
 
             ScanSmoothCount = DEFAULT_SMOOTH_COUNT;
 
@@ -228,7 +239,7 @@ namespace IMSDriftTimeAligner
             Console.WriteLine(" Maximum shift: {0} scans", MaxShiftScans);
             Console.WriteLine(" Minimum Intensity hreshold Fraction: {0}", MinimumIntensityThresholdFraction);
 
-            if (DriftScanFilterMin > 0 || DriftScanFilterMax > 0)
+            if (DriftScanFilterMin > 0 || DriftScanFilterMax > 0 || MzFilterMin > 0 || MzFilterMax > 0)
             {
                 Console.WriteLine();
                 Console.WriteLine(" Data selection restrictions for generating the drift time TIC");
@@ -243,6 +254,19 @@ namespace IMSDriftTimeAligner
                     else
                     {
                         Console.WriteLine(" Maximum drift time scan: last scan in frame");
+                    }
+                }
+
+                if (MzFilterMin > 0 || MzFilterMax > 0)
+                {
+                    Console.WriteLine(" Minimum m/z: {0}", MzFilterMin);
+                    if (MzFilterMax > 0)
+                    {
+                        Console.WriteLine(" Maximum m/z: {0}", MzFilterMax);
+                    }
+                    else
+                    {
+                        Console.WriteLine(" Maximum m/z: highest observed m/z (no filter)");
                     }
                 }
             }

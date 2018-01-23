@@ -27,6 +27,12 @@ namespace IMSDriftTimeAligner
 
         private int mWarnCountScanZeroDataFrames;
 
+        /// <summary>
+        /// Keys in this dictionary are based on the frame number and scan number, for example: Frame20_Scan400
+        /// Values are filtered TIC values
+        /// </summary>
+        private readonly Dictionary<string, ScanStats> mFrameScanStats;
+
         #endregion
 
         #region "Properties"
@@ -64,6 +70,7 @@ namespace IMSDriftTimeAligner
             Options = options;
             ErrorMessages = new List<string>();
             WarningMessages = new List<string>();
+            mFrameScanStats = new Dictionary<string, ScanStats>();
         }
 
         /// <summary>
@@ -390,12 +397,68 @@ namespace IMSDriftTimeAligner
 
         }
 
-        private void ComputeTIC(
-            ScanInfo sourceScanInfo,
-            out int nonZeroCount, out double totalIntensity)
+        private ScanInfo CloneScanInfo(ScanInfo sourceScanInfo)
         {
-            nonZeroCount = sourceScanInfo.NonZeroCount;
-            totalIntensity = sourceScanInfo.TIC;
+            var clonedScanInfo = new ScanInfo(sourceScanInfo.Frame, sourceScanInfo.Scan)
+            {
+                BPI = sourceScanInfo.BPI,
+                BPI_MZ = sourceScanInfo.BPI_MZ,
+                DriftTime = sourceScanInfo.DriftTime,
+                DriftTimeUnnormalized = sourceScanInfo.DriftTimeUnnormalized,
+                NonZeroCount = sourceScanInfo.NonZeroCount,
+                TIC = sourceScanInfo.TIC
+            };
+
+            return clonedScanInfo;
+
+        }
+
+        private void ComputeFilteredTICandBPI(
+            DataReader reader,
+            ScanInfo sourceScanInfo,
+            bool mzFilterEnabled,
+            double mzMin,
+            double mzMax)
+        {
+
+            var key = "Frame" + sourceScanInfo.Frame + "_Scan" + sourceScanInfo.Scan;
+
+            if (mFrameScanStats.TryGetValue(key, out var cachedScanStats))
+            {
+                UpdateScanStats(sourceScanInfo, cachedScanStats);
+                return;
+            }
+
+            reader.GetSpectrum(sourceScanInfo.Frame, sourceScanInfo.Scan, out var mzArray, out var intensityArray);
+
+            var scanStats = new ScanStats();
+            var highestIntensity = 0;
+
+            for (var i = 0; i < mzArray.Length; i++)
+            {
+                if (intensityArray[i] == 0)
+                    continue;
+
+                if (mzFilterEnabled)
+                {
+                    if (mzArray[i] < mzMin || mzMax > 0 && mzArray[i] > mzMax)
+                        continue;
+                }
+
+                scanStats.TIC += intensityArray[i];
+                scanStats.NonZeroCount += 1;
+
+                if (intensityArray[i] <= highestIntensity)
+                    continue;
+
+                highestIntensity = intensityArray[i];
+                scanStats.BPI = highestIntensity;
+                scanStats.BPI_MZ = mzArray[i];
+            }
+
+            mFrameScanStats.Add(key, scanStats);
+
+            UpdateScanStats(sourceScanInfo, scanStats);
         }
 
         /// <summary>
@@ -417,6 +480,10 @@ namespace IMSDriftTimeAligner
             var scanMax = Options.DriftScanFilterMax;
             var scanFilterEnabled = scanMin > 0 || scanMax > 0;
 
+            var mzMin = Options.MzFilterMin;
+            var mzMax = Options.MzFilterMax;
+            var mzFilterEnabled = mzMin > 0 || mzMax > 0;
+
             scanNumsInFrame = new List<int>();
             frameScansSummed = new List<ScanInfo>();
 
@@ -435,8 +502,20 @@ namespace IMSDriftTimeAligner
                 if (scanFilterEnabled && (scanNumber < scanMin || scanNumber > scanMax))
                     continue;
 
-                frameScansSummed.Add(sourceScanInfo);
+                ScanInfo scanInfoToStore;
 
+                if (mzFilterEnabled)
+                {
+                    scanInfoToStore = CloneScanInfo(sourceScanInfo);
+
+                    ComputeFilteredTICandBPI(reader, scanInfoToStore, true, mzMin, mzMax);
+                }
+                else
+                {
+                    scanInfoToStore = sourceScanInfo;
+                }
+
+                frameScansSummed.Add(scanInfoToStore);
             }
 
             if (baseFrameList.Count == 1)
@@ -471,14 +550,33 @@ namespace IMSDriftTimeAligner
                     if (scanFilterEnabled && (scanNumber < scanMin || scanNumber > scanMax))
                         continue;
 
-                    if (scanData.TryGetValue(scanNumber, out var targetScanInfo))
+                    ScanInfo scanInfoToStore;
+
+                    if (mzFilterEnabled)
                     {
-                        targetScanInfo.NonZeroCount += sourceScanInfo.NonZeroCount;
-                        targetScanInfo.TIC += sourceScanInfo.TIC;
+                        scanInfoToStore = CloneScanInfo(sourceScanInfo);
+
+                        ComputeFilteredTICandBPI(reader, scanInfoToStore, true, mzMin, mzMax);
                     }
                     else
                     {
-                        scanData.Add(scanNumber, sourceScanInfo);
+                        scanInfoToStore = sourceScanInfo;
+                    }
+
+                    if (scanData.TryGetValue(scanNumber, out var targetScanInfo))
+                    {
+                        targetScanInfo.NonZeroCount += scanInfoToStore.NonZeroCount;
+                        targetScanInfo.TIC += scanInfoToStore.TIC;
+
+                        if (scanInfoToStore.BPI > targetScanInfo.BPI)
+                        {
+                            targetScanInfo.BPI = scanInfoToStore.BPI;
+                            targetScanInfo.BPI_MZ = scanInfoToStore.BPI_MZ;
+                        }
+                    }
+                    else
+                    {
+                        scanData.Add(scanNumber, scanInfoToStore);
                     }
 
                 }
@@ -748,6 +846,9 @@ namespace IMSDriftTimeAligner
 
                 if (scan.Scan < scanStart)
                 {
+                    if (Math.Abs(scan.TIC) < float.Epsilon)
+                        continue;
+
                     warningCountEarly++;
                     if (warningCountEarly < 5)
                         ReportWarning(string.Format("Scan {0} is less than {1} in {2}; this represents a programming bug", scan.Scan, scanStart, frameDescription));
@@ -756,6 +857,9 @@ namespace IMSDriftTimeAligner
 
                 if (scan.Scan > scanEnd)
                 {
+                    if (Math.Abs(scan.TIC) < float.Epsilon)
+                        continue;
+
                     warningCountLater++;
                     if (warningCountLater < 5)
                         ReportWarning(string.Format("Scan {0} is greater than {1} in {2}; this represents a programming bug", scan.Scan, scanEnd, frameDescription));
@@ -826,6 +930,7 @@ namespace IMSDriftTimeAligner
             }
 
             var outputFile = new FileInfo(outputFilePath);
+
             if (outputFile.Directory != null && !outputFile.Directory.Exists)
             {
                 outputFile.Directory.Create();
@@ -866,6 +971,8 @@ namespace IMSDriftTimeAligner
                     if (debugDataFile.Exists)
                         debugDataFile.Delete();
                 }
+
+                mFrameScanStats.Clear();
 
                 ReportMessage(string.Format("Opening {0}\n in folder {1}", sourceFile.Name, sourceFile.Directory));
                 var outputFile = InitializeOutputFile(sourceFile, outputFilePath);
@@ -1226,6 +1333,14 @@ namespace IMSDriftTimeAligner
             {
                 ReportError("Error in SaveSmoothedDataForDebug: " + ex.Message);
             }
+        }
+
+        private void UpdateScanStats(ScanInfo sourceScanInfo, ScanStats scanStats)
+        {
+            sourceScanInfo.BPI = scanStats.BPI;
+            sourceScanInfo.BPI_MZ = scanStats.BPI_MZ;
+            sourceScanInfo.TIC = scanStats.TIC;
+            sourceScanInfo.NonZeroCount = scanStats.NonZeroCount;
         }
 
         private void ZeroValuesBelowThreshold(IList<double> frameData)
