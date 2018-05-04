@@ -1058,6 +1058,33 @@ namespace IMSDriftTimeAligner
                     using (var writer = new DataWriter(outputFile.FullName))
                     {
                         statsWriter.AutoFlush = true;
+
+                        if (Options.WriteOptionsToStatsFile)
+                        {
+                            statsWriter.WriteLine("== Processing Options ==");
+                            statsWriter.WriteLine();
+                            statsWriter.WriteLine("AlignmentMethod=" + Options.AlignmentMethod);
+                            statsWriter.WriteLine("BaseFrameSelectionMode=" + Options.BaseFrameSelectionMode);
+                            statsWriter.WriteLine("BaseFrameSumCount=" + Options.BaseFrameSumCount);
+                            statsWriter.WriteLine("BaseFrameStart=" + Options.BaseFrameStart);
+                            statsWriter.WriteLine("BaseFrameEnd=" + Options.BaseFrameEnd);
+                            statsWriter.WriteLine("BaseFrameList=" + Options.BaseFrameList);
+                            statsWriter.WriteLine("FrameStart=" + Options.FrameStart);
+                            statsWriter.WriteLine("FrameEnd=" + Options.FrameEnd);
+                            statsWriter.WriteLine("MaxShiftScans=" + Options.MaxShiftScans);
+                            statsWriter.WriteLine("MinimumIntensityThresholdFraction=" + Options.MinimumIntensityThresholdFraction);
+                            statsWriter.WriteLine("DriftScanFilterMin=" + Options.DriftScanFilterMin);
+                            statsWriter.WriteLine("DriftScanFilterMax=" + Options.DriftScanFilterMax);
+                            statsWriter.WriteLine("MzFilterMin=" + Options.MzFilterMin);
+                            statsWriter.WriteLine("MzFilterMax=" + Options.MzFilterMax);
+                            statsWriter.WriteLine("ScanSmoothCount=" + Options.ScanSmoothCount);
+                            statsWriter.WriteLine("MergeFrames=" + Options.MergeFrames);
+                            statsWriter.WriteLine("AppendMergedFrame=" + Options.AppendMergedFrame);
+                            statsWriter.WriteLine();
+                            statsWriter.WriteLine("== Alignment Stats ==");
+                            statsWriter.WriteLine();
+                        }
+
                         statsWriter.WriteLine("{0,-8} {1,-6} {2,-8}", "Frame", "Shift", "Best RSquared");
 
                         if (writer.HasLegacyParameterTables)
@@ -1075,7 +1102,6 @@ namespace IMSDriftTimeAligner
                         {
                             insertEachFrame = true;
                         }
-
 
                         for (var frameNum = frameStart; frameNum <= frameEnd; frameNum++)
                         {

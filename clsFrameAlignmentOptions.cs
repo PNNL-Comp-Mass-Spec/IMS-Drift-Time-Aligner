@@ -123,6 +123,10 @@ namespace IMSDriftTimeAligner
             "(ignored if option AppendMergedFrame is true)")]
         public bool AppendMergedFrame { get; set; }
 
+        [Option("WO", "WriteOptions", HelpShowsDefault = true, HelpText =
+            "Include the processing options at the start of the alignment stats file (Dataset_stats.txt)")]
+        public bool WriteOptionsToStatsFile { get; set; } = true;
+
         #endregion
 
         /// <summary>
