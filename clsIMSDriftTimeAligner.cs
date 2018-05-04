@@ -3,13 +3,11 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
-using FileProcessor;
 using UIMFLibrary;
-using MessageEventArgs = FileProcessor.MessageEventArgs;
 
 namespace IMSDriftTimeAligner
 {
-    class DriftTimeAlignmentEngine
+    class DriftTimeAlignmentEngine : PRISM.clsEventNotifier
     {
         #region "Constants"
 
@@ -1234,18 +1232,18 @@ namespace IMSDriftTimeAligner
 
         private void ReportError(string message)
         {
-            OnErrorMessage(new MessageEventArgs(message));
+            OnErrorEvent(message);
             ErrorMessages.Add(message);
         }
 
         private void ReportMessage(string message)
         {
-            OnMessage(new MessageEventArgs(message));
+            OnStatusEvent(message);
         }
 
         private void ReportWarning(string message)
         {
-            OnWarningMessage(new MessageEventArgs(message));
+            OnWarningEvent(message);
             WarningMessages.Add(message);
         }
 
@@ -1394,30 +1392,7 @@ namespace IMSDriftTimeAligner
 
         #endregion
 
-        #region "Events"
-
-        public event MessageEventHandler ErrorEvent;
-        public event MessageEventHandler MessageEvent;
-        public event MessageEventHandler WarningEvent;
-
-        #endregion
-
         #region "Event Handlers"
-
-        private void OnErrorMessage(MessageEventArgs e)
-        {
-            ErrorEvent?.Invoke(this, e);
-        }
-
-        private void OnMessage(MessageEventArgs e)
-        {
-            MessageEvent?.Invoke(this, e);
-        }
-
-        private void OnWarningMessage(MessageEventArgs e)
-        {
-            WarningEvent?.Invoke(this, e);
-        }
 
         private void UIMFReader_ErrorEvent(object sender, UIMFLibrary.MessageEventArgs e)
         {

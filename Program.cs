@@ -2,7 +2,6 @@
 using System.IO;
 using System.Reflection;
 using System.Threading;
-using FileProcessor;
 using PRISM;
 
 namespace IMSDriftTimeAligner
@@ -78,7 +77,7 @@ namespace IMSDriftTimeAligner
                 var processor = new DriftTimeAlignmentEngine(options);
 
                 processor.ErrorEvent += Processor_ErrorEvent;
-                processor.MessageEvent += Processor_MessageEvent;
+                processor.StatusEvent += Processor_StatusEvent;
                 processor.WarningEvent += Processor_WarningEvent;
 
                 var success = processor.ProcessFile(options.InputFilePath, options.OutputFilePath);
@@ -103,19 +102,20 @@ namespace IMSDriftTimeAligner
 
         #region "Event handlers"
 
-        private static void Processor_ErrorEvent(object sender, MessageEventArgs e)
+
+        private static void Processor_ErrorEvent(string message, Exception ex)
         {
-            ConsoleMsgUtils.ShowError(e.Message);
+            ConsoleMsgUtils.ShowError(message, ex);
         }
 
-        private static void Processor_MessageEvent(object sender, MessageEventArgs e)
+        private static void Processor_StatusEvent(string message)
         {
-            Console.WriteLine(e.Message);
+            Console.WriteLine(message);
         }
 
-        private static void Processor_WarningEvent(object sender, MessageEventArgs e)
+        private static void Processor_WarningEvent(string message)
         {
-            ConsoleMsgUtils.ShowWarning(e.Message);
+            ConsoleMsgUtils.ShowWarning(message);
         }
 
         #endregion
