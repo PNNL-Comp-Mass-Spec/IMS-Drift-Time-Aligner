@@ -15,7 +15,7 @@ IMSDriftTimeAligner.exe
  [/ScanMin:N] [/ScanMax:N]
  [/MzMin:N] [MzMax:N]
  [/MaxShift:N] [/Smooth:N] 
- [/Debug]
+ [/Debug] [/WO:False]
 ```
 
 InputFilePath is a path to the UIMF file to process
@@ -61,6 +61,9 @@ prior to aligning each frame to the base frame;
 * Default is `/Smooth:7`
 
 Use `/Debug` to show additional debug messages at the console
+
+By default, the processing options will be included in the alignment stats file (Dataset_stats.txt).
+This can be disabled with `/WO:False`
 
 ## Contacts
 
