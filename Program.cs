@@ -14,7 +14,7 @@ namespace IMSDriftTimeAligner
     /// Written by Matthew Monroe for the Department of Energy (PNNL, Richland, WA)
     ///
     /// E-mail: matthew.monroe@pnnl.gov or matt@alchemistmatt.com
-    /// Website: http://panomics.pnnl.gov/ or http://omics.pnl.gov or http://www.sysbio.org/resources/staff/
+    /// Website: https://panomics.pnnl.gov/ or https://omics.pnl.gov
     /// </remarks>
     internal static class Program
     {
@@ -33,12 +33,12 @@ namespace IMSDriftTimeAligner
                 ContactInfo = "Program written by Matthew Monroe for the Department of Energy\n(PNNL, Richland, WA) in 2017" +
                               Environment.NewLine + Environment.NewLine +
                               "E-mail: matthew.monroe@pnnl.gov or proteomics@pnnl.gov" + Environment.NewLine +
-                              "Website: http://panomics.pnnl.gov/ or http://omics.pnl.gov or http://www.sysbio.org/resources/staff/",
+                              "Website: https://panomics.pnnl.gov/ or https://omics.pnl.gov",
 
                 UsageExamples = {
                     exeName + " DataFile.UIMF",
-                    exeName + " DataFile.UIM /Start:2",
-                    exeName + " DataFile.UIM /Start:2 /BaseFrame:5 /BaseCount:7"
+                    exeName + " DataFile.UIMF /Start:2",
+                    exeName + " DataFile.UIMF /Start:2 /BaseFrame:5 /BaseCount:7"
                 }
             };
 

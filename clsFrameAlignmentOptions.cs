@@ -4,17 +4,43 @@ using PRISM;
 
 namespace IMSDriftTimeAligner
 {
+    /// <summary>
+    /// Frame alignment options
+    /// </summary>
     public class FrameAlignmentOptions
     {
-        public const string PROGRAM_DATE = "January 23, 2018";
+        /// <summary>
+        /// Progrma date
+        /// </summary>
+        public const string PROGRAM_DATE = "May 4, 2018";
 
+        /// <summary>
+        /// Default frame selection mode
+        /// </summary>
         public const BaseFrameSelectionModes DEFAULT_FRAME_SELECTION_MODE = BaseFrameSelectionModes.SumMidNFrames;
+
+        /// <summary>
+        /// Default number of frames to sum
+        /// </summary>
         public const int DEFAULT_FRAME_SUM_COUNT = 15;
+
+        /// <summary>
+        /// Default maximum scans to shift data when aligning
+        /// </summary>
         public const int DEFAULT_MAX_SHIFT_SCANS = 150;
+
+        /// <summary>
+        /// Default number of data points for smoothing
+        /// </summary>
         public const int DEFAULT_SMOOTH_COUNT = 7;
+
+#pragma warning disable 1591
 
         #region "Enums"
 
+        /// <summary>
+        /// Base frame selection modes
+        /// </summary>
         public enum BaseFrameSelectionModes
         {
             FirstFrame = 0,
@@ -28,6 +54,9 @@ namespace IMSDriftTimeAligner
             SumAll = 8
         }
 
+        /// <summary>
+        /// Alignment methods
+        /// </summary>
         public enum AlignmentMethods
         {
             LinearRegression = 0,
@@ -129,6 +158,8 @@ namespace IMSDriftTimeAligner
 
         #endregion
 
+#pragma warning restore 1591
+
         /// <summary>
         /// Constructor
         /// </summary>
@@ -166,6 +197,10 @@ namespace IMSDriftTimeAligner
             AppendMergedFrame = false;
         }
 
+        /// <summary>
+        /// Get the program version
+        /// </summary>
+        /// <returns></returns>
         public static string GetAppVersion()
         {
             var version = Assembly.GetExecutingAssembly().GetName().Version + " (" + PROGRAM_DATE + ")";
@@ -173,6 +208,9 @@ namespace IMSDriftTimeAligner
             return version;
         }
 
+        /// <summary>
+        /// Show the options at the console
+        /// </summary>
         public void OutputSetOptions()
         {
             Console.WriteLine("Options:");
@@ -300,11 +338,20 @@ namespace IMSDriftTimeAligner
 
         }
 
+        /// <summary>
+        /// Copy thenoptions with a Memberwise Clone
+        /// </summary>
+        /// <returns></returns>
         public FrameAlignmentOptions ShallowCopy()
         {
+            // ReSharper disable once ArrangeThisQualifier
             return (FrameAlignmentOptions)this.MemberwiseClone();
         }
 
+        /// <summary>
+        /// Validate the options
+        /// </summary>
+        /// <returns></returns>
         public bool ValidateArgs()
         {
             if (string.IsNullOrWhiteSpace(InputFilePath))
