@@ -222,7 +222,7 @@ namespace IMSDriftTimeAligner
 
             Console.WriteLine();
             Console.WriteLine(" Alignment Method: {0}", AlignmentMethod);
-            Console.WriteLine(" Base Frame Selection Mode: {0}", BaseFrameSelectionMode);
+            Console.WriteLine(" Base Frame Selection Mode: {0} ({1})", BaseFrameSelectionMode, (int)BaseFrameSelectionMode);
 
             switch (BaseFrameSelectionMode)
             {

@@ -1064,10 +1064,10 @@ namespace IMSDriftTimeAligner
                             statsWriter.WriteLine("== Processing Options ==");
                             statsWriter.WriteLine();
                             statsWriter.WriteLine("AlignmentMethod=" + Options.AlignmentMethod);
-                            statsWriter.WriteLine("BaseFrameSelectionMode=" + Options.BaseFrameSelectionMode);
-                            statsWriter.WriteLine("BaseFrameSumCount=" + Options.BaseFrameSumCount);
                             statsWriter.WriteLine("BaseFrameStart=" + Options.BaseFrameStart);
                             statsWriter.WriteLine("BaseFrameEnd=" + Options.BaseFrameEnd);
+                            statsWriter.WriteLine("BaseFrameMode=" + Options.BaseFrameSelectionMode + " (" + (int)Options.BaseFrameSelectionMode + ")");
+                            statsWriter.WriteLine("BaseCount=" + Options.BaseFrameSumCount);
                             statsWriter.WriteLine("BaseFrameList=" + Options.BaseFrameList);
                             statsWriter.WriteLine("FrameStart=" + Options.FrameStart);
                             statsWriter.WriteLine("FrameEnd=" + Options.FrameEnd);
