@@ -303,7 +303,10 @@ namespace IMSDriftTimeAligner
                     }
                 }
 
-                statsWriter.WriteLine("{0,-8} {1,-6} {2,-8:F5}", frameNum, bestOffset, bestRSquared);
+                var statsLine = string.Format("{0,-8} {1,-6} {2,-8:F5}", frameNum, bestOffset, bestRSquared);
+                statsWriter.WriteLine(statsLine.Trim());
+
+                Console.WriteLine("  R-squared {0:F3}, shift {1} scans", bestRSquared, bestOffset);
 
                 if (ShowDebugMessages)
                 {
