@@ -242,8 +242,8 @@ namespace IMSDriftTimeAligner
 
                         var coeff = MathNet.Numerics.LinearRegression.SimpleRegression.Fit(frameDataShifted, baseFrameData);
 
-                        var slope = coeff.Item1;
-                        var intercept = coeff.Item2;
+                        var intercept = coeff.Item1;
+                        var slope = coeff.Item2;
 
                         var rSquared = MathNet.Numerics.GoodnessOfFit.RSquared(frameDataShifted.Select(x => intercept + slope * x), baseFrameData);
 
