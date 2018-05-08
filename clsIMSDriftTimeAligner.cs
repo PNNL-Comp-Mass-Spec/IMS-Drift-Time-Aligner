@@ -657,15 +657,55 @@ namespace IMSDriftTimeAligner
 
                         if (baseFrameStart <= 0 && baseFrameEnd <= 0)
                         {
+                            ReportWarning(string.Format(
+                                              "BaseFrameEnd must be non-zero when the BaseFrameSelectionMode is UserSpecifiedFrameRange; alternatively, use /BaseFrameList.\n" +
+                                              "Valid frame numbers are {0} to {1}", frameMin, frameMax));
+
                             throw new ArgumentOutOfRangeException(
                                 nameof(frameAlignmentOptions.BaseFrameEnd),
-                                "BaseFrameEnd must be non-zero when the BaseFrameSelectionMode is UserSpecifiedFrameRange; alternatively, use /BaseFrameList");
+                                "BaseFrameEnd must be non-zero when the BaseFrameSelectionMode is UserSpecifiedFrameRange");
                         }
 
                         baseFrameList = new List<int>();
+                        var ignoredFrameNums = new List<int>();
+
                         for (var frameNum = baseFrameStart; frameNum <= baseFrameEnd; frameNum++)
                         {
+                            if (frameNum < frameMin)
+                            {
+                                ignoredFrameNums.Add(frameNum);
+                                continue;
+                            }
+
+                            if (frameNum > frameMax)
+                            {
+                                ignoredFrameNums.Add(frameNum);
+                                continue;
+                            }
+
                             baseFrameList.Add(frameNum);
+                        }
+
+                        if (baseFrameList.Count == 0)
+                        {
+                            ReportWarning(string.Format(
+                                              "Invalid base frame range; valid frame numbers are {0} to {1}; " +
+                                              "will use the first frame as the base frame",
+                                              frameMin, frameMax));
+
+                            baseFrameList.Add(frameMin);
+                        } else if (ignoredFrameNums.Count == 1)
+                        {
+                            ReportWarning(string.Format(
+                                              "Valid frame numbers are {0} to {1}; " +
+                                              "ignoring frame {2}",
+                                              frameMin, frameMax, ignoredFrameNums.First()));
+                        } else if (ignoredFrameNums.Count > 1)
+                        {
+                            ReportWarning(string.Format(
+                                              "Valid frame numbers are {0} to {1}; " +
+                                              "ignoring {2}",
+                                              frameMin, frameMax, string.Join(", ", ignoredFrameNums)));
                         }
                     }
                     else
@@ -673,10 +713,19 @@ namespace IMSDriftTimeAligner
                         // Split the frame list on commas
                         var baseFrames = frameAlignmentOptions.BaseFrameList.Split(',');
                         baseFrameList = new List<int>();
+
+                        var integerCount = 0;
                         foreach (var baseFrame in baseFrames)
                         {
                             if (int.TryParse(baseFrame, out var frameNum))
                             {
+                                integerCount++;
+
+                                if (frameNum < frameMin)
+                                    continue;
+                                if (frameNum > frameMax)
+                                    continue;
+
                                 baseFrameList.Add(frameNum);
                             }
                             else
@@ -687,9 +736,19 @@ namespace IMSDriftTimeAligner
 
                         if (baseFrameList.Count == 0)
                         {
-                            throw new ArgumentException(
-                                "BaseFrameList must contain a comma-separated list of integers",
-                                nameof(frameAlignmentOptions.BaseFrameList));
+                            if (integerCount == 0)
+                            {
+                                throw new ArgumentException(
+                                    "BaseFrameList must contain a comma-separated list of integers",
+                                    nameof(frameAlignmentOptions.BaseFrameList));
+                            }
+
+                            ReportWarning(string.Format(
+                                              "Invalid base frame numbers; frame numbers must be between {0} and {1}; " +
+                                              "will use the first frame as the base frame",
+                                              frameMin, frameMax));
+
+                            baseFrameList.Add(frameMin);
                         }
                     }
                     break;
@@ -993,6 +1052,12 @@ namespace IMSDriftTimeAligner
                 if (!sourceFile.Exists)
                 {
                     ReportError("Source file not found: " + inputFilePath);
+                    return false;
+                }
+
+                if (outputFilePath.IndexOf(':') > 1)
+                {
+                    ReportError("Invalid output file path: " + outputFilePath);
                     return false;
                 }
 
