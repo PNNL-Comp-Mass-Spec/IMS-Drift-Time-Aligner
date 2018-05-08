@@ -36,6 +36,11 @@ namespace IMSDriftTimeAligner
         #region "Properties"
 
         /// <summary>
+        /// Original command line passed to the entry class
+        /// </summary>
+        public string CommandLine { get; }
+
+        /// <summary>
         /// List of recent error messages
         /// </summary>
         /// <remarks>Old messages are cleared when ProcessFile is called</remarks>
@@ -63,8 +68,9 @@ namespace IMSDriftTimeAligner
         /// <summary>
         /// Constructor
         /// </summary>
-        public DriftTimeAlignmentEngine(FrameAlignmentOptions options)
+        public DriftTimeAlignmentEngine(FrameAlignmentOptions options, string commandLine = "")
         {
+            CommandLine = commandLine;
             Options = options;
             ErrorMessages = new List<string>();
             WarningMessages = new List<string>();
@@ -1061,6 +1067,8 @@ namespace IMSDriftTimeAligner
 
                         if (Options.WriteOptionsToStatsFile)
                         {
+                            statsWriter.WriteLine(CommandLine);
+                            statsWriter.WriteLine();
                             statsWriter.WriteLine("== Processing Options ==");
                             statsWriter.WriteLine();
                             statsWriter.WriteLine("AlignmentMethod=" + Options.AlignmentMethod);
@@ -1069,6 +1077,11 @@ namespace IMSDriftTimeAligner
                             statsWriter.WriteLine("BaseStart=" + Options.BaseFrameStart);
                             statsWriter.WriteLine("BaseEnd=" + Options.BaseFrameEnd);
                             statsWriter.WriteLine("BaseFrameList=" + Options.BaseFrameList);
+                            if (baseFrameList.Count == 1)
+                                statsWriter.WriteLine("ActualBaseFrameNum=" + baseFrameList.First());
+                            else
+                                statsWriter.WriteLine("ActualBaseFrameNums=" + string.Join(",", baseFrameList));
+
                             statsWriter.WriteLine("FrameStart=" + Options.FrameStart);
                             statsWriter.WriteLine("FrameEnd=" + Options.FrameEnd);
                             statsWriter.WriteLine("MaxShift=" + Options.MaxShiftScans);
@@ -1084,6 +1097,12 @@ namespace IMSDriftTimeAligner
                             statsWriter.WriteLine("== Alignment Stats ==");
                             statsWriter.WriteLine();
                         }
+
+                        Console.WriteLine();
+                        if (baseFrameList.Count == 1)
+                            Console.WriteLine("Actual base frame: " + baseFrameList.First());
+                        else
+                            Console.WriteLine("Actual base frames:" + string.Join(",", baseFrameList));
 
                         statsWriter.WriteLine("{0,-8} {1,-6} {2,-8}", "Frame", "Shift", "Best RSquared");
 

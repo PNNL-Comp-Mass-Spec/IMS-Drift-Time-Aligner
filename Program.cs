@@ -74,7 +74,8 @@ namespace IMSDriftTimeAligner
 
             try
             {
-                var processor = new DriftTimeAlignmentEngine(options);
+                var commandLine = exeName + " " + string.Join(" ", args);
+                var processor = new DriftTimeAlignmentEngine(options, commandLine);
 
                 processor.ErrorEvent += Processor_ErrorEvent;
                 processor.StatusEvent += Processor_StatusEvent;
