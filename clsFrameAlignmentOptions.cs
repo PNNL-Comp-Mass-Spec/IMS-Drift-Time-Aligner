@@ -71,7 +71,7 @@ namespace IMSDriftTimeAligner
             "Method for aligning the data for each frame to the base frame; LinearRegression (0) is the only method available at present")]
         public AlignmentMethods AlignmentMethod { get; set; }
 
-        [Option("BaseFrame", HelpText =
+        [Option("BaseFrame", "BaseFrameMode", HelpText =
             "Method for selecting the base frame to align all the other frames to")]
         public BaseFrameSelectionModes BaseFrameSelectionMode { get; set; }
 
@@ -96,11 +96,11 @@ namespace IMSDriftTimeAligner
             "True to show additional debug messages at the console")]
         public bool DebugMode { get; set; }
 
-        [Option("Start", HelpShowsDefault = false, HelpText =
+        [Option("Start", "FrameStart", HelpShowsDefault = false, HelpText =
             "Frame to start processing at (0 to start at the first frame)")]
         public int FrameStart { get; set; }
 
-        [Option("End", HelpShowsDefault = false, HelpText =
+        [Option("End", "FrameEnd", HelpShowsDefault = false, HelpText =
             "Frame to stop processing at (Set FrameStart and FrameEnd to 0 to process all frames)")]
         public int FrameEnd { get; set; }
 
@@ -116,38 +116,38 @@ namespace IMSDriftTimeAligner
             "Maximum number of scans that data in a frame is allowed to be shifted when aligning to the base frame data")]
         public int MaxShiftScans { get; set; }
 
-        [Option("ITF", HelpText =
+        [Option("ITF", "MinimumIntensityThresholdFraction", HelpText =
             "Value to multiply the maximum TIC value by to determine an intensity threshold, " +
             "below which intensity values will be set to 0")]
         public double MinimumIntensityThresholdFraction { get; set; }
 
-        [Option("ScanMin", "MinScan", HelpShowsDefault = false, HelpText =
+        [Option("ScanMin", "MinScan", "DriftScanFilterMin", HelpShowsDefault = false, HelpText =
             "Optional minimum drift scan number to filter data by when obtaining data to align")]
         public int DriftScanFilterMin { get; set; }
 
-        [Option("ScanMax", "MaxScan" ,HelpShowsDefault = false, HelpText =
+        [Option("ScanMax", "MaxScan", "DriftScanFilterMax", HelpShowsDefault = false, HelpText =
             "Optional maximum drift scan number to filter data by when obtaining data to align")]
         public int DriftScanFilterMax { get; set; }
 
-        [Option("MzMin", "MinMZ", HelpShowsDefault = false, HelpText =
+        [Option("MzMin", "MinMZ", "MzFilterMin", HelpShowsDefault = false, HelpText =
             "Optional minimum m/z to filter data by when obtaining data to align")]
         public int MzFilterMin { get; set; }
 
-        [Option("MzMax", "MaxMZ", HelpShowsDefault = false, HelpText =
+        [Option("MzMax", "MaxMZ", "MzFilterMax", HelpShowsDefault = false, HelpText =
             "Optional maximum m/z to filter data by when obtaining data to align")]
         public int MzFilterMax { get; set; }
 
-        [Option("Smooth", HelpText =
+        [Option("Smooth", "ScanSmoothCount", HelpText =
             "Number of points to use when smoothing TICs before aligning. " +
             "If 0 or 1; no smoothing is applied.")]
         public int ScanSmoothCount { get; set; }
 
-        [Option("Merge", HelpText =
+        [Option("Merge", "MergeFrames", HelpText =
             "When true, the output file will have a single, merged frame. " +
             "When false, the output file will have all of the original frames, with their IMS drift times aligned")]
         public bool MergeFrames { get; set; }
 
-        [Option("Append", HelpText =
+        [Option("Append", "AppendMergedFrame", HelpText =
             "When true, a merged frame of data will be appended to the output file as a new frame " +
             "(ignored if option AppendMergedFrame is true)")]
         public bool AppendMergedFrame { get; set; }
