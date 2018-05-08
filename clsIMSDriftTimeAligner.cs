@@ -1163,7 +1163,7 @@ namespace IMSDriftTimeAligner
 
             try
             {
-                var currentFrameList = new List<int> { nextFrameNumOutfile };
+                var currentFrameList = new List<int> { frameNum };
 
                 GetSummedFrameScans(reader, currentFrameList, out var scanNumsInFrame, out var frameScans);
 
