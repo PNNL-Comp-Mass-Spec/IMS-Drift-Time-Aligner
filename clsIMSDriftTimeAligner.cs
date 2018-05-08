@@ -1064,14 +1064,14 @@ namespace IMSDriftTimeAligner
                             statsWriter.WriteLine("== Processing Options ==");
                             statsWriter.WriteLine();
                             statsWriter.WriteLine("AlignmentMethod=" + Options.AlignmentMethod);
-                            statsWriter.WriteLine("BaseFrameStart=" + Options.BaseFrameStart);
-                            statsWriter.WriteLine("BaseFrameEnd=" + Options.BaseFrameEnd);
                             statsWriter.WriteLine("BaseFrameMode=" + Options.BaseFrameSelectionMode + " (" + (int)Options.BaseFrameSelectionMode + ")");
                             statsWriter.WriteLine("BaseCount=" + Options.BaseFrameSumCount);
+                            statsWriter.WriteLine("BaseStart=" + Options.BaseFrameStart);
+                            statsWriter.WriteLine("BaseEnd=" + Options.BaseFrameEnd);
                             statsWriter.WriteLine("BaseFrameList=" + Options.BaseFrameList);
                             statsWriter.WriteLine("FrameStart=" + Options.FrameStart);
                             statsWriter.WriteLine("FrameEnd=" + Options.FrameEnd);
-                            statsWriter.WriteLine("MaxShiftScans=" + Options.MaxShiftScans);
+                            statsWriter.WriteLine("MaxShift=" + Options.MaxShiftScans);
                             statsWriter.WriteLine("MinimumIntensityThresholdFraction=" + Options.MinimumIntensityThresholdFraction);
                             statsWriter.WriteLine("DriftScanFilterMin=" + Options.DriftScanFilterMin);
                             statsWriter.WriteLine("DriftScanFilterMax=" + Options.DriftScanFilterMax);
