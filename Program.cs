@@ -37,6 +37,7 @@ namespace IMSDriftTimeAligner
 
                 UsageExamples = {
                     exeName + " DataFile.UIMF",
+                    exeName + " NamePrefix*.UIMF",
                     exeName + " DataFile.UIMF /Start:2",
                     exeName + " DataFile.UIMF /Start:2 /BaseFrame:5 /BaseCount:7"
                 }
@@ -81,7 +82,57 @@ namespace IMSDriftTimeAligner
                 processor.StatusEvent += Processor_StatusEvent;
                 processor.WarningEvent += Processor_WarningEvent;
 
-                var success = processor.ProcessFile(options.InputFilePath, options.OutputFilePath);
+                bool success;
+
+                if (options.InputFilePath.Contains("*") || options.InputFilePath.Contains("?"))
+                {
+                    // FileSpec has a wildcard
+
+                    var filesToProcess = clsPathUtils.FindFilesWildcard(options.InputFilePath);
+
+                    var successCount = 0;
+                    var failureCount = 0;
+
+                    foreach (var fileToProcess in filesToProcess)
+                    {
+                        var baseName = Path.GetFileNameWithoutExtension(fileToProcess.Name);
+                        if (string.IsNullOrWhiteSpace(options.OutputFilePath) && baseName.ToLower().EndsWith(DriftTimeAlignmentEngine.OUTPUT_FILENAME_SUFFIX.ToLower()))
+                        {
+                            Console.WriteLine();
+                            Console.WriteLine("Skipping file with suffix {0}: {1}",
+                                              DriftTimeAlignmentEngine.OUTPUT_FILENAME_SUFFIX,
+                                              clsPathUtils.CompactPathString(fileToProcess.FullName, 70));
+                            Console.WriteLine();
+                            continue;
+                        }
+
+                        ConsoleMsgUtils.ShowDebug("Processing " + clsPathUtils.CompactPathString(fileToProcess.FullName, 70));
+                        Console.WriteLine();
+
+                        var successOneFile = processor.ProcessFile(fileToProcess.FullName, options.OutputFilePath);
+
+                        if (successOneFile)
+                        {
+                            successCount++;
+                            continue;
+                        }
+
+                        failureCount++;
+                        ConsoleMsgUtils.ShowWarning("Error processing " + fileToProcess.Name);
+                    }
+
+                    if (successCount == 0 && failureCount == 0)
+                    {
+                        ConsoleMsgUtils.ShowWarning("No files were found with file spec " + options.InputFilePath);
+                        return -2;
+                    }
+
+                    success = failureCount == 0;
+                }
+                else
+                {
+                    success = processor.ProcessFile(options.InputFilePath, options.OutputFilePath);
+                }
 
                 if (!success)
                 {

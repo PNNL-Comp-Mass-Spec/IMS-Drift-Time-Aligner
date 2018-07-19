@@ -18,7 +18,8 @@ IMSDriftTimeAligner.exe
  [/Debug] [/WO:False]
 ```
 
-InputFilePath is a path to the UIMF file to process
+InputFilePath is a path to the UIMF file to process.
+Wildcards are also supported, for example *.uimf
 
 Use `/O` to specify the output file path
 By default the output file will be named InputFileName_new.uimf

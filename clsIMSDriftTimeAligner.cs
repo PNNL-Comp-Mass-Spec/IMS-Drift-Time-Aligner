@@ -15,6 +15,8 @@ namespace IMSDriftTimeAligner
 
         private const string BASE_FRAME_DESCRIPTION = "Base frame";
 
+        public const string OUTPUT_FILENAME_SUFFIX = "_new";
+
         #endregion
 
         #region "Classwide variables"
@@ -985,7 +987,7 @@ namespace IMSDriftTimeAligner
 
             if (string.IsNullOrWhiteSpace(outputFilePath))
             {
-                var outputFileName = Path.GetFileNameWithoutExtension(sourceFile.Name) + "_new" + Path.GetExtension(sourceFile.Name);
+                var outputFileName = Path.GetFileNameWithoutExtension(sourceFile.Name) + OUTPUT_FILENAME_SUFFIX + Path.GetExtension(sourceFile.Name);
                 if (sourceFile.DirectoryName == null)
                 {
                     outputFilePath = Path.Combine(outputFileName);
