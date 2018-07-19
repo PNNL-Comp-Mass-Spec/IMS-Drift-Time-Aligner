@@ -13,7 +13,7 @@ namespace IMSDriftTimeAligner
     /// <remarks>
     /// Written by Matthew Monroe for the Department of Energy (PNNL, Richland, WA)
     ///
-    /// E-mail: matthew.monroe@pnnl.gov or matt@alchemistmatt.com
+    /// E-mail: matthew.monroe@pnnl.gov or proteomics@pnnl.gov
     /// Website: https://panomics.pnnl.gov/ or https://omics.pnl.gov
     /// </remarks>
     internal static class Program
