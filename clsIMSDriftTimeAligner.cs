@@ -17,6 +17,8 @@ namespace IMSDriftTimeAligner
 
         public const string OUTPUT_FILENAME_SUFFIX = "_new";
 
+        public const string BACKUP_FILENAME_SUFFIX = "_bak";
+
         #endregion
 
         #region "Classwide variables"
@@ -1015,7 +1017,7 @@ namespace IMSDriftTimeAligner
                 {
                     var backupFilePath = Path.Combine(
                         outputFile.Directory.FullName,
-                        Path.GetFileNameWithoutExtension(outputFile.Name) + "_bak" + Path.GetExtension(outputFile.Name));
+                        Path.GetFileNameWithoutExtension(outputFile.Name) + BACKUP_FILENAME_SUFFIX + Path.GetExtension(outputFile.Name));
 
                     var backupFile = new FileInfo(backupFilePath);
 
