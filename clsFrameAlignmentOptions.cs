@@ -10,9 +10,9 @@ namespace IMSDriftTimeAligner
     public class FrameAlignmentOptions
     {
         /// <summary>
-        /// Progrma date
+        /// Program date
         /// </summary>
-        public const string PROGRAM_DATE = "July 18, 2018";
+        public const string PROGRAM_DATE = "September 27, 2018";
 
         /// <summary>
         /// Default frame selection mode
@@ -279,7 +279,7 @@ namespace IMSDriftTimeAligner
             }
 
             Console.WriteLine(" Maximum shift: {0} scans", MaxShiftScans);
-            Console.WriteLine(" Minimum Intensity hreshold Fraction: {0}", MinimumIntensityThresholdFraction);
+            Console.WriteLine(" Minimum Intensity threshold Fraction: {0}", MinimumIntensityThresholdFraction);
 
             if (DriftScanFilterMin > 0 || DriftScanFilterMax > 0 || MzFilterMin > 0 || MzFilterMax > 0)
             {
@@ -339,7 +339,7 @@ namespace IMSDriftTimeAligner
         }
 
         /// <summary>
-        /// Copy thenoptions with a Memberwise Clone
+        /// Copy the options with a Memberwise Clone
         /// </summary>
         /// <returns></returns>
         public FrameAlignmentOptions ShallowCopy()

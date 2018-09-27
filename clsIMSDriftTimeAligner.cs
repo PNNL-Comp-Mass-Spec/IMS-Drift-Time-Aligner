@@ -82,7 +82,7 @@ namespace IMSDriftTimeAligner
         }
 
         /// <summary>
-        /// Align the data using piecewise linear correlation optimised warping (COW)
+        /// Align the data using piecewise linear correlation optimized warping (COW)
         /// </summary>
         /// <param name="frameNum"></param>
         /// <param name="baseFrameScans"></param>
@@ -134,19 +134,19 @@ namespace IMSDriftTimeAligner
 
             //for (var i = N - 1; i >= 0; i--)
             //{
-            //    var xstart = Math.Max(i * (m + delta - t), LT - (N - i) * (m + delta + t));
+            //    var xStart = Math.Max(i * (m + delta - t), LT - (N - i) * (m + delta + t));
 
-            //    var xend = Math.Min(i * (m + delta + t), LT - (N - i) * (m + delta - t));
+            //    var xEnd = Math.Min(i * (m + delta + t), LT - (N - i) * (m + delta - t));
 
-            //    for (var x = xstart; x <= xend; x++)
+            //    for (var x = xStart; x <= xEnd; x++)
             //    {
             //        for (var u = delta - t; u <= delta + t; u++)
             //        {
-            //            var fsum = F[i+1, x+m+u] + unknownFunc(x);
+            //            var fSum = F[i+1, x+m+u] + unknownFunc(x);
 
-            //            if (fsum > F[i, x])
+            //            if (fSum > F[i, x])
             //            {
-            //                F[i, x] = fsum;
+            //                F[i, x] = fSum;
             //                U[i, x] = u;
             //            }
             //        }
@@ -424,7 +424,7 @@ namespace IMSDriftTimeAligner
 
         }
 
-        private void ComputeFilteredTICandBPI(
+        private void ComputeFilteredTICAndBPI(
             DataReader reader,
             ScanInfo sourceScanInfo,
             bool mzFilterEnabled,
@@ -519,7 +519,7 @@ namespace IMSDriftTimeAligner
                 {
                     scanInfoToStore = CloneScanInfo(sourceScanInfo);
 
-                    ComputeFilteredTICandBPI(reader, scanInfoToStore, true, mzMin, mzMax);
+                    ComputeFilteredTICAndBPI(reader, scanInfoToStore, true, mzMin, mzMax);
                 }
                 else
                 {
@@ -568,7 +568,7 @@ namespace IMSDriftTimeAligner
                     {
                         scanInfoToStore = CloneScanInfo(sourceScanInfo);
 
-                        ComputeFilteredTICandBPI(reader, scanInfoToStore, true, mzMin, mzMax);
+                        ComputeFilteredTICAndBPI(reader, scanInfoToStore, true, mzMin, mzMax);
                     }
                     else
                     {
@@ -1225,7 +1225,7 @@ namespace IMSDriftTimeAligner
         }
 
         /// <summary>
-        /// Read the frame data from the source file, align it to baseFramedata, and write to the output file
+        /// Read the frame data from the source file, align it to base frame data, and write to the output file
         /// </summary>
         /// <param name="reader">UIMF Reader</param>
         /// <param name="writer">UIMF Writer</param>
