@@ -25,9 +25,11 @@ Use `/O` to specify the output file path
 By default the output file will be named InputFileName_new.uimf
 
 Use `/Merge` to specify that all of the aligned frames should be merged into a single frame by co-adding the data
+
 Use `/Append` to specify that the data should be merged and appended as a new frame to the output file
 
 Use `/BaseFrame` to specify how the base frame is selected; options are:
+
 | Mode            | Description             |
 |-----------------|-------------------------|
 |  `/BaseFrame:0` |FirstFrame               |
@@ -45,7 +47,7 @@ The default is `/BaseFrame:5`
 Use `/BaseCount` to specify the number or frames or percent range to use when FrameMode is NFrame or NPercent based;
 * Default is `/BaseCount:15`
 
-Use `/BaseStart` and /BaseEnd to specify the range of frames to use as the base when using /BaseFrame:3 (aka UserSpecifiedFrameRange)
+Use `/BaseStart` and `/BaseEnd` to specify the range of frames to use as the base when using `/BaseFrame:3` (aka UserSpecifiedFrameRange)
 
 Use `/Start` and `/End` to limit the range of frames to align
 
