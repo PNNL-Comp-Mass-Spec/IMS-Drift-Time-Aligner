@@ -7,7 +7,7 @@ using UIMFLibrary;
 
 namespace IMSDriftTimeAligner
 {
-    class DriftTimeAlignmentEngine : PRISM.clsEventNotifier
+    class DriftTimeAlignmentEngine : PRISM.EventNotifier
     {
         #region "Constants"
 
@@ -321,7 +321,7 @@ namespace IMSDriftTimeAligner
             catch (Exception ex)
             {
                 ReportError("Error in AlignFrameDataLinearRegression: " + ex.Message);
-                ReportWarning(PRISM.clsStackTraceFormatter.GetExceptionStackTraceMultiLine(ex));
+                ReportWarning(PRISM.StackTraceFormatter.GetExceptionStackTraceMultiLine(ex));
             }
 
             return frameScanAlignmentMap;

@@ -123,7 +123,7 @@ namespace IMSDriftTimeAligner
 
             // FileSpec has a wildcard
 
-            var filesToProcess = clsPathUtils.FindFilesWildcard(options.InputFilePath);
+            var filesToProcess = PathUtils.FindFilesWildcard(options.InputFilePath);
 
             var successCount = 0;
             var failureCount = 0;
@@ -146,7 +146,7 @@ namespace IMSDriftTimeAligner
                         Console.WriteLine();
                         Console.WriteLine("Skipping file with suffix {0}: {1}",
                                           suffix,
-                                          clsPathUtils.CompactPathString(fileToProcess.FullName, 70));
+                                          PathUtils.CompactPathString(fileToProcess.FullName, 70));
                         Console.WriteLine();
                         skipFile = true;
                         break;
@@ -156,7 +156,7 @@ namespace IMSDriftTimeAligner
                 if (skipFile)
                     continue;
 
-                ConsoleMsgUtils.ShowDebug("Processing " + clsPathUtils.CompactPathString(fileToProcess.FullName, 70));
+                ConsoleMsgUtils.ShowDebug("Processing " + PathUtils.CompactPathString(fileToProcess.FullName, 70));
                 Console.WriteLine();
 
                 var successOneFile = processor.ProcessFile(fileToProcess.FullName, options.OutputFilePath);
