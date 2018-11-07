@@ -1229,8 +1229,10 @@ namespace IMSDriftTimeAligner
                             AppendMergedFrame(reader, writer, referenceFrameNum, nextFrameNumOutfile, mergedFrameScans);
                         }
 
-                        // Make sure the frame count in Global_Params is up-to-date
-                        writer.UpdateGlobalFrameCount();
+                        // Make sure values in Global_Params are up-to-date
+                        // Specifically, the frame count (tracked by NumFrames) and the
+                        // maximum number of scans in any frame (tracked by PrescanTOFPulses)
+                        writer.UpdateGlobalStats();
 
                     }
                 }
