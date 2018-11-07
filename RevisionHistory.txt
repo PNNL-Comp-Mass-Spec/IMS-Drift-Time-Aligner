@@ -1,5 +1,9 @@
 IMSDriftTimeAligner Revision History
 
+Version 1.0.6773; November 6, 2018
+	- Update the scan count for each frame, tracked in the Frame_Params table of the aligned .UIMF file
+	- Update the PrescanTOFPulses value tracked in the Global_Params table of the aligned .UIMF file
+
 Version 1.0.6773; July 18, 2018
 	- Add support for wildcards in the input file name
 	- Update to MathNet.Numerics v4.5.1 and PRISM v2.4.91
