@@ -388,6 +388,12 @@ namespace IMSDriftTimeAligner
 
             var frameParams = reader.GetFrameParams(referenceFrameNum);
 
+            // Determine the the minimum and maximum scan numbers in the merged frame
+            if (GetScanRange(mergedFrameScans.Keys, out var scanMin, out var scanMax))
+            {
+                UpdateScanRange(frameParams, scanMin, scanMax);
+            }
+
             writer.InsertFrame(mergedFrameNum, frameParams);
 
             var binWidth = reader.GetGlobalParams().BinWidth;
@@ -865,6 +871,21 @@ namespace IMSDriftTimeAligner
         }
 
         /// <summary>
+        /// Determine the minimum and maximum scan numbers
+        /// </summary>
+        /// <param name="scanNumbers"></param>
+        /// <param name="scanMin"></param>
+        /// <param name="scanMax"></param>
+        /// <returns></returns>
+        private bool GetScanRange(IReadOnlyCollection<int> scanNumbers, out int scanMin, out int scanMax)
+        {
+            scanMin = scanNumbers.Min();
+            scanMax = scanNumbers.Max();
+
+            return scanMax > 0;
+        }
+
+        /// <summary>
         /// Populate an array of doubles using the TIC values from the scans in frameScans
         /// </summary>
         /// <param name="frameDescription">Description of this frame</param>
@@ -1274,6 +1295,12 @@ namespace IMSDriftTimeAligner
 
                 if (insertFrame)
                 {
+                    // Determine the minimum and maximum values of the new scan numbers in frameScanAlignmentMap
+                    if (GetScanRange(frameScanAlignmentMap.Values.ToList(), out var scanMin, out var scanMax))
+                    {
+                        UpdateScanRange(frameParams, scanMin, scanMax);
+                    }
+
                     writer.InsertFrame(nextFrameNumOutfile, frameParams);
                 }
 
@@ -1480,6 +1507,13 @@ namespace IMSDriftTimeAligner
             {
                 ReportError("Error in SaveSmoothedDataForDebug: " + ex.Message);
             }
+        }
+
+        private void UpdateScanRange(FrameParams frameParams, int scanMin, int scanMax)
+        {
+            frameParams.AddUpdateValue(FrameParamKeyType.Scans, scanMax);
+            frameParams.AddUpdateValue(FrameParamKeyType.ScanNumFirst, scanMin);
+            frameParams.AddUpdateValue(FrameParamKeyType.ScanNumLast, scanMax);
         }
 
         private void UpdateScanStats(ScanInfo sourceScanInfo, ScanStats scanStats)
