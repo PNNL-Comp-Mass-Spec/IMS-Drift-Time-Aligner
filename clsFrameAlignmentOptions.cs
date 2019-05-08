@@ -12,7 +12,7 @@ namespace IMSDriftTimeAligner
         /// <summary>
         /// Program date
         /// </summary>
-        public const string PROGRAM_DATE = "November 6, 2018";
+        public const string PROGRAM_DATE = "May 8, 2019";
 
         /// <summary>
         /// Default frame selection mode
@@ -352,14 +352,15 @@ namespace IMSDriftTimeAligner
         /// Validate the options
         /// </summary>
         /// <returns></returns>
-        public bool ValidateArgs()
+        public bool ValidateArgs(out string errorMessage)
         {
             if (string.IsNullOrWhiteSpace(InputFilePath))
             {
-                Console.WriteLine("You must specify an input file");
+                errorMessage = "You must specify an input file";
                 return false;
             }
 
+            errorMessage = string.Empty;
             return true;
         }
     }

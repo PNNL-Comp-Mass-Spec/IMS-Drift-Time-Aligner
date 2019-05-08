@@ -56,9 +56,14 @@ namespace IMSDriftTimeAligner
                     return -1;
                 }
 
-                if (!options.ValidateArgs())
+                if (!options.ValidateArgs(out var errorMessage))
                 {
                     parser.PrintHelp();
+
+                    Console.WriteLine();
+                    ConsoleMsgUtils.ShowWarning("Validation error:");
+                    ConsoleMsgUtils.ShowWarning(errorMessage);
+
                     Thread.Sleep(1500);
                     return -1;
                 }
