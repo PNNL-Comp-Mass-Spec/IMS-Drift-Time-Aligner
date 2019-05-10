@@ -12,7 +12,7 @@ namespace IMSDriftTimeAligner
         /// <summary>
         /// Program date
         /// </summary>
-        public const string PROGRAM_DATE = "May 8, 2019";
+        public const string PROGRAM_DATE = "May 9, 2019";
 
         /// <summary>
         /// Default frame selection mode
