@@ -1423,7 +1423,7 @@ namespace IMSDriftTimeAligner
                             continue;
                         }
 
-                        var scanShift = scanNumNew - scanStart;
+                        var scanShift = scanNumNew - scanNumOld;
                         if (scanShiftStats.TryGetValue(scanShift, out var scanShiftCount))
                         {
                             scanShiftStats[scanShift] = scanShiftCount + 1;
