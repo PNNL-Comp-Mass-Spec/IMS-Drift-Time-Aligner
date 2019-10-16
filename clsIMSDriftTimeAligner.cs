@@ -229,6 +229,11 @@ namespace IMSDriftTimeAligner
                     baseFrameData = GetTICValues(BASE_FRAME_DESCRIPTION, scanStart, scanEnd, baseFrameScans);
                     frameData = GetTICValues("Frame " + frameNum, scanStart, scanEnd, frameScans);
 
+                    // ToDo: add a for loop that steps through a range of contraction / expansion values to apply to the offset variable
+                    // Use this to shift the data by a non-linear amount
+                    // correlationByOffset will need to track a list of offsets (of length frameData.Length) instead of a single offset value
+
+
                     var offset = 0;
                     var correlationByOffset = new Dictionary<int, double>();
 
@@ -236,6 +241,8 @@ namespace IMSDriftTimeAligner
 
                     while (true)
                     {
+                        // ToDo: Construct a list of offsets, based on the current contraction / expansion value
+
                         var frameDataShifted = new double[baseFrameData.Length];
                         var targetIndex = 0;
 
