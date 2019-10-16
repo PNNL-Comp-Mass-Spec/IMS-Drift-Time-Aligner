@@ -1130,6 +1130,13 @@ namespace IMSDriftTimeAligner
 
                     GetSummedFrameScans(reader, baseFrameList, out _, out var baseFrameScans);
 
+                    if (Options.DebugMode)
+                    {
+                        var baseFrameDebugFile = new FileInfo(Path.Combine(outputFile.DirectoryName, Path.GetFileNameWithoutExtension(outputFile.Name) + "_baseframe.txt"));
+
+                        WriteFrameScansDebugFile(baseFrameScans, baseFrameDebugFile);
+                    }
+
                     if (baseFrameScans.Count == 0)
                     {
                         if (Options.DriftScanFilterMin > 0 || Options.DriftScanFilterMax > 0)
@@ -1217,7 +1224,10 @@ namespace IMSDriftTimeAligner
 
                         for (var frameNum = frameStart; frameNum <= frameEnd; frameNum++)
                         {
-                            ProcessFrame(reader, writer, frameNum, baseFrameScans, mergedFrameScans, statsWriter, insertEachFrame, nextFrameNumOutfile);
+                            ProcessFrame(reader, writer, outputFile,
+                                         frameNum, baseFrameScans, mergedFrameScans,
+                                         statsWriter, insertEachFrame, nextFrameNumOutfile);
+
                             if (insertEachFrame)
                                 nextFrameNumOutfile++;
                         }
@@ -1252,6 +1262,7 @@ namespace IMSDriftTimeAligner
         /// </summary>
         /// <param name="reader">UIMF Reader</param>
         /// <param name="writer">UIMF Writer</param>
+        /// <param name="outputFile">Output file (used for debug purposes)</param>
         /// <param name="frameNum">Frame Number</param>
         /// <param name="baseFrameScans">Base frame scan data (most importantly, TIC by scan number)</param>
         /// <param name="mergedFrameScans">
@@ -1264,6 +1275,7 @@ namespace IMSDriftTimeAligner
         private void ProcessFrame(
             DataReader reader,
             DataWriter writer,
+            FileInfo outputFile,
             int frameNum,
             IReadOnlyList<ScanInfo> baseFrameScans,
             IDictionary<int, int[]> mergedFrameScans,
@@ -1280,6 +1292,14 @@ namespace IMSDriftTimeAligner
                 var currentFrameList = new List<int> { frameNum };
 
                 GetSummedFrameScans(reader, currentFrameList, out var scanNumsInFrame, out var frameScans);
+
+                if (outputFile.Directory != null)
+                {
+                    var frameDebugFile = new FileInfo(Path.Combine(outputFile.Directory.FullName,
+                                                                   Path.GetFileNameWithoutExtension(outputFile.Name) + "_frame" + frameNum + ".txt"));
+
+                    WriteFrameScansDebugFile(frameScans, frameDebugFile);
+                }
 
                 // Dictionary where keys are the old scan number and values are the new scan number
                 var frameScanAlignmentMap = AlignFrameTICToBase(frameNum, baseFrameScans, frameScans, scanNumsInFrame, statsWriter);
@@ -1524,6 +1544,20 @@ namespace IMSDriftTimeAligner
             sourceScanInfo.BPI_MZ = scanStats.BPI_MZ;
             sourceScanInfo.TIC = scanStats.TIC;
             sourceScanInfo.NonZeroCount = scanStats.NonZeroCount;
+        }
+
+        private void WriteFrameScansDebugFile(IEnumerable<ScanInfo> baseFrameScans, FileSystemInfo baseFrameFile)
+        {
+            using (var debugWriter = new StreamWriter(new FileStream(baseFrameFile.FullName, FileMode.Create, FileAccess.Write)))
+            {
+                debugWriter.WriteLine("{0}\t{1}\t{2}\t{3}", "Scan", "DriftTime", "TIC", "BPI");
+
+                var query = (from item in baseFrameScans orderby item.Scan select item);
+                foreach (var item in query)
+                {
+                    debugWriter.WriteLine("{0}\t{1}\t{2}\t{3}", item.Scan, item.DriftTime, item.TIC, item.BPI);
+                }
+            }
         }
 
         private void ZeroValuesBelowThreshold(IList<double> frameData)
