@@ -30,9 +30,11 @@ namespace IMSDriftTimeAligner
         private int mWarnCountScanZeroDataFrames;
 
         /// <summary>
+        /// Cached ScanStats
         /// Keys in this dictionary are based on the frame number and scan number, for example: Frame20_Scan400
         /// Values are filtered TIC values
         /// </summary>
+        /// <remarks>This dictionary is used by ComputeFilteredTICAndBPI when filtering by m/z</remarks>
         private readonly Dictionary<string, ScanStats> mFrameScanStats;
 
         #endregion
@@ -235,6 +237,8 @@ namespace IMSDriftTimeAligner
 
 
                     var offset = 0;
+
+                    // Keys in this dictionary are offset values, values are R-squared
                     var correlationByOffset = new Dictionary<int, double>();
 
                     var shiftPositive = true;
@@ -436,6 +440,13 @@ namespace IMSDriftTimeAligner
 
         }
 
+        /// <summary>
+        /// Compute updated TIC and BPI values for the scan, using only the data between mzMin and mzMax
+        /// </summary>
+        /// <param name="reader"></param>
+        /// <param name="sourceScanInfo"></param>
+        /// <param name="mzMin"></param>
+        /// <param name="mzMax"></param>
         private void ComputeFilteredTICAndBPI(
             DataReader reader,
             ScanInfo sourceScanInfo,
