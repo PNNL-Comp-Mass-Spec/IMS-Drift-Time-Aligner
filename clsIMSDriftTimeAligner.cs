@@ -327,8 +327,7 @@ namespace IMSDriftTimeAligner
             }
             catch (Exception ex)
             {
-                ReportError("Error in AlignFrameDataLinearRegression: " + ex.Message);
-                ReportWarning(PRISM.StackTraceFormatter.GetExceptionStackTraceMultiLine(ex));
+                ReportError("Error in AlignFrameDataLinearRegression", ex);
             }
 
             return frameScanAlignmentMap;
@@ -1060,8 +1059,7 @@ namespace IMSDriftTimeAligner
             }
             catch (Exception ex)
             {
-                ReportError("Error in InitializeOutputFile: " + ex.Message);
-                ReportMessage(ex.StackTrace);
+                ReportError("Error in InitializeOutputFile for " + outputFile.FullName, ex);
                 return null;
             }
         }
@@ -1254,8 +1252,7 @@ namespace IMSDriftTimeAligner
             }
             catch (Exception ex)
             {
-                ReportError("Error in ProcessFile: " + ex.Message);
-                ReportMessage(ex.StackTrace);
+                ReportError("Error in ProcessFile", ex);
                 return false;
             }
         }
@@ -1353,7 +1350,7 @@ namespace IMSDriftTimeAligner
                     }
                     catch (Exception ex)
                     {
-                        ReportError($"Error retrieving data for frame {frameNum}, scan {scanNumOld}: {ex.Message}");
+                        ReportError($"Error retrieving data for frame {frameNum}, scan {scanNumOld}", ex);
                         continue;
                     }
 
@@ -1395,13 +1392,19 @@ namespace IMSDriftTimeAligner
             }
             catch (Exception ex)
             {
-                ReportError("Error in ProcessFrame: " + ex.Message);
+                ReportError("Error in ProcessFrame", ex);
             }
         }
 
         private void ReportError(string message)
         {
-            OnErrorEvent(message);
+            OnErrorEvent(message, null);
+            ErrorMessages.Add(message);
+        }
+
+        private void ReportError(string message, Exception ex)
+        {
+            OnErrorEvent(message, ex);
             ErrorMessages.Add(message);
         }
 
@@ -1501,7 +1504,7 @@ namespace IMSDriftTimeAligner
             }
             catch (Exception ex)
             {
-                ReportError("Error in SaveFrameForDebug: " + ex.Message);
+                ReportError("Error in SaveFrameForDebug", ex);
             }
         }
 
@@ -1530,7 +1533,7 @@ namespace IMSDriftTimeAligner
             }
             catch (Exception ex)
             {
-                ReportError("Error in SaveSmoothedDataForDebug: " + ex.Message);
+                ReportError("Error in SaveSmoothedDataForDebug", ex);
             }
         }
 
