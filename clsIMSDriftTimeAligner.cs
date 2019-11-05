@@ -440,7 +440,6 @@ namespace IMSDriftTimeAligner
         private void ComputeFilteredTICAndBPI(
             DataReader reader,
             ScanInfo sourceScanInfo,
-            bool mzFilterEnabled,
             double mzMin,
             double mzMax)
         {
@@ -463,11 +462,8 @@ namespace IMSDriftTimeAligner
                 if (intensityArray[i] == 0)
                     continue;
 
-                if (mzFilterEnabled)
-                {
-                    if (mzArray[i] < mzMin || mzMax > 0 && mzArray[i] > mzMax)
-                        continue;
-                }
+                if (mzArray[i] < mzMin || mzMax > 0 && mzArray[i] > mzMax)
+                    continue;
 
                 scanStats.TIC += intensityArray[i];
                 scanStats.NonZeroCount += 1;
@@ -532,7 +528,7 @@ namespace IMSDriftTimeAligner
                 {
                     scanInfoToStore = CloneScanInfo(sourceScanInfo);
 
-                    ComputeFilteredTICAndBPI(reader, scanInfoToStore, true, mzMin, mzMax);
+                    ComputeFilteredTICAndBPI(reader, scanInfoToStore, mzMin, mzMax);
                 }
                 else
                 {
@@ -581,7 +577,7 @@ namespace IMSDriftTimeAligner
                     {
                         scanInfoToStore = CloneScanInfo(sourceScanInfo);
 
-                        ComputeFilteredTICAndBPI(reader, scanInfoToStore, true, mzMin, mzMax);
+                        ComputeFilteredTICAndBPI(reader, scanInfoToStore, mzMin, mzMax);
                     }
                     else
                     {
