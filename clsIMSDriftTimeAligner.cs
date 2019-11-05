@@ -187,7 +187,7 @@ namespace IMSDriftTimeAligner
             int frameNum,
             IReadOnlyList<ScanInfo> baseFrameScans,
             IReadOnlyList<ScanInfo> frameScans,
-            IReadOnlyList<int> scanNumsInFrame,
+            IEnumerable<int> scanNumsInFrame,
             TextWriter statsWriter)
         {
             // Keys are the old scan number and values are the new scan number
