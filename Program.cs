@@ -40,8 +40,8 @@ namespace IMSDriftTimeAligner
                 UsageExamples = {
                     exeName + " DataFile.UIMF",
                     exeName + " NamePrefix*.UIMF",
-                    exeName + " DataFile.UIMF /Start:2",
-                    exeName + " DataFile.UIMF /Start:2 /BaseFrame:5 /BaseCount:7"
+                    exeName + " DataFile.UIMF -Start:2",
+                    exeName + " DataFile.UIMF -Start:2 -BaseFrame:5 -BaseCount:7"
                 }
             };
 

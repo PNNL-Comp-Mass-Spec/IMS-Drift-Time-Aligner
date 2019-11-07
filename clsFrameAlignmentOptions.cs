@@ -12,7 +12,7 @@ namespace IMSDriftTimeAligner
         /// <summary>
         /// Program date
         /// </summary>
-        public const string PROGRAM_DATE = "November 6, 2019";
+        public const string PROGRAM_DATE = "November 7, 2019";
 
         /// <summary>
         /// Default frame selection mode
@@ -81,11 +81,11 @@ namespace IMSDriftTimeAligner
         public int BaseFrameSumCount { get; set; }
 
         [Option("BaseStart", HelpShowsDefault = false, HelpText =
-            "First frame to use when the BaseFrameSelection mode is 3 (UserSpecifiedFrameRange); ignored if /BaseFrameList is defined")]
+            "First frame to use when the BaseFrameSelection mode is 3 (UserSpecifiedFrameRange); ignored if -BaseFrameList is defined")]
         public int BaseFrameStart { get; set; }
 
         [Option("BaseEnd", HelpShowsDefault = false, HelpText =
-            "Last frame to use when the BaseFrameSelection mode is 3 (UserSpecifiedFrameRange); ignored if /BaseFrameList is defined")]
+            "Last frame to use when the BaseFrameSelection mode is 3 (UserSpecifiedFrameRange); ignored if -BaseFrameList is defined")]
         public int BaseFrameEnd { get; set; }
 
         [Option("BaseFrameList", "BaseFrames", HelpShowsDefault = false, HelpText =
@@ -118,7 +118,7 @@ namespace IMSDriftTimeAligner
 
         [Option("ITF", "MinimumIntensityThresholdFraction", HelpText =
             "Value to multiply the maximum TIC value by to determine an intensity threshold, " +
-            "below which intensity values will be set to 0")]
+            "below which intensity values will be set to 0; only used if the Alignment Method is LinearRegression (-Align:0)")]
         public double MinimumIntensityThresholdFraction { get; set; }
 
         public bool EnableStretch { get; private set; }
