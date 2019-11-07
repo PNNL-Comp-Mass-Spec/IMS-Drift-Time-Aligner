@@ -121,8 +121,42 @@ namespace IMSDriftTimeAligner
             "below which intensity values will be set to 0")]
         public double MinimumIntensityThresholdFraction { get; set; }
 
+        public bool EnableStretch { get; private set; }
+
+        private double mMaxExpansionPercent;
+
+        [Option("Expand", "Grow", HelpShowsDefault = true, HelpText =
+            "Maximum percentage value to expand the data when stretching the scan numbers to match the comparison frame to the base frame; value between 0 and 100")]
+        public double MaxExpansionPercent
+        {
+            get => mMaxExpansionPercent;
+            set
+            {
+                EnableStretch = true;
+                mMaxExpansionPercent = value;
+            }
+        }
+
+        private double mMaxContractionPercent;
+
+        [Option("Contract", "Shrink", HelpShowsDefault = true, HelpText =
+            "Maximum percentage value to contract the data when stretching the scan numbers to match the comparison frame to the base frame; value between 0 and 100")]
+        public double MaxContractionPercent
+        {
+            get => mMaxContractionPercent;
+            set
+            {
+                EnableStretch = true;
+                mMaxContractionPercent = value;
+            }
+        }
+
+        [Option("StretchSteps", HelpShowsDefault = true, HelpText =
+            "Number of steps to try between the -Contract and -Expand limits")]
+        public int ExpandContractSteps { get; set; }
+
         [Option("ScanMin", "MinScan", "DriftScanFilterMin", HelpShowsDefault = false, HelpText =
-            "Optional minimum drift scan number to filter data by when obtaining data to align")]
+                        "Optional minimum drift scan number to filter data by when obtaining data to align")]
         public int DriftScanFilterMin { get; set; }
 
         [Option("ScanMax", "MaxScan", "DriftScanFilterMax", HelpShowsDefault = false, HelpText =
@@ -181,6 +215,10 @@ namespace IMSDriftTimeAligner
             FrameEnd = 0;
 
             MaxShiftScans = DEFAULT_MAX_SHIFT_SCANS;
+
+            MaxContractionPercent = 10;
+            MaxExpansionPercent = 20;
+            ExpandContractSteps = 20;
 
             MinimumIntensityThresholdFraction = 0.1;
 
