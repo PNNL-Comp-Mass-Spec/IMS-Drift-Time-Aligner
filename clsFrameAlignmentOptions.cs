@@ -12,7 +12,7 @@ namespace IMSDriftTimeAligner
         /// <summary>
         /// Program date
         /// </summary>
-        public const string PROGRAM_DATE = "October 15, 2019";
+        public const string PROGRAM_DATE = "November 6, 2019";
 
         /// <summary>
         /// Default frame selection mode
@@ -60,15 +60,15 @@ namespace IMSDriftTimeAligner
         public enum AlignmentMethods
         {
             LinearRegression = 0,
-            COW = 1
+            DynamicTimeWarping = 1
         }
 
         #endregion
 
         #region "Properties"
 
-        [Option("Align", DoNotListEnumValues = true, HelpShowsDefault = false, HelpText =
-            "Method for aligning the data for each frame to the base frame; LinearRegression (0) is the only method available at present")]
+        [Option("Align", DoNotListEnumValues = false, HelpShowsDefault = false, HelpText =
+            "Method for aligning the data for each frame to the base frame")]
         public AlignmentMethods AlignmentMethod { get; set; }
 
         [Option("BaseFrame", "BaseFrameMode", HelpText =

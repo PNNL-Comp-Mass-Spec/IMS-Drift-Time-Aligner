@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using NDtw;
 using UIMFLibrary;
 
 namespace IMSDriftTimeAligner
@@ -12,6 +14,8 @@ namespace IMSDriftTimeAligner
         #region "Constants"
 
         private const string DEBUG_DATA_FILE = "DebugData.txt";
+
+        private const string DTW_DEBUG_DATA_FILE = "DebugDataDTW.txt";
 
         private const string BASE_FRAME_DESCRIPTION = "Base frame";
 
@@ -179,21 +183,19 @@ namespace IMSDriftTimeAligner
         /// <summary>
         /// Align the TIC data in frameData to baseFrameData using Linear Regression
         /// </summary>
-        /// <param name="frameNum">Frame number (for logging purposes)</param>
+        /// <param name="comparisonFrameNum">Frame number (for logging purposes)</param>
         /// <param name="baseFrameScans">Scans in the base frame</param>
         /// <param name="frameScans">Scans in the frame that we're aligning</param>
         /// <param name="scanNumsInFrame">Full list of scan numbers in the frame (since frameScans might be filtered)</param>
         /// <param name="statsWriter">Stats file writer</param>
         /// <returns>Dictionary where keys are the old scan number and values are the new scan number</returns>
-        private Dictionary<int, int> AlignFrameDataLinearRegression(
-            int frameNum,
+        private Dictionary<int, int> AlignFrameData(
+            int comparisonFrameNum,
             IReadOnlyList<ScanInfo> baseFrameScans,
             IReadOnlyList<ScanInfo> frameScans,
             IEnumerable<int> scanNumsInFrame,
             TextWriter statsWriter)
         {
-            // Keys are the old scan number and values are the new scan number
-            var frameScanAlignmentMap = new Dictionary<int, int>();
 
             try
             {
@@ -201,24 +203,24 @@ namespace IMSDriftTimeAligner
                 var nonzeroScans1 = (from item in baseFrameScans where item.TIC > 0 orderby item.Scan select item.Scan).ToList();
                 var nonzeroScans2 = (from item in frameScans where item.TIC > 0 orderby item.Scan select item.Scan).ToList();
 
-                int bestOffset;
-                double bestRSquared;
                 double[] baseFrameData;
-                double[] frameData;
+                double[] comparisonFrameData;
                 int scanStart;
+
+                // Keys are the old scan number and values are the new scan number
+                Dictionary<int, int> frameScanAlignmentMap;
 
                 if (nonzeroScans1.Count == 0 || nonzeroScans2.Count == 0)
                 {
                     // Either (or both) of the arrays have all zeroes; nothing to align
-                    bestOffset = 0;
-                    bestRSquared = 0;
+                    frameScanAlignmentMap = new Dictionary<int, int>();
 
                     scanStart = baseFrameScans.First().Scan;
                     var scanEnd = baseFrameScans.Last().Scan;
 
-                    // Populate the arrays, storing TIC values in the appropriate index of baseFrameData and frameData
+                    // Populate the arrays, storing TIC values in the appropriate index of baseFrameData and comparisonFrameData
                     baseFrameData = GetTICValues(BASE_FRAME_DESCRIPTION, scanStart, scanEnd, baseFrameScans);
-                    frameData = GetTICValues("Frame " + frameNum, scanStart, scanEnd, frameScans);
+                    comparisonFrameData = GetTICValues("Frame " + comparisonFrameNum, scanStart, scanEnd, frameScans);
 
                 }
                 else
@@ -227,87 +229,351 @@ namespace IMSDriftTimeAligner
                     scanStart = Math.Min(nonzeroScans1.First(), nonzeroScans2.First());
                     var scanEnd = Math.Max(nonzeroScans1.Last(), nonzeroScans2.Last());
 
-                    // Populate the arrays, storing TIC values in the appropriate index of baseFrameData and frameData
+                    // Populate the arrays, storing TIC values in the appropriate index of baseFrameData and comparisonFrameData
                     baseFrameData = GetTICValues(BASE_FRAME_DESCRIPTION, scanStart, scanEnd, baseFrameScans);
-                    frameData = GetTICValues("Frame " + frameNum, scanStart, scanEnd, frameScans);
+                    comparisonFrameData = GetTICValues("Frame " + comparisonFrameNum, scanStart, scanEnd, frameScans);
 
-                    // ToDo: add a for loop that steps through a range of contraction / expansion values to apply to the offset variable
-                    // Use this to shift the data by a non-linear amount
-                    // correlationByOffset will need to track a list of offsets (of length frameData.Length) instead of a single offset value
-
-
-                    var offset = 0;
-
-                    // Keys in this dictionary are offset values, values are R-squared
-                    var correlationByOffset = new Dictionary<int, double>();
-
-                    var shiftPositive = true;
-
-                    while (true)
+                    if (Options.AlignmentMethod == FrameAlignmentOptions.AlignmentMethods.LinearRegression)
                     {
-                        // ToDo: Construct a list of offsets, based on the current contraction / expansion value
+                        frameScanAlignmentMap = AlignFrameDataLinearRegression(
+                            baseFrameData, comparisonFrameData,
+                            comparisonFrameNum, scanNumsInFrame,
+                            statsWriter);
+                    }
+                    else if (Options.AlignmentMethod == FrameAlignmentOptions.AlignmentMethods.DynamicTimeWarping)
+                    {
+                        frameScanAlignmentMap = AlignFrameDataDTW(
+                            baseFrameData, comparisonFrameData,
+                            comparisonFrameNum, scanNumsInFrame,
+                            statsWriter, scanStart, scanEnd);
+                    }
+                    else
+                    {
+                        frameScanAlignmentMap = new Dictionary<int, int>();
+                    }
+                }
 
-                        var frameDataShifted = new double[baseFrameData.Length];
-                        var targetIndex = 0;
+                if (ShowDebugMessages)
+                {
+                    SaveFrameForDebug("Frame " + comparisonFrameNum, baseFrameData, comparisonFrameData, scanStart, frameScanAlignmentMap);
+                }
 
-                        for (var sourceIndex = offset; sourceIndex < frameData.Length; sourceIndex++)
+                return frameScanAlignmentMap;
+            }
+            catch (Exception ex)
+            {
+                ReportError("Error in AlignFrameData", ex);
+                return new Dictionary<int, int>();
+            }
+
+        }
+
+        private Dictionary<int, int> AlignFrameDataDTW(
+            double[] baseFrameData,
+            double[] comparisonFrameData,
+            int comparisonFrameNum,
+            IEnumerable<int> scanNumsInFrame,
+            TextWriter statsWriter,
+            int startScan,
+            int endScan)
+        {
+            // Keys are the old scan number and values are the new scan number (in the base frame)
+            var frameScanAlignmentMap = new Dictionary<int, int>();
+
+            try
+            {
+
+                double[] baseDataToUse;
+                double[] comparisonDataToUse;
+                bool dataIsCompressed;
+                int sampleLength;
+
+                // Keys in this dictionary are index values in baseDataToUse
+                // Values are tuples tracking the source indices in baseFrameData; Item1 is the first index of a block; Item2 is the last index of a block
+                Dictionary<int, Tuple<int, int>> compressionMap;
+
+                if (baseFrameData.Length > 10000)
+                {
+                    // Compress the data to limit the size of the matrices used by the Dynamic Time Warping algorithm
+
+                    sampleLength = (int)Math.Ceiling(baseFrameData.Length / 10000.0);
+
+                    baseDataToUse = CompressArrayBySumming(baseFrameData, sampleLength, out compressionMap);
+                    comparisonDataToUse = CompressArrayBySumming(comparisonFrameData, sampleLength, out _);
+                    dataIsCompressed = true;
+                }
+                else
+                {
+                    baseDataToUse = baseFrameData;
+                    comparisonDataToUse = comparisonFrameData;
+                    compressionMap = new Dictionary<int, Tuple<int, int>>();
+                    dataIsCompressed = false;
+                    sampleLength = 1;
+                }
+
+                // Map the comparison data TIC values onto the base data TIC values
+                var dtwAligner = new Dtw(comparisonDataToUse, baseDataToUse);
+
+                var cost = dtwAligner.GetCost();
+
+                // The alignment path will range from 0 to baseDataToUse.Length - 1
+                var alignmentPath = dtwAligner.GetPath();
+
+                var statsLine = string.Format("{0,-8} {1,-8:#,##0}", comparisonFrameNum, cost);
+                statsWriter.WriteLine(statsLine.Trim());
+
+                Console.WriteLine("Frame {0}, Dynamic Time Warping cost: {1:0}", comparisonFrameNum, cost);
+
+                // Populate frameScanAlignmentMap
+
+                // Keys in this dictionary are source scan number
+                // Values are the list of target scan numbers (ideally just one, but dynamic time warping will sometimes duplicate the X values)
+                var scanInfoFromDTW = new Dictionary<int, List<int>>();
+
+                var alignmentPathAllScans = new List<Tuple<int, int>>();
+
+                if (dataIsCompressed)
+                {
+                    // Data was compressed
+                    // Need to transform the indices in alignmentPath to actual scan numbers
+
+                    for (var i = 0; i < alignmentPath.Length - 1; i++)
+                    {
+                        var currentPoint = alignmentPath[i];
+                        var nextPoint = alignmentPath[i + 1];
+
+                        if (currentPoint.Item1 == nextPoint.Item1)
                         {
-                            if (sourceIndex >= 0)
+                            // Data like:
+                            // ComparisonData  BaseFrameData
+                            // 23              14
+                            // 23              15
+                            // 23              16
+
+                            // Insert items to alignmentPathAllScans using 23 * 5 for Item1 of each entry, and incrementing values for Item2, starting at 14 * 5
+                            // Example inserted data:
+                            //
+                            // ComparisonData  BaseFrameData
+                            // 115             65
+                            // 115             66
+                            // 115             67
+                            // 115             68
+                            // 115             69
+
+                            var rescaledSourceScan = currentPoint.Item1 * sampleLength;
+                            var rescaledTargetScanStart = currentPoint.Item2 * sampleLength;
+                            for (var j = 0; j < sampleLength; j++)
                             {
-                                frameDataShifted[targetIndex] = frameData[sourceIndex];
+                                alignmentPathAllScans.Add(new Tuple<int, int>(rescaledSourceScan, rescaledTargetScanStart + j));
                             }
-                            targetIndex++;
-                            if (targetIndex >= frameData.Length)
-                                break;
                         }
-
-                        var coeff = MathNet.Numerics.LinearRegression.SimpleRegression.Fit(frameDataShifted, baseFrameData);
-
-                        var intercept = coeff.Item1;
-                        var slope = coeff.Item2;
-
-                        var rSquared = MathNet.Numerics.GoodnessOfFit.RSquared(frameDataShifted.Select(x => intercept + slope * x), baseFrameData);
-
-                        correlationByOffset.Add(offset, rSquared);
-
-                        if (shiftPositive)
+                        else if (currentPoint.Item2 == nextPoint.Item2)
                         {
-                            offset = Math.Abs(offset) + 1;
-                            shiftPositive = false;
+
+                            // Data like:
+                            // ComparisonData  BaseFrameData
+                            // 60              72
+                            // 61              72
+                            // 62              72
+
+                            // Insert items to alignmentPathAllScans using 72 * 5 for Item2 of each entry, and incrementing values for Item1, starting at 60 * 5
+                            // Example inserted data:
+                            //
+                            // ComparisonData  BaseFrameData
+                            // 300             360
+                            // 301             360
+                            // 302             360
+                            // 303             360
+                            // 304             360
+
+                            var rescaledSourceScan = currentPoint.Item1 * sampleLength;
+                            var rescaledTargetScanStart = currentPoint.Item2 * sampleLength;
+                            for (var j = 0; j < sampleLength; j++)
+                            {
+                                alignmentPathAllScans.Add(new Tuple<int, int>(rescaledSourceScan + j, rescaledTargetScanStart));
+                            }
+
                         }
                         else
                         {
-                            offset = -offset;
-                            shiftPositive = true;
-                        }
+                            // Data like:
+                            // ComparisonData  BaseFrameData
+                            // 285             236
+                            // 286             237
+                            // 287             238
 
-                        if (Math.Abs(offset) > Options.MaxShiftScans)
-                        {
-                            // Exit the while loop
-                            break;
+                            // Insert items to alignmentPathAllScans using incrementing values for Item1 and Item2 for each entry
+                            // Example inserted data:
+                            //
+                            // ComparisonData  BaseFrameData
+                            // 1425            1180
+                            // 1426            1181
+                            // 1427            1182
+                            // 1428            1183
+                            // 1429            1184
+
+                            var rescaledSourceScan = currentPoint.Item1 * sampleLength;
+                            var rescaledTargetScanStart = currentPoint.Item2 * sampleLength;
+                            for (var j = 0; j < sampleLength; j++)
+                            {
+                                alignmentPathAllScans.Add(new Tuple<int, int>(rescaledSourceScan + j, rescaledTargetScanStart + j));
+                            }
                         }
                     }
 
-                    var rankedOffsets = (from item in correlationByOffset orderby item.Value descending select item).ToList();
+                    // Add the final mapping point
+                    var finalPoint = alignmentPath[alignmentPath.Length - 1];
+                    alignmentPathAllScans.Add(new Tuple<int, int>(finalPoint.Item1 * sampleLength, finalPoint.Item2 * sampleLength));
 
-                    if (ShowDebugMessages)
-                    {
-                        Console.WriteLine();
-                        ReportMessage("Top 10 offsets:");
-                        ReportMessage(string.Format("{0,-12}  {1}", "Offset_Scans", "R-Squared"));
-                        for (var i = 0; i < 10; i++)
-                        {
-                            if (i >= rankedOffsets.Count)
-                                break;
-
-                            ReportMessage(string.Format("{0,4:##0}          {1:n6}", rankedOffsets[i].Key, rankedOffsets[i].Value));
-                        }
-
-                    }
-
-                    bestOffset = rankedOffsets.First().Key;
-                    bestRSquared = rankedOffsets.First().Value;
                 }
+                else
+                {
+                    // Data was not compressed
+                    // Can use the indices in alignmentPath as-is
+                    foreach (var alignedPoint in alignmentPath)
+                    {
+                        alignmentPathAllScans.Add(alignedPoint);
+                    }
+                }
+
+                foreach (var alignedPoint in alignmentPathAllScans)
+                {
+                    var comparisonFrameScan = alignedPoint.Item1 + startScan;
+                    var baseFrameScan = alignedPoint.Item2 + startScan;
+
+                    if (scanInfoFromDTW.TryGetValue(comparisonFrameScan, out var mappedValues))
+                    {
+                        mappedValues.Add(baseFrameScan);
+                    }
+                    else
+                    {
+                        scanInfoFromDTW.Add(comparisonFrameScan, new List<int> { baseFrameScan });
+                    }
+                }
+
+                // Compute the average target scan value (base frame scan) in scanInfoFromDTW
+                foreach (var comparisonFrameScan in scanInfoFromDTW.Keys.ToList())
+                {
+                    var mappedValues = scanInfoFromDTW[comparisonFrameScan];
+                    if (mappedValues.Count == 1)
+                        continue;
+
+                    var average = mappedValues.Average();
+
+                    scanInfoFromDTW[comparisonFrameScan] = new List<int> { (int)Math.Round(average) };
+                }
+
+                // Populate frameScanAlignmentMap
+                foreach (var item in scanInfoFromDTW)
+                {
+                    frameScanAlignmentMap.Add(item.Key, item.Value.First());
+                }
+
+                if (ShowDebugMessages)
+                {
+                    SaveDynamicTimeWarpingDataForDebug("Frame " + comparisonFrameNum, cost, alignmentPath, scanInfoFromDTW);
+                }
+
+            }
+            catch (Exception ex)
+            {
+                ReportError("Error in AlignFrameDataDTW", ex);
+
+            }
+
+            return frameScanAlignmentMap;
+        }
+
+        /// <summary>
+        /// Align the TIC data in comparisonFrameData to baseFrameData using Linear Regression
+        /// </summary>
+        /// <param name="baseFrameData">TIC values from the base frame</param>
+        /// <param name="comparisonFrameData">TIC values from the comparison frame</param>
+        /// <param name="comparisonFrameNum">Frame number (for logging purposes)</param>
+        /// <param name="scanNumsInFrame">Full list of scan numbers in the frame (since frameScans might be filtered)</param>
+        /// <param name="statsWriter">Stats file writer</param>
+        /// <returns>Dictionary where keys are the old scan number and values are the new scan number</returns>
+        private Dictionary<int, int> AlignFrameDataLinearRegression(
+            double[] baseFrameData,
+            IReadOnlyList<double> comparisonFrameData,
+            int comparisonFrameNum,
+            IEnumerable<int> scanNumsInFrame,
+            TextWriter statsWriter)
+        {
+            // Keys are the old scan number and values are the new scan number
+            var frameScanAlignmentMap = new Dictionary<int, int>();
+
+            try
+            {
+                var offset = 0;
+
+                // Keys in this dictionary are offset values, values are R-squared
+                var correlationByOffset = new Dictionary<int, double>();
+
+                var shiftPositive = true;
+
+                while (true)
+                {
+                    var frameDataShifted = new double[baseFrameData.Length];
+                    var targetIndex = 0;
+
+                    for (var sourceIndex = offset; sourceIndex < comparisonFrameData.Count; sourceIndex++)
+                    {
+                        if (sourceIndex >= 0)
+                        {
+                            frameDataShifted[targetIndex] = comparisonFrameData[sourceIndex];
+                        }
+
+                        targetIndex++;
+                        if (targetIndex >= comparisonFrameData.Count)
+                            break;
+                    }
+
+                    var coeff = MathNet.Numerics.LinearRegression.SimpleRegression.Fit(frameDataShifted, baseFrameData);
+
+                    var intercept = coeff.Item1;
+                    var slope = coeff.Item2;
+
+                    var rSquared = MathNet.Numerics.GoodnessOfFit.RSquared(frameDataShifted.Select(x => intercept + slope * x), baseFrameData);
+
+                    correlationByOffset.Add(offset, rSquared);
+
+                    if (shiftPositive)
+                    {
+                        offset = Math.Abs(offset) + 1;
+                        shiftPositive = false;
+                    }
+                    else
+                    {
+                        offset = -offset;
+                        shiftPositive = true;
+                    }
+
+                    if (Math.Abs(offset) > Options.MaxShiftScans)
+                    {
+                        // Exit the while loop
+                        break;
+                    }
+                }
+
+                var rankedOffsets = (from item in correlationByOffset orderby item.Value descending select item).ToList();
+
+                if (ShowDebugMessages)
+                {
+                    Console.WriteLine();
+                    ReportMessage("Top 10 offsets:");
+                    ReportMessage(string.Format("{0,-12}  {1}", "Offset_Scans", "R-Squared"));
+                    for (var i = 0; i < 10; i++)
+                    {
+                        if (i >= rankedOffsets.Count)
+                            break;
+
+                        ReportMessage(string.Format("{0,4:##0}          {1:n6}", rankedOffsets[i].Key, rankedOffsets[i].Value));
+                    }
+                }
+
+                var bestOffset = rankedOffsets.First().Key;
+                var bestRSquared = rankedOffsets.First().Value;
 
                 foreach (var scanNumber in scanNumsInFrame)
                 {
@@ -318,15 +584,10 @@ namespace IMSDriftTimeAligner
                     }
                 }
 
-                var statsLine = string.Format("{0,-8} {1,-6} {2,-8:F5}", frameNum, bestOffset, bestRSquared);
+                var statsLine = string.Format("{0,-8} {1,-6} {2,-8:F5}", comparisonFrameNum, bestOffset, bestRSquared);
                 statsWriter.WriteLine(statsLine.Trim());
 
                 Console.WriteLine("  R-squared {0:F3}, shift {1} scans", bestRSquared, bestOffset);
-
-                if (ShowDebugMessages)
-                {
-                    SaveFrameForDebug("Frame " + frameNum, baseFrameData, frameData, scanStart, frameScanAlignmentMap);
-                }
 
             }
             catch (Exception ex)
@@ -340,14 +601,14 @@ namespace IMSDriftTimeAligner
         /// <summary>
         /// Align the TIC data in frameData to baseFrameData
         /// </summary>
-        /// <param name="frameNum">Frame number (for logging purposes)</param>
+        /// <param name="comparisonFrameNum">Frame number (for logging purposes)</param>
         /// <param name="baseFrameScans">Scans in the base frame</param>
         /// <param name="frameScans">Scans in the frame that we're aligning</param>
         /// <param name="scanNumsInFrame">Full list of scan numbers in the frame (since frameScans might be filtered)</param>
         /// <param name="statsWriter">Stats file writer</param>
         /// <returns>Dictionary where keys are the old scan number and values are the new scan number</returns>
         public Dictionary<int, int> AlignFrameTICToBase(
-            int frameNum,
+            int comparisonFrameNum,
             IReadOnlyList<ScanInfo> baseFrameScans,
             IReadOnlyList<ScanInfo> frameScans,
             IReadOnlyList<int> scanNumsInFrame,
@@ -359,12 +620,10 @@ namespace IMSDriftTimeAligner
             switch (Options.AlignmentMethod)
             {
                 case FrameAlignmentOptions.AlignmentMethods.LinearRegression:
-                    frameScanAlignmentMap = AlignFrameDataLinearRegression(frameNum, baseFrameScans, frameScans, scanNumsInFrame, statsWriter);
+                case FrameAlignmentOptions.AlignmentMethods.DynamicTimeWarping:
+                    frameScanAlignmentMap = AlignFrameData(comparisonFrameNum, baseFrameScans, frameScans, scanNumsInFrame, statsWriter);
                     break;
-                case FrameAlignmentOptions.AlignmentMethods.COW:
-                    ReportError("Alignment method COW is not implemented");
-                    // frameScanAlignmentMap = AlignFrameDataCOW(frameNum, baseFrameScans, frameScans, alignmentOptions);
-                    return null;
+
                 default:
                     throw new InvalidEnumArgumentException(
                         "AlignmentMethod");
@@ -438,6 +697,50 @@ namespace IMSDriftTimeAligner
 
             return clonedScanInfo;
 
+        }
+
+        /// <summary>
+        /// Compress data in dataValues by summing adjacent data points in groups of sampleLength
+        /// </summary>
+        /// <param name="dataValues">Data to compress</param>
+        /// <param name="sampleLength">Number of adjacent data points to combine</param>
+        /// <param name="compressionMap">Map of index in the compressed array that is returned, to the start and end indices of each compressed data block</param>
+        /// <returns>Compressed data</returns>
+        private double[] CompressArrayBySumming(IReadOnlyList<double> dataValues, int sampleLength, out Dictionary<int, Tuple<int, int>> compressionMap)
+        {
+            compressionMap = new Dictionary<int, Tuple<int, int>>();
+
+            var dataCount = dataValues.Count;
+
+            var compressedDataLength = (int)Math.Ceiling(dataCount / (double)sampleLength);
+
+            var compressedData = new double[compressedDataLength];
+
+            var targetIndex = 0;
+            for (var i = 0; i < dataCount; i += sampleLength)
+            {
+                var endIndex = Math.Min(i + sampleLength, dataCount);
+                var sum = 0.0;
+
+                for (var j = i; j < endIndex; j++)
+                {
+                    sum += dataValues[j];
+                }
+
+                compressedData[targetIndex] = sum;
+
+                var sourceStartEndIndex = new Tuple<int, int>(i, endIndex - 1);
+                compressionMap.Add(targetIndex, sourceStartEndIndex);
+
+                targetIndex++;
+
+                if (targetIndex == compressedDataLength)
+                {
+                    break;
+                }
+            }
+
+            return compressedData;
         }
 
         /// <summary>
@@ -720,13 +1023,15 @@ namespace IMSDriftTimeAligner
                                               frameMin, frameMax));
 
                             baseFrameList.Add(frameMin);
-                        } else if (ignoredFrameNums.Count == 1)
+                        }
+                        else if (ignoredFrameNums.Count == 1)
                         {
                             ReportWarning(string.Format(
                                               "Valid frame numbers are {0} to {1}; " +
                                               "ignoring frame {2}",
                                               frameMin, frameMax, ignoredFrameNums.First()));
-                        } else if (ignoredFrameNums.Count > 1)
+                        }
+                        else if (ignoredFrameNums.Count > 1)
                         {
                             ReportWarning(string.Format(
                                               "Valid frame numbers are {0} to {1}; " +
@@ -992,7 +1297,10 @@ namespace IMSDriftTimeAligner
                     frameDataSmoothed[i] = 0;
             }
 
-            ZeroValuesBelowThreshold(frameDataSmoothed);
+            if (Options.AlignmentMethod == FrameAlignmentOptions.AlignmentMethods.LinearRegression)
+            {
+                ZeroValuesBelowThreshold(frameDataSmoothed);
+            }
 
             if (!ShowDebugMessages)
                 return frameDataSmoothed;
@@ -1107,6 +1415,10 @@ namespace IMSDriftTimeAligner
                     var debugDataFile = new FileInfo(DEBUG_DATA_FILE);
                     if (debugDataFile.Exists)
                         debugDataFile.Delete();
+
+                    var dtwDebugDataFile = new FileInfo(DTW_DEBUG_DATA_FILE);
+                    if (dtwDebugDataFile.Exists)
+                        dtwDebugDataFile.Delete();
                 }
 
                 mFrameScanStats.Clear();
@@ -1214,9 +1526,17 @@ namespace IMSDriftTimeAligner
                         if (baseFrameList.Count == 1)
                             Console.WriteLine("Actual base frame: " + baseFrameList.First());
                         else
-                            Console.WriteLine("Actual base frames:" + string.Join(",", baseFrameList));
+                            Console.WriteLine("Actual base frames: " + string.Join(",", baseFrameList));
 
-                        statsWriter.WriteLine("{0,-8} {1,-6} {2,-8}", "Frame", "Shift", "Best RSquared");
+                        if (Options.AlignmentMethod == FrameAlignmentOptions.AlignmentMethods.DynamicTimeWarping)
+                        {
+                            statsWriter.WriteLine("{0,-8} {1,-8}", "Frame", "Cost");
+                        }
+                        else
+                        {
+                            statsWriter.WriteLine("{0,-8} {1,-6} {2,-8}", "Frame", "Shift", "Best RSquared");
+                        }
+
 
                         if (writer.HasLegacyParameterTables)
                             writer.ValidateLegacyHPFColumnsExist();
@@ -1274,7 +1594,7 @@ namespace IMSDriftTimeAligner
         /// <param name="reader">UIMF Reader</param>
         /// <param name="writer">UIMF Writer</param>
         /// <param name="outputFile">Output file (used for debug purposes)</param>
-        /// <param name="frameNum">Frame Number</param>
+        /// <param name="comparisonFrameNum">Current frame Number</param>
         /// <param name="baseFrameScans">Base frame scan data (most importantly, TIC by scan number)</param>
         /// <param name="mergedFrameScans">
         /// Single frame of data where scan intensities are accumulated (summed) as each frame is processed
@@ -1287,7 +1607,7 @@ namespace IMSDriftTimeAligner
             DataReader reader,
             DataWriter writer,
             FileInfo outputFile,
-            int frameNum,
+            int comparisonFrameNum,
             IReadOnlyList<ScanInfo> baseFrameScans,
             IDictionary<int, int[]> mergedFrameScans,
             TextWriter statsWriter,
@@ -1296,28 +1616,29 @@ namespace IMSDriftTimeAligner
             )
         {
             Console.WriteLine();
-            ReportMessage($"Process frame {frameNum}");
+            ReportMessage($"Process frame {comparisonFrameNum}");
 
             try
             {
-                var currentFrameList = new List<int> { frameNum };
+                var currentFrameList = new List<int> { comparisonFrameNum };
 
+                // Get the scans for frame comparisonFrameNum
                 GetSummedFrameScans(reader, currentFrameList, out var scanNumsInFrame, out var frameScans);
 
                 if (outputFile.Directory != null)
                 {
                     var frameDebugFile = new FileInfo(Path.Combine(outputFile.Directory.FullName,
-                                                                   Path.GetFileNameWithoutExtension(outputFile.Name) + "_frame" + frameNum + ".txt"));
+                                                                   Path.GetFileNameWithoutExtension(outputFile.Name) + "_frame" + comparisonFrameNum + ".txt"));
 
                     WriteFrameScansDebugFile(frameScans, frameDebugFile);
                 }
 
                 // Dictionary where keys are the old scan number and values are the new scan number
-                var frameScanAlignmentMap = AlignFrameTICToBase(frameNum, baseFrameScans, frameScans, scanNumsInFrame, statsWriter);
+                var frameScanAlignmentMap = AlignFrameTICToBase(comparisonFrameNum, baseFrameScans, frameScans, scanNumsInFrame, statsWriter);
                 if (frameScanAlignmentMap == null)
                     return;
 
-                var frameParams = reader.GetFrameParams(frameNum);
+                var frameParams = reader.GetFrameParams(comparisonFrameNum);
 
                 // Assure that the frame type is not 0
                 var frameType = frameParams.GetValueInt32(FrameParamKeyType.FrameType, 0);
@@ -1342,32 +1663,75 @@ namespace IMSDriftTimeAligner
                 var binWidth = reader.GetGlobalParams().BinWidth;
                 var lastProgressTime = DateTime.UtcNow;
 
-                foreach (var scanNumber in scanNumsInFrame)
+                // Dynamic Time Warping will sometimes map two source scans to the same target scan
+                // Examine frameScanAlignmentMap to populate a dictionary where keys are the target scan and values are the source scan(s)
+                // Note that frameScanAlignmentMap might not have every scan in scanNumsInFrame; this is expected
+                // missing scans will not be included in the new .uimf file (and will not be used to update mergedFrameScans)
+
+                var targetScanSourceScans = new Dictionary<int, List<int>>();
+                foreach (var item in frameScanAlignmentMap)
                 {
-                    if (scanNumber % 10 == 0 && DateTime.UtcNow.Subtract(lastProgressTime).TotalMilliseconds >= 1000)
+                    var scanNumOld = item.Key;
+                    var scanNumNew = item.Value;
+
+                    if (targetScanSourceScans.TryGetValue(scanNumNew, out var sourceScans))
+                    {
+                        sourceScans.Add(scanNumOld);
+                    }
+                    else
+                    {
+                        targetScanSourceScans.Add(scanNumNew, new List<int> { scanNumOld });
+                    }
+                }
+
+                // Read each scan in the frame and transform to the new scan number
+                // Write the scan to the output file if insertFrame is true
+                // Append the scan to mergedFrameScans if Options.AppendMergedFrame is true or Options.MergeFrames is true
+
+                foreach (var targetScanItem in targetScanSourceScans)
+                {
+                    var scanNumOldStart = targetScanItem.Value.First();
+                    var scanNumNew = targetScanItem.Key;
+
+                    if (scanNumNew % 10 == 0 && DateTime.UtcNow.Subtract(lastProgressTime).TotalMilliseconds >= 1000)
                     {
                         lastProgressTime = DateTime.UtcNow;
-                        ReportMessage($"  storing scan {scanNumber}");
+                        ReportMessage($"  storing scan {scanNumOldStart}");
                     }
-                    var scanNumOld = scanNumber;
 
-                    if (!frameScanAlignmentMap.TryGetValue(scanNumOld, out var scanNumNew))
-                        continue;
+                    int[] targetScanIntensities = null;
 
-                    int[] intensities;
-                    try
+                    foreach (var scanNumOld in targetScanItem.Value)
                     {
-                        intensities = reader.GetSpectrumAsBins(frameNum, frameParams.FrameType, scanNumOld);
-                    }
-                    catch (Exception ex)
-                    {
-                        ReportError($"Error retrieving data for frame {frameNum}, scan {scanNumOld}", ex);
-                        continue;
+                        int[] intensities;
+                        try
+                        {
+                            intensities = reader.GetSpectrumAsBins(comparisonFrameNum, frameParams.FrameType, scanNumOld);
+                        }
+                        catch (Exception ex)
+                        {
+                            ReportError($"Error retrieving data for frame {comparisonFrameNum}, scan {scanNumOld}", ex);
+                            continue;
+                        }
+
+                        if (targetScanIntensities == null)
+                        {
+                            targetScanIntensities = intensities;
+                            continue;
+                        }
+
+                        for (var i = 0; i < intensities.Length; i++)
+                        {
+                            if (i >= targetScanIntensities.Length)
+                                break;
+
+                            targetScanIntensities[i] += intensities[i];
+                        }
                     }
 
                     if (insertFrame)
                     {
-                        writer.InsertScan(nextFrameNumOutfile, frameParams, scanNumNew, intensities, binWidth);
+                        writer.InsertScan(nextFrameNumOutfile, frameParams, scanNumNew, targetScanIntensities, binWidth);
                     }
 
                     if (!Options.AppendMergedFrame && !Options.MergeFrames)
@@ -1384,18 +1748,18 @@ namespace IMSDriftTimeAligner
                     {
                         for (var i = 0; i < summedIntensities.Length; i++)
                         {
-                            if (i >= intensities.Length)
+                            if (i >= targetScanIntensities.Length)
                                 break;
 
-                            if (summedIntensities[i] + (long)intensities[i] > int.MaxValue)
+                            if (summedIntensities[i] + (long)targetScanIntensities[i] > int.MaxValue)
                                 summedIntensities[i] = int.MaxValue;
                             else
-                                summedIntensities[i] += intensities[i];
+                                summedIntensities[i] += targetScanIntensities[i];
                         }
                     }
                     else
                     {
-                        mergedFrameScans.Add(scanNumNew, intensities);
+                        mergedFrameScans.Add(scanNumNew, targetScanIntensities);
                     }
 
                 }
@@ -1430,6 +1794,53 @@ namespace IMSDriftTimeAligner
             WarningMessages.Add(message);
         }
 
+        /// <summary>
+        /// Write data to DebugDataDTW.txt
+        /// </summary>
+        /// <param name="frameDescription">Frame description</param>
+        /// <param name="cost">Dynamic time warping cost</param>
+        /// <param name="alignmentPath">Map from source scan to target scan; source scans might map to multiple target scans</param>
+        /// <param name="scanInfoFromDTW">Dictionary mapping source scan to target scan</param>
+        private void SaveDynamicTimeWarpingDataForDebug(
+            string frameDescription,
+            double cost,
+            IEnumerable<Tuple<int, int>> alignmentPath,
+            IReadOnlyDictionary<int, List<int>> scanInfoFromDTW)
+        {
+            try
+            {
+                var debugDataFile = new FileInfo(DTW_DEBUG_DATA_FILE);
+
+                using (var writer = new StreamWriter(new FileStream(debugDataFile.FullName, FileMode.Append, FileAccess.Write, FileShare.ReadWrite)))
+                {
+                    writer.WriteLine(frameDescription);
+                    writer.WriteLine();
+                    writer.WriteLine("Cost: {0:#,##0}", cost);
+                    writer.WriteLine();
+                    writer.WriteLine("{0}\t{1}", "Source", "Target");
+
+                    foreach (var item in alignmentPath)
+                    {
+                        writer.WriteLine("{0:0}\t{1:0}", item.Item1, item.Item2);
+                    }
+
+                    writer.WriteLine();
+                    writer.WriteLine("{0}\t{1}", "Source", "Unique_Target");
+
+                    foreach (var item in scanInfoFromDTW)
+                    {
+                        writer.WriteLine("{0:0}\t{1:0}", item.Key, item.Value.First());
+                    }
+                    writer.WriteLine();
+                }
+
+            }
+            catch (Exception ex)
+            {
+                ReportError("Error in SaveFrameForDebug", ex);
+            }
+        }
+
         private void SaveFrameForDebug(
             string frameDescription,
             IReadOnlyList<double> baseFrameData,
@@ -1448,6 +1859,9 @@ namespace IMSDriftTimeAligner
                     // Construct a mapping of the existing indices in frameData to where the TIC value for that index would be shifted to using frameScanAlignmentMap
                     var targetIndex = new int[frameData.Count];
 
+                    // This dictionary is a histogram of scan shifts
+                    // Keys are the number of scans a source scan is shifted by
+                    // Values are the number of source scans shifted by this amount
                     var scanShiftStats = new Dictionary<int, int>();
 
                     for (var i = 0; i < frameData.Count; i++)
@@ -1489,7 +1903,6 @@ namespace IMSDriftTimeAligner
                             ReportMessage($"Data in {frameDescription} will be shifted by {scanShiftApplied} scans");
                             break;
                     }
-
 
                     writer.WriteLine("ScanShift\t{0}\tscans", scanShiftApplied);
 
