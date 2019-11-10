@@ -536,8 +536,9 @@ namespace IMSDriftTimeAligner
             catch (Exception ex)
             {
                 ReportError("Error in AlignFrameDataDTW", ex);
-
             }
+
+            PRISM.ProgRunner.GarbageCollectNow();
 
             return frameScanAlignmentMap;
         }
