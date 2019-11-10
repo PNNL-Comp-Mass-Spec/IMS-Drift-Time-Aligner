@@ -289,25 +289,20 @@ namespace IMSDriftTimeAligner
                 bool dataIsCompressed;
                 int sampleLength;
 
-                // Keys in this dictionary are index values in baseDataToUse
-                // Values are tuples tracking the source indices in baseFrameData; Item1 is the first index of a block; Item2 is the last index of a block
-                Dictionary<int, Tuple<int, int>> compressionMap;
-
-                if (baseFrameData.Length > 10000)
+                if (baseFrameData.Length > Options.DTWMaxPoints)
                 {
                     // Compress the data to limit the size of the matrices used by the Dynamic Time Warping algorithm
 
-                    sampleLength = (int)Math.Ceiling(baseFrameData.Length / 10000.0);
+                    sampleLength = (int)Math.Ceiling(baseFrameData.Length / (double)Options.DTWMaxPoints);
 
-                    baseDataToUse = CompressArrayBySumming(baseFrameData, sampleLength, out compressionMap);
-                    comparisonDataToUse = CompressArrayBySumming(comparisonFrameData, sampleLength, out _);
+                    baseDataToUse = CompressArrayBySumming(baseFrameData, sampleLength);
+                    comparisonDataToUse = CompressArrayBySumming(comparisonFrameData, sampleLength);
                     dataIsCompressed = true;
                 }
                 else
                 {
                     baseDataToUse = baseFrameData;
                     comparisonDataToUse = comparisonFrameData;
-                    compressionMap = new Dictionary<int, Tuple<int, int>>();
                     dataIsCompressed = false;
                     sampleLength = 1;
                 }

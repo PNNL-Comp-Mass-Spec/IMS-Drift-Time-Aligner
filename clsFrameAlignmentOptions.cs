@@ -112,6 +112,9 @@ namespace IMSDriftTimeAligner
             "Output file path")]
         public string OutputFilePath { get; set; }
 
+        [Option("DTWPoints", "DTWMaxPoints", HelpShowsDefault = true, Min = 100, Max = 10000, HelpText =
+            "Maximum number of points to use for Dynamic Time Warping")]
+        public int DTWMaxPoints { get; set; }
 
         [Option("DTWShift", "DTWMaxShift", "DTWMaxShiftPercent", HelpShowsDefault = true, Min = 0.01, Max = 100, HelpText =
             "Maximum Sakoe Chiba Shift, as a percentage of the number of points used for Dynamic Time Warping")]
@@ -223,6 +226,8 @@ namespace IMSDriftTimeAligner
             FrameStart = 0;
             FrameEnd = 0;
 
+            DTWMaxPoints = 7500;
+
             DTWSakoeChibaMaxShiftPercent = 5;
 
             MaxShiftScans = DEFAULT_MAX_SHIFT_SCANS;
@@ -279,6 +284,7 @@ namespace IMSDriftTimeAligner
             {
                 Console.WriteLine(" {0,-40}: {1}", "Visualize the DTW Path", BoolToEnabledDisabled(VisualizeDTW));
 
+                Console.WriteLine(" {0,-40}: {1}", "Max points for DTW", DTWMaxPoints);
 
                 Console.WriteLine(" {0,-40}: {1}%", "Sakoe Chiba Max Shift", StringUtilities.ValueToString(DTWSakoeChibaMaxShiftPercent, 3));
             }
