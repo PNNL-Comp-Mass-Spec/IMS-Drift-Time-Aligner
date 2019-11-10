@@ -468,22 +468,60 @@ namespace IMSDriftTimeAligner
                 }
 
                 // Compute the average target scan value (base frame scan) in scanInfoFromDTW
+                var consolidatedScanInfoFromDTW = new Dictionary<int, int>();
+
                 foreach (var comparisonFrameScan in scanInfoFromDTW.Keys.ToList())
                 {
                     var mappedValues = scanInfoFromDTW[comparisonFrameScan];
                     if (mappedValues.Count == 1)
+                    {
+                        consolidatedScanInfoFromDTW.Add(comparisonFrameScan, mappedValues.First());
                         continue;
+                    }
 
                     var average = mappedValues.Average();
-
-                    scanInfoFromDTW[comparisonFrameScan] = new List<int> { (int)Math.Round(average) };
+                    consolidatedScanInfoFromDTW.Add(comparisonFrameScan, (int)Math.Round(average));
                 }
+
+                // Populate a dictionary listing source scan number, and the offset to apply to obtain the target scan number
+
+                var offsetsBySourceScan = new Dictionary<int, int>();
+
+                foreach (var item in consolidatedScanInfoFromDTW)
+                {
+                    var offset = item.Value - item.Key;
+                    offsetsBySourceScan.Add(item.Key, offset);
+                }
+
+                // Compute a moving average of the offsets in offsetsBySourceScan
+                // For the smooth length, use the total number of scans divided by 100
+                var pointsForSmooth = Math.Max(1, (int)(offsetsBySourceScan.Count / 100.0));
+
+                // Keys in this dictionary are source scan; values are the offset to apply to obtain the target scan
+                var offsetsBySourceScanSmoothed = SmoothViaMovingAverage(offsetsBySourceScan, pointsForSmooth);
+
+                var searcher = new clsBinarySearchFindNearest();
+                searcher.AddData(offsetsBySourceScanSmoothed);
 
                 // Populate frameScanAlignmentMap
-                foreach (var item in scanInfoFromDTW)
+                foreach (var scanNumber in scanNumsInFrame)
                 {
-                    frameScanAlignmentMap.Add(item.Key, item.Value.First());
+                    int offsetToUse;
+                    if (offsetsBySourceScanSmoothed.TryGetValue(scanNumber, out var offset))
+                    {
+                        offsetToUse = offset;
+                    }
+                    else
+                    {
+                        // Find the scan in offsetsBySourceScanSmoothed that is closest to scanNumber
+                        var interpolatedOffset = searcher.GetYForX(scanNumber);
+                        offsetToUse = (int)interpolatedOffset;
+                    }
+
+                    var targetScan = scanNumber + offsetToUse;
+                    frameScanAlignmentMap.Add(scanNumber, targetScan);
                 }
+
 
                 if (ShowDebugMessages)
                 {
@@ -1975,6 +2013,27 @@ namespace IMSDriftTimeAligner
             {
                 ReportError("Error in SaveSmoothedDataForDebug", ex);
             }
+        }
+
+        private Dictionary<int, int> SmoothViaMovingAverage(Dictionary<int, int> dataToSmooth, int windowSize)
+        {
+            var dataKeys = new List<int>();
+            var dataValues = new List<double>();
+            foreach (var item in dataToSmooth)
+            {
+                dataKeys.Add(item.Key);
+                dataValues.Add(item.Value);
+            }
+
+            var smoothedValues = MathNet.Numerics.Statistics.Statistics.MovingAverage(dataValues, windowSize).ToList();
+
+            var smoothedData = new Dictionary<int, int>();
+            for (var i = 0; i < dataKeys.Count; i++)
+            {
+                smoothedData.Add(dataKeys[i], (int)smoothedValues[i]);
+            }
+
+            return smoothedData;
         }
 
         private void UpdateScanRange(FrameParams frameParams, int scanMin, int scanMax)

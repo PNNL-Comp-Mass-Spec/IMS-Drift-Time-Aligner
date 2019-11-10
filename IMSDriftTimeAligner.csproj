@@ -71,6 +71,7 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="clsBinarySearchFindNearest.cs" />
     <Compile Include="clsFrameAlignmentOptions.cs" />
     <Compile Include="clsIMSDriftTimeAligner.cs" />
     <Compile Include="DTWVisualization.xaml.cs">
