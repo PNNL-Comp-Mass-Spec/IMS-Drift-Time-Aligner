@@ -312,24 +312,32 @@ namespace IMSDriftTimeAligner
                     sampleLength = 1;
                 }
 
+                var normalizer = new NormalizationPreprocessor();
+
+                var xSeries = new[] { new SeriesVariable(comparisonDataToUse, baseDataToUse, null, normalizer) };
+                // var xSeries = new[] { new SeriesVariable(comparisonDataToUse, baseDataToUse)};
+
+                var sakoeChibaMaxShift = Math.Max(2, (int)Math.Round(baseDataToUse.Length * Options.DTWSakoeChibaMaxShiftPercent / 100.0));
+
                 // Map the comparison data TIC values onto the base data TIC values
-                var dtwAligner = new Dtw(comparisonDataToUse, baseDataToUse);
+                var dtwAligner = new Dtw(xSeries, DistanceMeasure.Euclidean, sakoeChibaMaxShift: sakoeChibaMaxShift);
 
                 var cost = dtwAligner.GetCost();
 
+                if (Options.VisualizeDTW)
+                {
+                    var visualizer = new DTWVisualization
+                    {
+                        Dtw = dtwAligner,
+                        Description = string.Format("Frame {0} with {1} points; max shift: {2} points", comparisonFrameNum, baseDataToUse.Length,
+                                                    sakoeChibaMaxShift)
+                    };
+
+                    visualizer.ShowDialog();
+                }
+
                 // The alignment path will range from 0 to baseDataToUse.Length - 1
                 var alignmentPath = dtwAligner.GetPath();
-                    if (Options.VisualizeDTW)
-                    {
-                        var visualizer = new DTWVisualization
-                        {
-                            Dtw = dtwAligner,
-                            Description = string.Format("Frame {0} with {1} points; max shift: {2} points", comparisonFrameNum, baseDataToUse.Length,
-                                                        sakoeChibaMaxShift)
-                        };
-
-                        visualizer.ShowDialog();
-                    }
 
 
                 var statsLine = string.Format("{0,-8} {1,-8:#,##0}", comparisonFrameNum, cost);
