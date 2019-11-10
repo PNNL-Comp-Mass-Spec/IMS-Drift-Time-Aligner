@@ -525,7 +525,11 @@ namespace IMSDriftTimeAligner
 
                 if (ShowDebugMessages)
                 {
-                    SaveDynamicTimeWarpingDataForDebug("Frame " + comparisonFrameNum, cost, alignmentPath, scanInfoFromDTW);
+                    SaveDynamicTimeWarpingDataForDebug("Frame " + comparisonFrameNum,
+                                                       cost, alignmentPath,
+                                                       consolidatedScanInfoFromDTW,
+                                                       offsetsBySourceScanSmoothed,
+                                                       frameScanAlignmentMap);
                 }
 
             }
@@ -1854,12 +1858,16 @@ namespace IMSDriftTimeAligner
         /// <param name="frameDescription">Frame description</param>
         /// <param name="cost">Dynamic time warping cost</param>
         /// <param name="alignmentPath">Map from source scan to target scan; source scans might map to multiple target scans</param>
-        /// <param name="scanInfoFromDTW">Dictionary mapping source scan to target scan</param>
+        /// <param name="consolidatedScanInfoFromDTW">Dictionary mapping source scan to target scan (unique target)</param>
+        /// <param name="offsetsBySourceScanSmoothed"></param>
+        /// <param name="frameScanAlignmentMap"></param>
         private void SaveDynamicTimeWarpingDataForDebug(
             string frameDescription,
             double cost,
             IEnumerable<Tuple<int, int>> alignmentPath,
-            IReadOnlyDictionary<int, List<int>> scanInfoFromDTW)
+            IReadOnlyDictionary<int, int> consolidatedScanInfoFromDTW,
+            IReadOnlyDictionary<int, int> offsetsBySourceScanSmoothed,
+            IReadOnlyDictionary<int, int> frameScanAlignmentMap)
         {
             try
             {
@@ -1871,7 +1879,8 @@ namespace IMSDriftTimeAligner
                     writer.WriteLine();
                     writer.WriteLine("Cost: {0:#,##0}", cost);
                     writer.WriteLine();
-                    writer.WriteLine("{0}\t{1}", "Source", "Target");
+                    writer.WriteLine("Alignment path found using the Compressed Data:");
+                    writer.WriteLine("{0}\t{1}", "ComparisonData", "BaseData");
 
                     foreach (var item in alignmentPath)
                     {
@@ -1879,13 +1888,43 @@ namespace IMSDriftTimeAligner
                     }
 
                     writer.WriteLine();
-                    writer.WriteLine("{0}\t{1}", "Source", "Unique_Target");
+                    writer.WriteLine("Mapping from Comparison Data to Base Data, for all scans:");
+                    writer.WriteLine("{0}\t{1}\t{2}\t{3}\t{4}", "SourceScan_ComparisonData", "TargetScan_BaseData", "Offset", "OffsetSmoothed", "TargetScan_via_OffsetSmoothed");
 
-                    foreach (var item in scanInfoFromDTW)
+                    foreach (var item in consolidatedScanInfoFromDTW)
                     {
-                        writer.WriteLine("{0:0}\t{1:0}", item.Key, item.Value.First());
+                        var sourceScan = item.Key;
+                        var targetScan = item.Value;
+
+                        var offset = targetScan - sourceScan;
+                        int targetScanViaOffsetSmoothed;
+
+                        if (offsetsBySourceScanSmoothed.TryGetValue(sourceScan, out var offsetSmoothed))
+                        {
+                            targetScanViaOffsetSmoothed = sourceScan + offsetSmoothed;
+                        }
+                        else
+                        {
+                            Console.WriteLine("Warning, did not find scan {0} in offsetsBySourceScanSmoothed", sourceScan);
+                            offsetSmoothed = -1;
+                            targetScanViaOffsetSmoothed = -1;
+                        }
+
+                        writer.WriteLine("{0:0}\t{1}\t{2}\t{3}\t{4}", sourceScan, targetScan, offset, offsetSmoothed, targetScanViaOffsetSmoothed);
+
+                        // Note that frameScanAlignmentMap only has data for scans that have a detected ion
+                        if (frameScanAlignmentMap.TryGetValue(sourceScan, out var targetScanToVerify))
+                        {
+                            if (targetScanToVerify != targetScanViaOffsetSmoothed)
+                            {
+                                Console.WriteLine("Warning, mismatch between expected target scan and frameScanAlignmentMap; {0} vs. {1}",
+                                                  targetScanToVerify, targetScanViaOffsetSmoothed);
+                            }
+                        }
+
                     }
                     writer.WriteLine();
+
                 }
 
             }
