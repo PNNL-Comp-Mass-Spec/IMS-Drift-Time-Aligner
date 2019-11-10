@@ -12,7 +12,7 @@ namespace IMSDriftTimeAligner
         /// <summary>
         /// Program date
         /// </summary>
-        public const string PROGRAM_DATE = "November 7, 2019";
+        public const string PROGRAM_DATE = "November 9, 2019";
 
         /// <summary>
         /// Default frame selection mode
@@ -275,6 +275,16 @@ namespace IMSDriftTimeAligner
 
             WriteOptionsToStatsFile = false;
         }
+
+        /// <summary>
+        /// Return Enabled if value is true
+        /// Return Disabled if value is false
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        private static string BoolToEnabledDisabled(bool value)
+        {
+            return value ? "Enabled" : "Disabled";
         }
 
         /// <summary>
@@ -295,14 +305,13 @@ namespace IMSDriftTimeAligner
         {
             Console.WriteLine("Options:");
 
-            Console.WriteLine(" Reading data from: {0}", InputFilePath);
+            Console.WriteLine(" {0,-15}: {1}", "Reading data from", InputFilePath);
 
             if (!string.IsNullOrWhiteSpace(OutputFilePath))
-                Console.WriteLine(" Creating file: {0}", OutputFilePath);
+                Console.WriteLine(" {0,-15}: {1}", "Creating file", OutputFilePath);
 
             Console.WriteLine();
-            Console.WriteLine(" Alignment Method: {0}", AlignmentMethod);
-            Console.WriteLine(" Base Frame Selection Mode: {0} ({1})", BaseFrameSelectionMode, (int)BaseFrameSelectionMode);
+            Console.WriteLine(" {0,-40}: {1}", "Alignment Method", AlignmentMethod);
             if (AlignmentMethod == AlignmentMethods.DynamicTimeWarping)
             {
                 Console.WriteLine(" {0,-40}: {1}", "Visualize the DTW Path", BoolToEnabledDisabled(VisualizeDTW));
@@ -311,6 +320,8 @@ namespace IMSDriftTimeAligner
 
                 Console.WriteLine(" {0,-40}: {1}%", "Sakoe Chiba Max Shift", StringUtilities.ValueToString(DTWSakoeChibaMaxShiftPercent, 3));
             }
+
+            Console.WriteLine(" {0,-40}: {1} ({2})", "Base Frame Selection Mode", BaseFrameSelectionMode, (int)BaseFrameSelectionMode);
 
             switch (BaseFrameSelectionMode)
             {
