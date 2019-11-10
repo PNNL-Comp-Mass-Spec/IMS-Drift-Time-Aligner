@@ -1353,13 +1353,12 @@ namespace IMSDriftTimeAligner
                     frameDataSmoothed[i] = 0;
             }
 
-            if (Options.AlignmentMethod == FrameAlignmentOptions.AlignmentMethods.LinearRegression)
-            {
-                ZeroValuesBelowThreshold(frameDataSmoothed);
-            }
+            ZeroValuesBelowThreshold(frameDataSmoothed);
 
             if (!ShowDebugMessages)
+            {
                 return frameDataSmoothed;
+            }
 
             var writeData = true;
             if (frameDescription == BASE_FRAME_DESCRIPTION)
