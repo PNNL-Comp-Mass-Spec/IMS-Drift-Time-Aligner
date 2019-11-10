@@ -5,7 +5,6 @@ using System.IO;
 using System.Linq;
 using NDtw;
 using NDtw.Preprocessing;
-using NDtw.Visualization.Wpf;
 using UIMFLibrary;
 
 namespace IMSDriftTimeAligner
@@ -246,7 +245,7 @@ namespace IMSDriftTimeAligner
                         frameScanAlignmentMap = AlignFrameDataDTW(
                             baseFrameData, comparisonFrameData,
                             comparisonFrameNum, scanNumsInFrame,
-                            statsWriter, scanStart, scanEnd);
+                            statsWriter, scanStart);
                     }
                     else
                     {
@@ -275,8 +274,7 @@ namespace IMSDriftTimeAligner
             int comparisonFrameNum,
             IEnumerable<int> scanNumsInFrame,
             TextWriter statsWriter,
-            int startScan,
-            int endScan)
+            int startScan)
         {
             // Keys are the old scan number and values are the new scan number (in the base frame)
             var frameScanAlignmentMap = new Dictionary<int, int>();
@@ -784,8 +782,6 @@ namespace IMSDriftTimeAligner
                 }
 
                 compressedData[targetIndex] = sum;
-
-                var sourceStartEndIndex = new Tuple<int, int>(i, endIndex - 1);
 
                 targetIndex++;
 
