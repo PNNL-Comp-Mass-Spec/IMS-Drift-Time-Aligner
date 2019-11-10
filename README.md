@@ -10,11 +10,16 @@ The IMS Drift Time Aligner is a console application, and must be run from the Wi
 ```
 IMSDriftTimeAligner.exe
  InputFilePath [/O:OutputFilePath] [/Merge] [/Append]
- [/BaseFrame:N] [/BaseCount:N] [/BaseStart:N] [/BaseEnd:N]
+ [/BaseFrame:N] [/BaseCount:N] 
+ [/BaseStart:N] [/BaseEnd:N]
+ [/BaseFrameList:X,Y,Z]
  [/Start:N] [/End:N] 
  [/ScanMin:N] [/ScanMax:N]
  [/MzMin:N] [MzMax:N]
- [/MaxShift:N] [/Smooth:N] 
+ [/MaxShift:N] [/Smooth:N]
+ [/ITF:Fraction] [/Align:Mode]
+ [/DTWPoints:N] [/DTWShift:N]
+ [/Vis]
  [/Debug] [/WO:False]
 ```
 
@@ -28,7 +33,7 @@ Use `/Merge` to specify that all of the aligned frames should be merged into a s
 
 Use `/Append` to specify that the data should be merged and appended as a new frame to the output file
 
-Use `/BaseFrame` to specify how the base frame is selected; options are:
+Use `/BaseFrame` or `/BaseFrameMode` to specify how the base frame is selected; options are:
 
 | Mode            | Description             |
 |-----------------|-------------------------|
@@ -47,7 +52,11 @@ The default is `/BaseFrame:5`
 Use `/BaseCount` to specify the number or frames or percent range to use when FrameMode is NFrame or NPercent based;
 * Default is `/BaseCount:15`
 
-Use `/BaseStart` and `/BaseEnd` to specify the range of frames to use as the base when using `/BaseFrame:3` (aka UserSpecifiedFrameRange)
+Use `/BaseStart` and `/BaseEnd` to specify the range of frames to use as the base
+* Only valid when using `/BaseFrame:3` (aka UserSpecifiedFrameRange)
+
+Use `/BaseFrameList` to define a comma separated list of frame numbers to use as the base frame
+* Only valid when using `/BaseFrame:3` (aka UserSpecifiedFrameRange)
 
 Use `/Start` and `/End` to limit the range of frames to align
 
@@ -62,6 +71,25 @@ Use `/MaxShift` to specify the maximum allowed shift (in scans) that scans in a 
 Use `/Smooth` to specify the number of data points (scans) in the TIC to use for moving average smoothing 
 prior to aligning each frame to the base frame;
 * Default is `/Smooth:7`
+ 
+Use `/ITF` to define the value to multiply the maximum TIC value by to determine an intensity threshold, 
+below which intensity values will be set to 0.
+* Defaults to 0.10  (aka 10% of the max) for -Align:0  (Linear Regression)
+* Defaults to 0.025 (aka 2.5% of the max) for -Align:1 (Dynamic Time Warping)
+
+Use `/Align` to define the alignment mode
+* `/Align:0` means linear regression and simple shifting of all data in a frame by the same number of scans
+* `/Align:1` means dynamic time warping, which provides for a non-linear shift of scans in a frame
+
+Use `/DTWPoints` to define the maximum number of points to use for Dynamic Time Warping
+* Defaults to 7500
+* Use smaller values if you run out of memory (55,000 drift scans and a DTWPoints value of 7500 requires 20 GB of memory)(
+
+Use `/DTWShift` to define the maximum Sakoe Chiba shift
+* The value is a percentage of the number of points used for Dynamic Time Warping
+* Default is 5 (aka 5%)
+
+Use `/Vis` or `/Plot` to visualize the dynamic time warping results for each aligned frame
 
 Use `/Debug` to show additional debug messages at the console
 
