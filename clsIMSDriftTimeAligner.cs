@@ -1,10 +1,11 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using NDtw;
+using NDtw.Preprocessing;
+using NDtw.Visualization.Wpf;
 using UIMFLibrary;
 
 namespace IMSDriftTimeAligner
@@ -318,6 +319,18 @@ namespace IMSDriftTimeAligner
 
                 // The alignment path will range from 0 to baseDataToUse.Length - 1
                 var alignmentPath = dtwAligner.GetPath();
+                    if (Options.VisualizeDTW)
+                    {
+                        var visualizer = new DTWVisualization
+                        {
+                            Dtw = dtwAligner,
+                            Description = string.Format("Frame {0} with {1} points; max shift: {2} points", comparisonFrameNum, baseDataToUse.Length,
+                                                        sakoeChibaMaxShift)
+                        };
+
+                        visualizer.ShowDialog();
+                    }
+
 
                 var statsLine = string.Format("{0,-8} {1,-8:#,##0}", comparisonFrameNum, cost);
                 statsWriter.WriteLine(statsLine.Trim());

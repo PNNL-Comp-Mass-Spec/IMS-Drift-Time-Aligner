@@ -186,6 +186,10 @@ namespace IMSDriftTimeAligner
             "(ignored if option AppendMergedFrame is true)")]
         public bool AppendMergedFrame { get; set; }
 
+        [Option("Plot", "Vis", HelpShowsDefault = false, HelpText =
+            "Visualize the dynamic time warping results")]
+        public bool VisualizeDTW { get; set; }
+
         [Option("WO", "WriteOptions", HelpShowsDefault = true, HelpText =
             "Include the processing options at the start of the alignment stats file (Dataset_stats.txt)")]
         public bool WriteOptionsToStatsFile { get; set; } = true;
@@ -233,6 +237,9 @@ namespace IMSDriftTimeAligner
             MergeFrames = false;
 
             AppendMergedFrame = false;
+
+            VisualizeDTW = false;
+
         }
 
         /// <summary>
@@ -261,6 +268,11 @@ namespace IMSDriftTimeAligner
             Console.WriteLine();
             Console.WriteLine(" Alignment Method: {0}", AlignmentMethod);
             Console.WriteLine(" Base Frame Selection Mode: {0} ({1})", BaseFrameSelectionMode, (int)BaseFrameSelectionMode);
+            if (AlignmentMethod == AlignmentMethods.DynamicTimeWarping)
+            {
+                Console.WriteLine(" {0,-40}: {1}", "Visualize the DTW Path", BoolToEnabledDisabled(VisualizeDTW));
+
+            }
 
             switch (BaseFrameSelectionMode)
             {

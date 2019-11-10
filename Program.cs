@@ -19,6 +19,7 @@ namespace IMSDriftTimeAligner
     /// </remarks>
     internal static class Program
     {
+        [STAThread]
         static int Main(string[] args)
         {
             var asmName = typeof(Program).GetTypeInfo().Assembly.GetName();

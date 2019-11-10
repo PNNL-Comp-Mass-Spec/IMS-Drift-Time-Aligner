@@ -5,6 +5,7 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{3CF3678F-CDA4-4916-B719-57AFF34F1DEA}</ProjectGuid>
+    <ProjectTypeGuids>{60dc8134-eba5-43b8-bcc9-bb4bc16c2548};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>IMSDriftTimeAligner</RootNamespace>
@@ -55,20 +56,26 @@
     <LangVersion>7.3</LangVersion>
     <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
-  </PropertyGroup>
   <ItemGroup>
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Xaml" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Xml" />
+    <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="clsFrameAlignmentOptions.cs" />
     <Compile Include="clsIMSDriftTimeAligner.cs" />
+    <Compile Include="DTWVisualization.xaml.cs">
+      <DependentUpon>DTWVisualization.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TICInfo.cs" />
@@ -83,6 +90,12 @@
     <PackageReference Include="NDtw">
       <Version>0.2.3</Version>
     </PackageReference>
+    <PackageReference Include="NDtw.Visualization.Wpf">
+      <Version>0.2.3</Version>
+    </PackageReference>
+    <PackageReference Include="OxyPlot.Wpf">
+      <Version>2013.1.2.1</Version>
+    </PackageReference>
     <PackageReference Include="PRISM-Library">
       <Version>2.5.26</Version>
     </PackageReference>
@@ -92,6 +105,12 @@
     <PackageReference Include="UIMFLibrary">
       <Version>3.7.3</Version>
     </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Page Include="DTWVisualization.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
