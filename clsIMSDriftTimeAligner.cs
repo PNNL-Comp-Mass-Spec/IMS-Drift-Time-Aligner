@@ -309,8 +309,7 @@ namespace IMSDriftTimeAligner
 
                 var normalizer = new NormalizationPreprocessor();
 
-                var xSeries = new[] { new SeriesVariable(comparisonDataToUse, baseDataToUse, null, normalizer) };
-                // var xSeries = new[] { new SeriesVariable(comparisonDataToUse, baseDataToUse)};
+                var xSeries = new[] { new SeriesVariable(comparisonDataToUse, baseDataToUse, "IntensityVsDriftTime", normalizer) };
 
                 var sakoeChibaMaxShift = Math.Max(2, (int)Math.Round(baseDataToUse.Length * Options.DTWSakoeChibaMaxShiftPercent / 100.0));
 
