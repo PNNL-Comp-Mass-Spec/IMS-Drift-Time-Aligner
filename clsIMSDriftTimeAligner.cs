@@ -762,11 +762,9 @@ namespace IMSDriftTimeAligner
         /// </summary>
         /// <param name="dataValues">Data to compress</param>
         /// <param name="sampleLength">Number of adjacent data points to combine</param>
-        /// <param name="compressionMap">Map of index in the compressed array that is returned, to the start and end indices of each compressed data block</param>
         /// <returns>Compressed data</returns>
-        private double[] CompressArrayBySumming(IReadOnlyList<double> dataValues, int sampleLength, out Dictionary<int, Tuple<int, int>> compressionMap)
+        private double[] CompressArrayBySumming(IReadOnlyList<double> dataValues, int sampleLength)
         {
-            compressionMap = new Dictionary<int, Tuple<int, int>>();
 
             var dataCount = dataValues.Count;
 
@@ -788,7 +786,6 @@ namespace IMSDriftTimeAligner
                 compressedData[targetIndex] = sum;
 
                 var sourceStartEndIndex = new Tuple<int, int>(i, endIndex - 1);
-                compressionMap.Add(targetIndex, sourceStartEndIndex);
 
                 targetIndex++;
 
@@ -1341,6 +1338,7 @@ namespace IMSDriftTimeAligner
             {
                 // Not using smoothing, but we may need to zero-out values below a threshold
                 ZeroValuesBelowThreshold(frameData);
+
                 return frameData;
             }
 
