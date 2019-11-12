@@ -227,8 +227,8 @@ namespace IMSDriftTimeAligner
                     var scanEnd = baseFrameScans.Last().Scan;
 
                     // Populate the arrays, storing TIC values in the appropriate index of baseFrameData and comparisonFrameData
-                    baseFrameData = GetTICValues(BASE_FRAME_DESCRIPTION, scanStart, scanEnd, baseFrameScans);
-                    comparisonFrameData = GetTICValues("Frame " + comparisonFrameNum, scanStart, scanEnd, frameScans);
+                    baseFrameData = GetTICValues(outputDirectory, BASE_FRAME_DESCRIPTION, scanStart, scanEnd, baseFrameScans);
+                    comparisonFrameData = GetTICValues(outputDirectory, "Frame " + comparisonFrameNum, scanStart, scanEnd, frameScans);
 
                 }
                 else
@@ -238,8 +238,8 @@ namespace IMSDriftTimeAligner
                     var scanEnd = Math.Max(nonzeroScans1.Last(), nonzeroScans2.Last());
 
                     // Populate the arrays, storing TIC values in the appropriate index of baseFrameData and comparisonFrameData
-                    baseFrameData = GetTICValues(BASE_FRAME_DESCRIPTION, scanStart, scanEnd, baseFrameScans);
-                    comparisonFrameData = GetTICValues("Frame " + comparisonFrameNum, scanStart, scanEnd, frameScans);
+                    baseFrameData = GetTICValues(outputDirectory, BASE_FRAME_DESCRIPTION, scanStart, scanEnd, baseFrameScans);
+                    comparisonFrameData = GetTICValues(outputDirectory, "Frame " + comparisonFrameNum, scanStart, scanEnd, frameScans);
 
                     if (Options.AlignmentMethod == FrameAlignmentOptions.AlignmentMethods.LinearRegression)
                     {
@@ -1420,6 +1420,7 @@ namespace IMSDriftTimeAligner
         /// <summary>
         /// Populate an array of doubles using the TIC values from the scans in frameScans
         /// </summary>
+        /// <param name="outputDirectory"></param>
         /// <param name="frameDescription">Description of this frame</param>
         /// <param name="scanStart">Start scan number for the TIC values to return</param>
         /// <param name="scanEnd">End scan number for the TIC values to return</param>
@@ -1430,6 +1431,7 @@ namespace IMSDriftTimeAligner
         /// will have one point for every scan (0 for the scans that were missing)
         /// </remarks>
         private double[] GetTICValues(
+            FileSystemInfo outputDirectory,
             string frameDescription,
             int scanStart,
             int scanEnd,
@@ -1534,7 +1536,7 @@ namespace IMSDriftTimeAligner
 
             if (writeData)
             {
-                SaveSmoothedDataForDebug(frameDescription, scanStart, frameData, frameDataSmoothed);
+                SaveSmoothedDataForDebug(outputDirectory, frameDescription, scanStart, frameData, frameDataSmoothed);
             }
 
             return frameDataSmoothed;
@@ -1797,16 +1799,6 @@ namespace IMSDriftTimeAligner
                 }
 
                 mSmoothedBaseFrameDataWritten = false;
-                if (ShowDebugMessages)
-                {
-                    var debugDataFile = new FileInfo(DEBUG_DATA_FILE);
-                    if (debugDataFile.Exists)
-                        debugDataFile.Delete();
-
-                    var dtwDebugDataFile = new FileInfo(DTW_DEBUG_DATA_FILE);
-                    if (dtwDebugDataFile.Exists)
-                        dtwDebugDataFile.Delete();
-                }
 
                 mFrameScanStats.Clear();
 
@@ -1818,6 +1810,19 @@ namespace IMSDriftTimeAligner
 
                 if (outputFile.DirectoryName == null)
                     throw new DirectoryNotFoundException("Cannot determine the parent directory of " + outputFile.FullName);
+
+                if (ShowDebugMessages)
+                {
+                    var outputDirectoryPath = outputFile.DirectoryName;
+
+                    var debugDataFile = new FileInfo(Path.Combine(outputDirectoryPath, DEBUG_DATA_FILE));
+                    if (debugDataFile.Exists)
+                        debugDataFile.Delete();
+
+                    var dtwDebugDataFile = new FileInfo(Path.Combine(outputDirectoryPath, DTW_DEBUG_DATA_FILE));
+                    if (dtwDebugDataFile.Exists)
+                        dtwDebugDataFile.Delete();
+                }
 
                 var statsFilePath = Path.Combine(outputFile.DirectoryName, Path.GetFileNameWithoutExtension(outputFile.Name) + "_stats.txt");
 
@@ -2373,6 +2378,7 @@ namespace IMSDriftTimeAligner
         }
 
         private void SaveSmoothedDataForDebug(
+            FileSystemInfo outputDirectory,
             string frameDescription,
             int scanStart,
             IReadOnlyList<double> frameData,
@@ -2380,7 +2386,7 @@ namespace IMSDriftTimeAligner
         {
             try
             {
-                var debugDataFile = new FileInfo(DEBUG_DATA_FILE);
+                var debugDataFile = new FileInfo(Path.Combine(outputDirectory.FullName, DEBUG_DATA_FILE));
 
                 using (var writer = new StreamWriter(new FileStream(debugDataFile.FullName, FileMode.Append, FileAccess.Write, FileShare.ReadWrite)))
                 {
