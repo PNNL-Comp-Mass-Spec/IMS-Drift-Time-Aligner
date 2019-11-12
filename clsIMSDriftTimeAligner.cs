@@ -5,7 +5,11 @@ using System.IO;
 using System.Linq;
 using NDtw;
 using NDtw.Preprocessing;
+using OxyPlot;
+using OxyPlot.Wpf;
 using UIMFLibrary;
+using LinearAxis = OxyPlot.LinearAxis;
+using LineSeries = OxyPlot.LineSeries;
 
 namespace IMSDriftTimeAligner
 {
@@ -316,21 +320,8 @@ namespace IMSDriftTimeAligner
 
                 var cost = dtwAligner.GetCost();
 
-                if (Options.VisualizeDTW)
-                {
-                    var visualizer = new DTWVisualization
-                    {
-                        Dtw = dtwAligner,
-                        Description = string.Format("Frame {0} with {1} points; max shift: {2} points", comparisonFrameNum, baseDataToUse.Length,
-                                                    sakoeChibaMaxShift)
-                    };
-
-                    visualizer.ShowDialog();
-                }
-
                 // The alignment path will range from 0 to baseDataToUse.Length - 1
                 var alignmentPath = dtwAligner.GetPath();
-
 
                 var statsLine = string.Format("{0,-8} {1,-8:#,##0}", comparisonFrameNum, cost);
                 statsWriter.WriteLine(statsLine.Trim());
@@ -511,7 +502,90 @@ namespace IMSDriftTimeAligner
                     frameScanAlignmentMap.Add(scanNumber, targetScan);
                 }
 
+                if (Options.VisualizeDTW || Options.SaveDTWPlots)
+                {
+                    var offsetPlot = new PlotModel("Offset vs. drift time scan");
+
+                    var offsetSeries = new LineSeries("Scan shift")
                     {
+                        XAxisKey = "DriftTimeScan",
+                        YAxisKey = "Offset"
+                    };
+
+                    foreach (var item in offsetsBySourceScan)
+                    {
+                        offsetSeries.Points.Add(new DataPoint(item.Key, item.Value));
+                    }
+
+                    var smoothedOffsetSeries = new LineSeries("Smoothed shift")
+                    {
+                        XAxisKey = "DriftTimeScan",
+                        YAxisKey = "Offset"
+                    };
+
+                    foreach (var item in offsetsBySourceScanSmoothed)
+                    {
+                        smoothedOffsetSeries.Points.Add(new DataPoint(item.Key, item.Value));
+                    }
+
+                    var optimizedOffsetSeries = new LineSeries("Optimized shift")
+                    {
+                        XAxisKey = "DriftTimeScan",
+                        YAxisKey = "Offset"
+                    };
+
+                    foreach (var item in optimizedOffsetsBySourceScan)
+                    {
+                        optimizedOffsetSeries.Points.Add(new DataPoint(item.Key, item.Value));
+                    }
+
+                    var xAxis = new LinearAxis(AxisPosition.Bottom, "Drift Time Scan")
+                    {
+                        Key = "DriftTimeScan"
+                    };
+
+                    var ticSeries = new LineSeries("Comparison TIC")
+                    {
+                        XAxisKey = "DriftTimeScan",
+                        YAxisKey = "TIC"
+                    };
+
+                    for (var i = 0; i < comparisonFrameData.Length; i++)
+                    {
+                        var scanNumber = i + startScan;
+                        ticSeries.Points.Add(new DataPoint(scanNumber, comparisonFrameData[i]));
+                    }
+
+                    var yAxisTIC = new LinearAxis(AxisPosition.Right, "TIC")
+                    {
+                        Key = "TIC"
+                    };
+
+                    var yAxis = new LinearAxis(AxisPosition.Left, "Offset")
+                    {
+                        Key = "Offset"
+                    };
+
+                    offsetPlot.Series.Add(offsetSeries);
+                    offsetPlot.Series.Add(smoothedOffsetSeries);
+                    offsetPlot.Series.Add(optimizedOffsetSeries);
+                    offsetPlot.Series.Add(ticSeries);
+
+                    offsetPlot.Axes.Add(xAxis);
+                    offsetPlot.Axes.Add(yAxis);
+                    offsetPlot.Axes.Add(yAxisTIC);
+
+                    var visualizer = new DTWVisualization
+                    {
+                        Dtw = dtwAligner,
+                        Description = string.Format("Frame {0} with {1} points; max shift: {2} points", comparisonFrameNum, baseDataToUse.Length,
+                                                    sakoeChibaMaxShift),
+                        OffsetPlot = offsetPlot
+                    };
+
+                    if (Options.VisualizeDTW)
+                    {
+                        visualizer.ShowDialog();
                     }
                     else
                     {

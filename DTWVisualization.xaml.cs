@@ -77,6 +77,22 @@ namespace IMSDriftTimeAligner
         //    }
         //}
 
+        private OxyPlot.PlotModel _offsetPlot;
+
+        /// <summary>
+        /// Plot of scan shift (aka offset) vs. drift time scan
+        /// </summary>
+        /// <remarks></remarks>
+        public OxyPlot.PlotModel OffsetPlot
+        {
+            get => _offsetPlot;
+            set
+            {
+                _offsetPlot = value;
+                OnPropertyChanged(nameof(OffsetPlot));
+            }
+        }
+
         /// <summary>
         /// Constructor
         /// </summary>
