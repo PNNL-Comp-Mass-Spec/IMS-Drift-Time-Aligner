@@ -1928,7 +1928,7 @@ namespace IMSDriftTimeAligner
                         var nextFrameNumOutfile = 1;
                         bool insertEachFrame;
 
-                        if (Options.MergeFrames && !Options.AppendMergedFrame)
+                        if (Options.MergeFrames)
                         {
                             // The output file will only have a single, merged frame
                             insertEachFrame = false;
