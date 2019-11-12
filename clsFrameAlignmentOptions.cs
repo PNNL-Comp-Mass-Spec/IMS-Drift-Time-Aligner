@@ -89,7 +89,7 @@ namespace IMSDriftTimeAligner
         public int BaseFrameEnd { get; set; }
 
         [Option("BaseFrameList", "BaseFrames", HelpShowsDefault = false, HelpText =
-            "List of frames to use when the BaseFrameSelection mode is 3 (UserSpecifiedFrameRange)")]
+            "List of frames to use when the BaseFrameMode mode is 3 (UserSpecifiedFrameRange)")]
         public string BaseFrameList { get; set; }
 
         [Option("Debug", HelpShowsDefault = false, HelpText =
@@ -178,11 +178,11 @@ namespace IMSDriftTimeAligner
 
         [Option("Append", "AppendMergedFrame", HelpText =
             "When true, a merged frame of data will be appended to the output file as a new frame " +
-            "(ignored if option AppendMergedFrame is true)")]
+            "(ignored if option MergeFrames is true)")]
         public bool AppendMergedFrame { get; set; }
 
         [Option("Plot", "Vis", HelpShowsDefault = false, HelpText =
-            "Visualize the dynamic time warping results")]
+            "Visualize the dynamic time warping results for each aligned frame")]
         public bool VisualizeDTW { get; set; }
 
         [Option("WO", "WriteOptions", HelpShowsDefault = true, HelpText =
@@ -208,7 +208,6 @@ namespace IMSDriftTimeAligner
             BaseFrameSumCount = DEFAULT_FRAME_SUM_COUNT;
             BaseFrameStart = 0;
             BaseFrameEnd = 0;
-            BaseFrameList = "";
             BaseFrameList = string.Empty;
 
             FrameStart = 0;
