@@ -1888,6 +1888,11 @@ namespace IMSDriftTimeAligner
                             statsWriter.WriteLine("FrameStart=" + Options.FrameStart);
                             statsWriter.WriteLine("FrameEnd=" + Options.FrameEnd);
                             statsWriter.WriteLine("MaxShift=" + Options.MaxShiftScans);
+                            if (Options.AlignmentMethod == FrameAlignmentOptions.AlignmentMethods.DynamicTimeWarping)
+                            {
+                                statsWriter.WriteLine("DynamicTimeWarpingMaxPoints=" + Options.DTWMaxPoints);
+                                statsWriter.WriteLine("DynamicTimeWarpingSakoeChibaMaxShiftPercent=" + Options.DTWSakoeChibaMaxShiftPercent);
+                            }
                             statsWriter.WriteLine("MinimumIntensityThresholdFraction=" + Options.MinimumIntensityThresholdFraction);
                             statsWriter.WriteLine("DriftScanFilterMin=" + Options.DriftScanFilterMin);
                             statsWriter.WriteLine("DriftScanFilterMax=" + Options.DriftScanFilterMax);
