@@ -192,13 +192,17 @@ namespace IMSDriftTimeAligner
         /// <param name="frameScans">Scans in the frame that we're aligning</param>
         /// <param name="scanNumsInFrame">Full list of scan numbers in the frame (since frameScans might be filtered)</param>
         /// <param name="statsWriter">Stats file writer</param>
+        /// <param name="datasetName"></param>
+        /// <param name="outputDirectory">Output directory</param>
         /// <returns>Dictionary where keys are the old scan number and values are the new scan number</returns>
         private Dictionary<int, int> AlignFrameData(
             int comparisonFrameNum,
             IReadOnlyList<ScanInfo> baseFrameScans,
             IReadOnlyList<ScanInfo> frameScans,
             IEnumerable<int> scanNumsInFrame,
-            TextWriter statsWriter)
+            TextWriter statsWriter,
+            string datasetName,
+            FileSystemInfo outputDirectory)
         {
 
             try
@@ -240,16 +244,18 @@ namespace IMSDriftTimeAligner
                     if (Options.AlignmentMethod == FrameAlignmentOptions.AlignmentMethods.LinearRegression)
                     {
                         frameScanAlignmentMap = AlignFrameDataLinearRegression(
-                            baseFrameData, comparisonFrameData,
-                            comparisonFrameNum, scanNumsInFrame,
+                            comparisonFrameNum, comparisonFrameData,
+                            baseFrameData, scanNumsInFrame,
                             statsWriter);
                     }
                     else if (Options.AlignmentMethod == FrameAlignmentOptions.AlignmentMethods.DynamicTimeWarping)
                     {
                         frameScanAlignmentMap = AlignFrameDataDTW(
-                            baseFrameData, comparisonFrameData,
-                            comparisonFrameNum, scanNumsInFrame,
-                            statsWriter, scanStart);
+                            comparisonFrameNum, comparisonFrameData,
+                            baseFrameData, scanNumsInFrame,
+                            statsWriter, scanStart,
+                            datasetName,
+                            outputDirectory);
                     }
                     else
                     {
@@ -259,7 +265,9 @@ namespace IMSDriftTimeAligner
 
                 if (ShowDebugMessages)
                 {
-                    SaveFrameForDebug("Frame " + comparisonFrameNum, baseFrameData, comparisonFrameData, scanStart, frameScanAlignmentMap);
+                    SaveFrameForDebug("Frame " + comparisonFrameNum,
+                                      baseFrameData, comparisonFrameData, scanStart,
+                                      frameScanAlignmentMap, outputDirectory);
                 }
 
                 return frameScanAlignmentMap;
@@ -272,13 +280,27 @@ namespace IMSDriftTimeAligner
 
         }
 
+        /// <summary>
+        /// Align the TIC values in comparisonFrameData to baseFrameData
+        /// </summary>
+        /// <param name="comparisonFrameNum">Frame number (for logging purposes)</param>
+        /// <param name="comparisonFrameData">TIC values from the comparison frame</param>
+        /// <param name="baseFrameData">TIC values from the base frame</param>
+        /// <param name="scanNumsInFrame">Full list of scan numbers in the frame (since frameScans might be filtered)</param>
+        /// <param name="statsWriter">Stats file writer</param>
+        /// <param name="startScan">First scan of the data in comparisonFrameData (and also baseFrameData)</param>
+        /// <param name="datasetName"></param>
+        /// <param name="outputDirectory">Output directory</param>
+        /// <returns>Dictionary where keys are the old scan number and values are the new scan number</returns>
         private Dictionary<int, int> AlignFrameDataDTW(
-            double[] baseFrameData,
-            double[] comparisonFrameData,
             int comparisonFrameNum,
+            double[] comparisonFrameData,
+            double[] baseFrameData,
             IEnumerable<int> scanNumsInFrame,
             TextWriter statsWriter,
-            int startScan)
+            int startScan,
+            string datasetName,
+            FileSystemInfo outputDirectory)
         {
             // Keys are the old scan number and values are the new scan number (in the base frame)
             var frameScanAlignmentMap = new Dictionary<int, int>();
@@ -334,6 +356,7 @@ namespace IMSDriftTimeAligner
                 // Values are the list of target scan numbers (ideally just one, but dynamic time warping will sometimes duplicate the X values)
                 var scanInfoFromDTW = new Dictionary<int, List<int>>();
 
+                // Mapping from source scan to target scan
                 var alignmentPathAllScans = new List<Tuple<int, int>>();
 
                 if (dataIsCompressed)
@@ -595,7 +618,8 @@ namespace IMSDriftTimeAligner
 
                 if (ShowDebugMessages)
                 {
-                    SaveDynamicTimeWarpingDataForDebug("Frame " + comparisonFrameNum,
+                    SaveDynamicTimeWarpingDataForDebug(outputDirectory,
+                                                       "Frame " + comparisonFrameNum,
                                                        cost, alignmentPath,
                                                        consolidatedScanInfoFromDTW,
                                                        offsetsBySourceScanSmoothed,
@@ -616,16 +640,16 @@ namespace IMSDriftTimeAligner
         /// <summary>
         /// Align the TIC data in comparisonFrameData to baseFrameData using Linear Regression
         /// </summary>
-        /// <param name="baseFrameData">TIC values from the base frame</param>
-        /// <param name="comparisonFrameData">TIC values from the comparison frame</param>
         /// <param name="comparisonFrameNum">Frame number (for logging purposes)</param>
+        /// <param name="comparisonFrameData">TIC values from the comparison frame</param>
+        /// <param name="baseFrameData">TIC values from the base frame</param>
         /// <param name="scanNumsInFrame">Full list of scan numbers in the frame (since frameScans might be filtered)</param>
         /// <param name="statsWriter">Stats file writer</param>
         /// <returns>Dictionary where keys are the old scan number and values are the new scan number</returns>
         private Dictionary<int, int> AlignFrameDataLinearRegression(
-            double[] baseFrameData,
-            IReadOnlyList<double> comparisonFrameData,
             int comparisonFrameNum,
+            IReadOnlyList<double> comparisonFrameData,
+            double[] baseFrameData,
             IEnumerable<int> scanNumsInFrame,
             TextWriter statsWriter)
         {
@@ -735,13 +759,17 @@ namespace IMSDriftTimeAligner
         /// <param name="frameScans">Scans in the frame that we're aligning</param>
         /// <param name="scanNumsInFrame">Full list of scan numbers in the frame (since frameScans might be filtered)</param>
         /// <param name="statsWriter">Stats file writer</param>
+        /// <param name="datasetName"></param>
+        /// <param name="outputDirectory">Output directory</param>
         /// <returns>Dictionary where keys are the old scan number and values are the new scan number</returns>
         public Dictionary<int, int> AlignFrameTICToBase(
             int comparisonFrameNum,
             IReadOnlyList<ScanInfo> baseFrameScans,
             IReadOnlyList<ScanInfo> frameScans,
             IReadOnlyList<int> scanNumsInFrame,
-            TextWriter statsWriter)
+            TextWriter statsWriter,
+            string datasetName,
+            DirectoryInfo outputDirectory)
         {
 
             Dictionary<int, int> frameScanAlignmentMap;
@@ -750,7 +778,8 @@ namespace IMSDriftTimeAligner
             {
                 case FrameAlignmentOptions.AlignmentMethods.LinearRegression:
                 case FrameAlignmentOptions.AlignmentMethods.DynamicTimeWarping:
-                    frameScanAlignmentMap = AlignFrameData(comparisonFrameNum, baseFrameScans, frameScans, scanNumsInFrame, statsWriter);
+                    frameScanAlignmentMap = AlignFrameData(comparisonFrameNum, baseFrameScans, frameScans,
+                                                           scanNumsInFrame, statsWriter, datasetName, outputDirectory);
                     break;
 
                 default:
@@ -836,7 +865,6 @@ namespace IMSDriftTimeAligner
         /// <returns>Compressed data</returns>
         private double[] CompressArrayBySumming(IReadOnlyList<double> dataValues, int sampleLength)
         {
-
             var dataCount = dataValues.Count;
 
             var compressedDataLength = (int)Math.Ceiling(dataCount / (double)sampleLength);
@@ -1976,16 +2004,19 @@ namespace IMSDriftTimeAligner
                 // Get the scans for frame comparisonFrameNum
                 GetSummedFrameScans(reader, currentFrameList, out var scanNumsInFrame, out var frameScans);
 
+                var datasetName = Path.GetFileNameWithoutExtension(outputFile.Name);
+
                 if (outputFile.Directory != null)
                 {
                     var frameDebugFile = new FileInfo(Path.Combine(outputFile.Directory.FullName,
-                                                                   Path.GetFileNameWithoutExtension(outputFile.Name) + "_frame" + comparisonFrameNum + ".txt"));
+                                                                   datasetName + "_frame" + comparisonFrameNum + ".txt"));
 
                     WriteFrameScansDebugFile(frameScans, frameDebugFile);
                 }
 
                 // Dictionary where keys are the old scan number and values are the new scan number
-                var frameScanAlignmentMap = AlignFrameTICToBase(comparisonFrameNum, baseFrameScans, frameScans, scanNumsInFrame, statsWriter);
+                var frameScanAlignmentMap = AlignFrameTICToBase(comparisonFrameNum, baseFrameScans, frameScans,
+                                                                scanNumsInFrame, statsWriter, datasetName, outputFile.Directory);
                 if (frameScanAlignmentMap == null)
                     return;
 
@@ -2148,6 +2179,7 @@ namespace IMSDriftTimeAligner
         /// <summary>
         /// Write data to DebugDataDTW.txt
         /// </summary>
+        /// <param name="outputDirectory"></param>
         /// <param name="frameDescription">Frame description</param>
         /// <param name="cost">Dynamic time warping cost</param>
         /// <param name="alignmentPath">Map from source scan to target scan; source scans might map to multiple target scans</param>
@@ -2155,6 +2187,7 @@ namespace IMSDriftTimeAligner
         /// <param name="offsetsBySourceScanSmoothed"></param>
         /// <param name="frameScanAlignmentMap"></param>
         private void SaveDynamicTimeWarpingDataForDebug(
+            FileSystemInfo outputDirectory,
             string frameDescription,
             double cost,
             IEnumerable<Tuple<int, int>> alignmentPath,
@@ -2164,7 +2197,7 @@ namespace IMSDriftTimeAligner
         {
             try
             {
-                var debugDataFile = new FileInfo(DTW_DEBUG_DATA_FILE);
+                var debugDataFile = new FileInfo(Path.Combine(outputDirectory.FullName, DTW_DEBUG_DATA_FILE));
 
                 using (var writer = new StreamWriter(new FileStream(debugDataFile.FullName, FileMode.Append, FileAccess.Write, FileShare.ReadWrite)))
                 {
@@ -2232,11 +2265,12 @@ namespace IMSDriftTimeAligner
             IReadOnlyList<double> baseFrameData,
             IReadOnlyList<double> frameData,
             int scanStart,
-            IReadOnlyDictionary<int, int> frameScanAlignmentMap)
+            IReadOnlyDictionary<int, int> frameScanAlignmentMap,
+            FileSystemInfo outputDirectory)
         {
             try
             {
-                var debugDataFile = new FileInfo(DEBUG_DATA_FILE);
+                var debugDataFile = new FileInfo(Path.Combine(outputDirectory.FullName, DEBUG_DATA_FILE));
 
                 using (var writer = new StreamWriter(new FileStream(debugDataFile.FullName, FileMode.Append, FileAccess.Write, FileShare.ReadWrite)))
                 {
