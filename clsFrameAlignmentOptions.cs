@@ -12,7 +12,7 @@ namespace IMSDriftTimeAligner
         /// <summary>
         /// Program date
         /// </summary>
-        public const string PROGRAM_DATE = "November 9, 2019";
+        public const string PROGRAM_DATE = "November 11, 2019";
 
         /// <summary>
         /// Default frame selection mode
@@ -185,6 +185,10 @@ namespace IMSDriftTimeAligner
             "Visualize the dynamic time warping results for each aligned frame")]
         public bool VisualizeDTW { get; set; }
 
+        [Option("SavePlot", "SavePlots", HelpShowsDefault = false, HelpText =
+            "Save a dynamic time warping plot for each aligned frame")]
+        public bool SaveDTWPlots { get; set; }
+
         [Option("WO", "WriteOptions", HelpShowsDefault = true, HelpText =
             "Include the processing options at the start of the alignment stats file (Dataset_stats.txt)")]
         public bool WriteOptionsToStatsFile { get; set; }
@@ -277,6 +281,7 @@ namespace IMSDriftTimeAligner
             if (AlignmentMethod == AlignmentMethods.DynamicTimeWarping)
             {
                 Console.WriteLine(" {0,-40} {1}", "Visualize the DTW path:", BoolToEnabledDisabled(VisualizeDTW));
+                Console.WriteLine(" {0,-40} {1}", "Save DTW plot for each frame:", BoolToEnabledDisabled(SaveDTWPlots));
 
                 Console.WriteLine(" {0,-40} {1}", "Max points for DTW:", DTWMaxPoints);
 

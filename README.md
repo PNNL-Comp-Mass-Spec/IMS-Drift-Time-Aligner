@@ -19,7 +19,7 @@ IMSDriftTimeAligner.exe
  [/MaxShift:N] [/Smooth:N]
  [/ITF:Fraction] [/Align:Mode]
  [/DTWPoints:N] [/DTWShift:N]
- [/Vis]
+ [/Vis] [/SavePlots]
  [/Debug] [/WO:False]
 ```
 
@@ -90,6 +90,8 @@ Use `/DTWShift` to define the maximum Sakoe Chiba shift
 * Default is 5 (aka 5%)
 
 Use `/Vis` or `/Plot` to visualize the dynamic time warping results for each aligned frame
+
+Use `/SavePlot` or `/SavePlots` to create a .png file visualizing dynamic time warping offsets for each frame
 
 Use `/Debug` to show additional debug messages at the console
 

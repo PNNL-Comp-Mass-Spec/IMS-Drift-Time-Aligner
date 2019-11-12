@@ -612,9 +612,20 @@ namespace IMSDriftTimeAligner
                     }
                     else
                     {
+                        visualizer.Show();
                     }
 
+                    if (Options.SaveDTWPlots)
+                    {
+                        var outputFilePath = Path.Combine(outputDirectory.FullName, datasetName + "_Frame" + comparisonFrameNum + ".png");
+                        PngExporter.Export(offsetPlot.PlotControl.ActualModel, outputFilePath, 1050, 650, OxyColors.White);
+                    }
 
+                    if (!Options.VisualizeDTW)
+                    {
+                        visualizer.Hide();
+                    }
+                }
 
                 if (ShowDebugMessages)
                 {
