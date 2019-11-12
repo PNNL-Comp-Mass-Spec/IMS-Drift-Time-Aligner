@@ -2217,6 +2217,8 @@ namespace IMSDriftTimeAligner
                     writer.WriteLine("Mapping from Comparison Data to Base Data, for all scans:");
                     writer.WriteLine("{0}\t{1}\t{2}\t{3}\t{4}", "SourceScan_ComparisonData", "TargetScan_BaseData", "Offset", "OffsetSmoothed", "TargetScan_via_OffsetSmoothed");
 
+                    var warningCount = 0;
+
                     foreach (var item in consolidatedScanInfoFromDTW)
                     {
                         var sourceScan = item.Key;
@@ -2243,8 +2245,13 @@ namespace IMSDriftTimeAligner
                         {
                             if (targetScanToVerify != targetScanViaOffsetSmoothed)
                             {
-                                Console.WriteLine("Warning, mismatch between expected target scan and frameScanAlignmentMap; {0} vs. {1}",
-                                                  targetScanToVerify, targetScanViaOffsetSmoothed);
+                                warningCount++;
+
+                                if (warningCount <= 10 || warningCount % 100 == 0)
+                                {
+                                    Console.WriteLine("Warning, mismatch between expected target scan and frameScanAlignmentMap; {0} vs. {1}",
+                                                      targetScanToVerify, targetScanViaOffsetSmoothed);
+                                }
                             }
                         }
 
