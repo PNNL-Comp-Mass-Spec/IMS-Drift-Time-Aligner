@@ -9,7 +9,9 @@ The IMS Drift Time Aligner is a console application, and must be run from the Wi
 
 ```
 IMSDriftTimeAligner.exe
- InputFilePath [/O:OutputFilePath] [/Merge] [/Append]
+ InputFilePath [/O:OutputFilePath] 
+ [/Merge] [/Append]
+ [/Align:Mode]
  [/BaseFrame:N] [/BaseCount:N] 
  [/BaseStart:N] [/BaseEnd:N]
  [/BaseFrameList:X,Y,Z]
@@ -17,21 +19,26 @@ IMSDriftTimeAligner.exe
  [/ScanMin:N] [/ScanMax:N]
  [/MzMin:N] [MzMax:N]
  [/MaxShift:N] [/Smooth:N]
- [/ITF:Fraction] [/Align:Mode]
+ [/ITF:Fraction]
  [/DTWPoints:N] [/DTWShift:N]
  [/Vis] [/SavePlots]
  [/Debug] [/WO:False]
 ```
 
-InputFilePath is a path to the UIMF file to process.
-Wildcards are also supported, for example *.uimf
+InputFilePath is a path to the UIMF file to process. Wildcards are also supported, for example *.uimf
 
-Use `/O` to specify the output file path
-By default the output file will be named InputFileName_new.uimf
+Use `/O` or `-O` to specify the output file path
+* By default the output file will be named InputFileName_new.uimf
 
-Use `/Merge` to specify that all of the aligned frames should be merged into a single frame by co-adding the data
+Use `/Merge` or `-Merge` to specify that all of the aligned frames should be merged into a single frame by co-adding the data
+* When this argument is provided, the output file will only contain the merged frame
 
-Use `/Append` to specify that the data should be merged and appended as a new frame to the output file
+Use `/Append` or `-Append` to specify that the data should be merged and appended as a new frame to the output file
+* This option is only applicable if `/Merge` is not specified
+
+Use `/Align` to define the alignment mode
+* `/Align:0` means linear regression and simple shifting of all data in a frame by the same number of scans
+* `/Align:1` means dynamic time warping, which provides for a non-linear shift of scans in a frame
 
 Use `/BaseFrame` or `/BaseFrameMode` to specify how the base frame is selected; options are:
 
@@ -67,6 +74,8 @@ Use `/MzMin` and `/MzMax` to limit the range of m/z values to use for generation
 
 Use `/MaxShift` to specify the maximum allowed shift (in scans) that scans in a frame can be adjusted;
 * Default is `/MaxShift:150`
+* Only used when the alignment mode is 0 (Linear Regression). 
+  * For Dynamic Time Warping (`/Align:1`) use `DTWShift` to define the maximum shift limits
 
 Use `/Smooth` to specify the number of data points (scans) in the TIC to use for moving average smoothing 
 prior to aligning each frame to the base frame;
@@ -74,16 +83,12 @@ prior to aligning each frame to the base frame;
  
 Use `/ITF` to define the value to multiply the maximum TIC value by to determine an intensity threshold, 
 below which intensity values will be set to 0.
-* Defaults to 0.10  (aka 10% of the max) for -Align:0  (Linear Regression)
-* Defaults to 0.025 (aka 2.5% of the max) for -Align:1 (Dynamic Time Warping)
-
-Use `/Align` to define the alignment mode
-* `/Align:0` means linear regression and simple shifting of all data in a frame by the same number of scans
-* `/Align:1` means dynamic time warping, which provides for a non-linear shift of scans in a frame
+* Defaults to 0.10  (aka 10% of the max) for `/Align:0`  (Linear Regression)
+* Defaults to 0.025 (aka 2.5% of the max) for `/Align:1` (Dynamic Time Warping)
 
 Use `/DTWPoints` to define the maximum number of points to use for Dynamic Time Warping
 * Defaults to 7500
-* Use smaller values if you run out of memory (55,000 drift scans and a DTWPoints value of 7500 requires 20 GB of memory)(
+* Use smaller values if you run out of memory (55,000 drift scans and a DTWPoints value of 7500 requires 20 GB of memory)
 
 Use `/DTWShift` to define the maximum Sakoe Chiba shift
 * The value is a percentage of the number of points used for Dynamic Time Warping
