@@ -464,7 +464,7 @@ namespace IMSDriftTimeAligner
                     }
                 }
 
-                // Compute the average target scan value (base frame scan) in scanInfoFromDTW
+                // For each source scan, compute the average target scan value (base frame scan) in scanInfoFromDTW
                 var consolidatedScanInfoFromDTW = new Dictionary<int, int>();
 
                 foreach (var comparisonFrameScan in scanInfoFromDTW.Keys.ToList())
@@ -500,24 +500,23 @@ namespace IMSDriftTimeAligner
                 var searcher = new clsBinarySearchFindNearest();
                 searcher.AddData(offsetsBySourceScanSmoothed);
 
+                var optimizedOffsetsBySourceScan = OptimizeOffsetsUsingPeaks(comparisonFrameData, startScan, offsetsBySourceScanSmoothed, searcher);
+
                 // Populate frameScanAlignmentMap
                 foreach (var scanNumber in scanNumsInFrame)
                 {
-                    int offsetToUse;
-                    if (offsetsBySourceScanSmoothed.TryGetValue(scanNumber, out var offset))
+                    var offset = GetOffsetForSourceScan(scanNumber, optimizedOffsetsBySourceScan, searcher);
+                    var targetScan = scanNumber + offset;
+
+                    frameScanAlignmentMap.Add(scanNumber, targetScan);
+                }
+
                     {
-                        offsetToUse = offset;
                     }
                     else
                     {
-                        // Find the scan in offsetsBySourceScanSmoothed that is closest to scanNumber
-                        var interpolatedOffset = searcher.GetYForX(scanNumber);
-                        offsetToUse = (int)interpolatedOffset;
                     }
 
-                    var targetScan = scanNumber + offsetToUse;
-                    frameScanAlignmentMap.Add(scanNumber, targetScan);
-                }
 
 
                 if (ShowDebugMessages)
@@ -1240,6 +1239,57 @@ namespace IMSDriftTimeAligner
         }
 
         /// <summary>
+        /// Get the appropriate offset for the given scan, interpolating if not found in offsetsBySourceScan
+        /// </summary>
+        /// <param name="sourceScan">Scan number</param>
+        /// <param name="offsetsBySourceScan">Dictionary where keys are scan numbers and values are the offset to use for that scan</param>
+        /// <param name="searcher">Binary search helper</param>
+        /// <returns></returns>
+        private int GetOffsetForSourceScan(
+            int sourceScan,
+            IReadOnlyDictionary<int, int> offsetsBySourceScan,
+            clsBinarySearchFindNearest searcher)
+        {
+            var offsetToUse = GetOffsetForSourceScan(sourceScan, offsetsBySourceScan, searcher, true);
+
+            if (!offsetToUse.HasValue)
+            {
+                throw new Exception("GetOffsetForSourceScan returned a null value; this code should not be reached");
+            }
+
+            return offsetToUse.GetValueOrDefault();
+        }
+
+        /// <summary>
+        /// Get the appropriate offset for the given scan
+        /// </summary>
+        /// <param name="sourceScan">Scan number</param>
+        /// <param name="offsetsBySourceScan">Dictionary where keys are scan numbers and values are the offset to use for that scan</param>
+        /// <param name="searcher">Binary search helper</param>
+        /// <param name="interpolateIfNotFound">
+        /// When true, if a match is not found, return an interpolated value.
+        /// When false, if a match is not found, return null
+        /// </param>
+        /// <returns></returns>
+        private int? GetOffsetForSourceScan(
+            int sourceScan,
+            IReadOnlyDictionary<int, int> offsetsBySourceScan,
+            clsBinarySearchFindNearest searcher,
+            bool interpolateIfNotFound)
+        {
+            if (offsetsBySourceScan.TryGetValue(sourceScan, out var offset))
+            {
+                return offset;
+            }
+
+            if (!interpolateIfNotFound)
+                return null;
+
+            var interpolatedOffset = searcher.GetYForX(sourceScan);
+            return (int)Math.Round(interpolatedOffset);
+        }
+
+        /// <summary>
         /// Determine the minimum and maximum scan numbers
         /// </summary>
         /// <param name="scanNumbers"></param>
@@ -1440,6 +1490,182 @@ namespace IMSDriftTimeAligner
 
             frameMin = masterFrameList.Keys.Min();
             frameMax = masterFrameList.Keys.Max();
+        }
+
+        /// <summary>
+        /// Look for peaks (aka islands) in comparisonFrameData
+        /// Assure that all points in each peak get the same offset applied
+        /// </summary>
+        /// <param name="comparisonFrameData"></param>
+        /// <param name="startScan"></param>
+        /// <param name="offsetsBySourceScanSmoothed"></param>
+        /// <param name="searcher"></param>
+        /// <returns>Dictionary where keys are source scan numbers and values are the offset to apply</returns>
+        private Dictionary<int, int> OptimizeOffsetsUsingPeaks(
+            IReadOnlyList<double> comparisonFrameData,
+            int startScan,
+            IReadOnlyDictionary<int, int> offsetsBySourceScanSmoothed,
+            clsBinarySearchFindNearest searcher)
+        {
+
+            // Dictionary where keys are source scan numbers and values are the offset to apply
+            var optimizedOffsetsBySourceScan = new Dictionary<int, int>();
+
+            try
+            {
+
+                // Set the noise threshold at 0.1% of the maximum intensity in comparisonFrameData
+                var noiseThreshold = comparisonFrameData.Max() * 0.001;
+
+                var insidePeak = false;
+                var lastAverageOffset = 0;
+
+                // Keys in this dictionary are source scan number, values are the offset to apply
+                var sourceScanOffsetsInPeak = new Dictionary<int, int?>();
+
+                if (comparisonFrameData[0] >= noiseThreshold)
+                {
+                    // The first value in comparisonFrameData is above the noise threshold
+                    insidePeak = true;
+                }
+
+                for (var i = 0; i < comparisonFrameData.Count - 1; i++)
+                {
+                    var sourceScan = i + startScan;
+
+                     // if (sourceScan >= 27464 && sourceScan < 27500)
+                         // Console.WriteLine("Check this scan");
+
+                    if (comparisonFrameData[i] < noiseThreshold)
+                    {
+                        if (insidePeak)
+                        {
+                            // End of a peak
+                            StoreAverageOffsetForScansInPeak(sourceScan, sourceScanOffsetsInPeak, optimizedOffsetsBySourceScan, ref lastAverageOffset);
+                            insidePeak = false;
+                        }
+                        else if (comparisonFrameData[i + 1] >= noiseThreshold)
+                        {
+                            // Start of a peak
+                            insidePeak = true;
+                            sourceScanOffsetsInPeak.Clear();
+
+                            var offset = GetOffsetForSourceScan(sourceScan, offsetsBySourceScanSmoothed, searcher, false);
+                            sourceScanOffsetsInPeak.Add(sourceScan, offset);
+                        }
+                        else
+                        {
+                            // Intensity is low, and we're not inside a peak
+                            var offset = GetOffsetForSourceScan(sourceScan, offsetsBySourceScanSmoothed, searcher);
+                            optimizedOffsetsBySourceScan.Add(sourceScan, offset);
+                        }
+                    }
+                    else
+                    {
+                        if (insidePeak)
+                        {
+                            var offset = GetOffsetForSourceScan(sourceScan, offsetsBySourceScanSmoothed, searcher, false);
+                            sourceScanOffsetsInPeak.Add(sourceScan, offset);
+                        }
+                        else
+                        {
+                            // Not inside a peak, yet this is point's intensity is above a threshold
+                            // This happens when a single data point is below the noise threshold; start a new peak
+                            insidePeak = true;
+                            sourceScanOffsetsInPeak.Clear();
+
+                            var offset = GetOffsetForSourceScan(sourceScan, offsetsBySourceScanSmoothed, searcher, false);
+                            sourceScanOffsetsInPeak.Add(sourceScan, offset);
+                        }
+
+                    }
+                }
+
+                if (comparisonFrameData.Count > 1)
+                {
+                    // Process the final point
+                    var sourceScan = comparisonFrameData.Count - 1 + startScan;
+
+                    if (insidePeak)
+                    {
+                        // End of a peak
+                        StoreAverageOffsetForScansInPeak(sourceScan, sourceScanOffsetsInPeak, optimizedOffsetsBySourceScan, ref lastAverageOffset);
+                    }
+                    else
+                    {
+                        var offset = GetOffsetForSourceScan(sourceScan, offsetsBySourceScanSmoothed, searcher);
+                        optimizedOffsetsBySourceScan.Add(sourceScan, offset);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                ReportError("Error in OptimizeOffsetsUsingPeaks", ex);
+            }
+
+            return optimizedOffsetsBySourceScan;
+
+        }
+
+        private void StoreAverageOffsetForScansInPeak(
+            int sourceScan,
+            Dictionary<int, int?> sourceScanOffsetsInPeak,
+            IDictionary<int, int> optimizedOffsetsBySourceScan,
+            ref int lastAverageOffset
+            )
+        {
+            // Compute the average offset in sourceScanOffsetsInPeak
+            // Skip null values
+            var offsetCount = 0;
+            var offsetSum = 0.0;
+
+            foreach (var offset in sourceScanOffsetsInPeak.Values)
+            {
+                if (!offset.HasValue)
+                    continue;
+
+                offsetCount++;
+                offsetSum += offset.Value;
+            }
+
+            int averageOffsetRounded;
+            if (offsetCount == 0)
+            {
+                averageOffsetRounded = lastAverageOffset;
+            }
+            else
+            {
+                var averageOffset = offsetSum / offsetCount;
+                averageOffsetRounded = (int)Math.Round(averageOffset);
+                lastAverageOffset = averageOffsetRounded;
+            }
+
+            foreach (var item in sourceScanOffsetsInPeak)
+            {
+                var currentSourceScan = item.Key;
+
+                if (optimizedOffsetsBySourceScan.TryGetValue(currentSourceScan, out var existingOffset))
+                {
+                    PRISM.ConsoleMsgUtils.ShowDebug("Skipping storing offset of {0} for scan {1} since already defined with an offset of {2}",
+                                                    averageOffsetRounded, currentSourceScan, existingOffset);
+                }
+                else
+                {
+                    optimizedOffsetsBySourceScan.Add(currentSourceScan, averageOffsetRounded);
+                }
+            }
+
+            if (optimizedOffsetsBySourceScan.TryGetValue(sourceScan, out var existingOffset2))
+            {
+                PRISM.ConsoleMsgUtils.ShowDebug("Skipping storing offset of {0} for scan {1} since already defined with an offset of {2}",
+                                                averageOffsetRounded, sourceScan, existingOffset2);
+            }
+            else
+            {
+                optimizedOffsetsBySourceScan.Add(sourceScan, averageOffsetRounded);
+            }
+
+
         }
 
         public bool ProcessFile(string inputFilePath, string outputFilePath)
