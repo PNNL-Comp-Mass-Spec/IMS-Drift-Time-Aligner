@@ -209,6 +209,7 @@ namespace IMSDriftTimeAligner
             BaseFrameStart = 0;
             BaseFrameEnd = 0;
             BaseFrameList = "";
+            BaseFrameList = string.Empty;
 
             FrameStart = 0;
             FrameEnd = 0;
@@ -267,23 +268,23 @@ namespace IMSDriftTimeAligner
         {
             Console.WriteLine("Options:");
 
-            Console.WriteLine(" {0,-15}: {1}", "Reading data from", InputFilePath);
+            Console.WriteLine(" {0,-15}: {1}", "Reading data from:", InputFilePath);
 
             if (!string.IsNullOrWhiteSpace(OutputFilePath))
-                Console.WriteLine(" {0,-15}: {1}", "Creating file", OutputFilePath);
+                Console.WriteLine(" {0,-15} {1}", "Creating file:", OutputFilePath);
 
             Console.WriteLine();
-            Console.WriteLine(" {0,-40}: {1}", "Alignment Method", AlignmentMethod);
+            Console.WriteLine(" {0,-40} {1}", "Alignment Method:", AlignmentMethod);
             if (AlignmentMethod == AlignmentMethods.DynamicTimeWarping)
             {
-                Console.WriteLine(" {0,-40}: {1}", "Visualize the DTW Path", BoolToEnabledDisabled(VisualizeDTW));
+                Console.WriteLine(" {0,-40} {1}", "Visualize the DTW path:", BoolToEnabledDisabled(VisualizeDTW));
 
-                Console.WriteLine(" {0,-40}: {1}", "Max points for DTW", DTWMaxPoints);
+                Console.WriteLine(" {0,-40} {1}", "Max points for DTW:", DTWMaxPoints);
 
-                Console.WriteLine(" {0,-40}: {1}%", "Sakoe Chiba Max Shift", StringUtilities.ValueToString(DTWSakoeChibaMaxShiftPercent, 3));
+                Console.WriteLine(" {0,-40} {1}%", "Sakoe Chiba Max Shift:", StringUtilities.ValueToString(DTWSakoeChibaMaxShiftPercent, 3));
             }
 
-            Console.WriteLine(" {0,-40}: {1} ({2})", "Base Frame Selection Mode", BaseFrameSelectionMode, (int)BaseFrameSelectionMode);
+            Console.WriteLine(" {0,-40} {1} ({2})", "Base Frame Selection Mode:", BaseFrameSelectionMode, (int)BaseFrameSelectionMode);
 
             switch (BaseFrameSelectionMode)
             {
@@ -297,30 +298,30 @@ namespace IMSDriftTimeAligner
 
                     if (string.IsNullOrWhiteSpace(BaseFrameList))
                     {
-                        Console.WriteLine(" Base Frame Start: {0}", BaseFrameStart);
+                        Console.WriteLine("{0,-40} {1}", " Base Frame Start:", BaseFrameStart);
                         if (BaseFrameEnd > 0)
                         {
-                            Console.WriteLine(" Base Frame End: {0}", BaseFrameEnd);
+                            Console.WriteLine(" {0,-40} {1}", "Base Frame End:", BaseFrameEnd);
                         }
                         else
                         {
-                            Console.WriteLine(" Base Frame End: last frame in file");
+                            Console.WriteLine(" {0,-40} {1}", "Base Frame End:", "Last frame in file");
                         }
                     }
                     else
                     {
-                        Console.WriteLine(" Base Frame List: {0}", BaseFrameList);
+                        Console.WriteLine(" {0,-40} {1}", "Base Frame List:", BaseFrameList);
                     }
                     break;
 
                 case BaseFrameSelectionModes.SumFirstNFrames:
                 case BaseFrameSelectionModes.SumMidNFrames:
-                    Console.WriteLine(" Base Frames to Sum: {0}", BaseFrameSumCount);
+                    Console.WriteLine(" {0,-40} {1}", "Base Frames to Sum:", BaseFrameSumCount);
                     break;
 
                 case BaseFrameSelectionModes.SumFirstNPercent:
                 case BaseFrameSelectionModes.SumMidNPercent:
-                    Console.WriteLine(" Base Frames to Sum: {0}%", BaseFrameSumCount);
+                    Console.WriteLine(" {0,-40} {1}%", "Base Frames to Sum:", BaseFrameSumCount);
                     break;
 
             }
@@ -328,19 +329,19 @@ namespace IMSDriftTimeAligner
             Console.WriteLine();
             if (FrameStart > 0 || FrameEnd > 0)
             {
-                Console.WriteLine(" First frame to process {0}", FrameStart);
+                Console.WriteLine(" {0,-40} {1}", "First frame to process:", FrameStart);
                 if (FrameEnd > 0)
                 {
-                    Console.WriteLine(" Last frame to process: {0}", FrameEnd);
+                    Console.WriteLine(" {0,-40} {1}", "Last frame to process:", FrameEnd);
                 }
                 else
                 {
-                    Console.WriteLine(" Last frame to process: last frame in file");
+                    Console.WriteLine(" {0,-40} {1}", "Last frame to process:", "Last frame in file");
                 }
             }
 
-            Console.WriteLine(" Maximum shift: {0} scans", MaxShiftScans);
-            Console.WriteLine(" Minimum Intensity threshold Fraction: {0}", MinimumIntensityThresholdFraction);
+            Console.WriteLine(" {0,-40} {1} scans", "Maximum shift:", MaxShiftScans);
+            Console.WriteLine(" {0,-40} {1}", "Minimum Intensity threshold Fraction:", MinimumIntensityThresholdFraction);
 
             if (DriftScanFilterMin > 0 || DriftScanFilterMax > 0 || MzFilterMin > 0 || MzFilterMax > 0)
             {
@@ -349,32 +350,32 @@ namespace IMSDriftTimeAligner
 
                 if (DriftScanFilterMin > 0 || DriftScanFilterMax > 0)
                 {
-                    Console.WriteLine(" Minimum drift time scan: {0}", DriftScanFilterMin);
+                    Console.WriteLine(" {0,-40} {1}", "Minimum drift time scan:", DriftScanFilterMin);
                     if (DriftScanFilterMax > 0)
                     {
-                        Console.WriteLine(" Maximum drift time scan: {0}", DriftScanFilterMax);
+                        Console.WriteLine(" {0,-40} {1}", " Maximum drift time scan:", DriftScanFilterMax);
                     }
                     else
                     {
-                        Console.WriteLine(" Maximum drift time scan: last scan in frame");
+                        Console.WriteLine(" {0,-40} {1}", "Maximum drift time scan:", "Last scan in frame");
                     }
                 }
 
                 if (MzFilterMin > 0 || MzFilterMax > 0)
                 {
-                    Console.WriteLine(" Minimum m/z: {0}", MzFilterMin);
+                    Console.WriteLine(" {0,-40} {1}", "Minimum m/z:", MzFilterMin);
                     if (MzFilterMax > 0)
                     {
-                        Console.WriteLine(" Maximum m/z: {0}", MzFilterMax);
+                        Console.WriteLine(" {0,-40} {1}", "Maximum m/z:", MzFilterMax);
                     }
                     else
                     {
-                        Console.WriteLine(" Maximum m/z: highest observed m/z (no filter)");
+                        Console.WriteLine(" {0,-40} {1}", "Maximum m/z:", "Highest observed m/z (no filter)");
                     }
                 }
             }
 
-            Console.WriteLine(" Scans to smooth: {0}", ScanSmoothCount);
+            Console.WriteLine(" {0,-40} {1}", "Scans to smooth:", ScanSmoothCount);
             if (DebugMode)
                 Console.WriteLine(" Showing debug messages");
 
