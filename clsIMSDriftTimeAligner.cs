@@ -1646,9 +1646,6 @@ namespace IMSDriftTimeAligner
                 {
                     var sourceScan = i + startScan;
 
-                     // if (sourceScan >= 27464 && sourceScan < 27500)
-                         // Console.WriteLine("Check this scan");
-
                     if (comparisonFrameData[i] < noiseThreshold)
                     {
                         if (insidePeak)
