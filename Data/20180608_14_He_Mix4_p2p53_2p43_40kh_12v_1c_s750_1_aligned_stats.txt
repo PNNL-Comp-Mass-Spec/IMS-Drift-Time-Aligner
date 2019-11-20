@@ -1,0 +1,47 @@
+IMSDriftTimeAligner.exe 20180608_14_He_Mix4_p2p53_2p43_40kh_12v_1c_s750_1.uimf /BaseFrameMode:3 /BaseStart:35 /BaseEnd:35 /FrameStart:30 /FrameEnd:50 /Append /OutputFilePath:20180608_14_He_Mix4_p2p53_2p43_40kh_12v_1c_s750_1_aligned.uimf
+
+== Processing Options ==
+
+AlignmentMethod=LinearRegression
+BaseFrameMode=UserSpecifiedFrameRange (3)
+BaseCount=15
+BaseStart=35
+BaseEnd=35
+BaseFrameList=
+ActualBaseFrameNum=35
+FrameStart=30
+FrameEnd=50
+MaxShift=150
+MinimumIntensityThresholdFraction=0.1
+DriftScanFilterMin=0
+DriftScanFilterMax=0
+MzFilterMin=0
+MzFilterMax=0
+ScanSmoothCount=7
+MergeFrames=False
+AppendMergedFrame=True
+
+== Alignment Stats ==
+
+Frame    Shift  Best RSquared
+30       -3     0.99424
+31       -3     0.98764
+32       -13    0.99013
+33       -2     0.99319
+34       -1     0.98208
+35       0      1.00000
+36       0      0.98374
+37       -8     0.98208
+38       1      0.96784
+39       -1     0.98053
+40       -1     0.99114
+41       -1     0.99276
+42       -2     0.99017
+43       -7     0.98770
+44       0      0.98957
+45       0      0.96735
+46       0      0.98019
+47       1      0.98494
+48       -8     0.99169
+49       1      0.98151
+50       0      0.97030
