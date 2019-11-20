@@ -240,7 +240,7 @@ namespace IMSDriftTimeAligner
 
             VisualizeDTW = false;
 
-            WriteOptionsToStatsFile = false;
+            WriteOptionsToStatsFile = true;
         }
 
         /// <summary>
