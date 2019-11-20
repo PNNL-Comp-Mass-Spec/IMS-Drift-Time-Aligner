@@ -12,7 +12,7 @@ IMSDriftTimeAligner.exe
  InputFilePath [/O:OutputFilePath] 
  [/Merge] [/Append]
  [/Align:Mode]
- [/BaseFrame:N] [/BaseCount:N] 
+ [/BaseFrameMode:N] [/BaseCount:N] 
  [/BaseStart:N] [/BaseEnd:N]
  [/BaseFrameList:X,Y,Z]
  [/Start:N] [/End:N] 
@@ -38,10 +38,10 @@ Use `/Append` or `-Append` to specify that the data should be merged and appende
 * This option is only applicable if `/Merge` is not specified
 
 Use `/Align` to define the alignment mode
-* `/Align:0` means linear regression and simple shifting of all data in a frame by the same number of scans
-* `/Align:1` means dynamic time warping, which provides for a non-linear shift of scans in a frame
+* `/Align:0` or `/Align:LinearRegression` means linear regression and simple shifting of all data in a frame by the same number of scans
+* `/Align:1` or `/Align:DynamicTimeWarping` means dynamic time warping, which provides for a non-linear shift of scans in a frame
 
-Use `/BaseFrame` or `/BaseFrameMode` to specify how the base frame is selected; options are:
+Use `/BaseFrameMode` or `/BaseFrame` to specify how the base frame is selected; options are:
 
 | Mode            | Description             |
 |-----------------|-------------------------|
@@ -96,13 +96,16 @@ Use `/DTWShift` to define the maximum Sakoe Chiba shift
 * Default is 5 (aka 5%)
 
 Use `/Vis` or `/Plot` to visualize the dynamic time warping results for each aligned frame
+* Shows interactive plots in a new window
+* Zoom in by drawing square box using the middle mouse button; alternatively, use Ctrl + Alt + Left Mouse Button
+* Zooom out by double clicking with the middle mouse button; alternatively, double click with Ctrl + Alt + Left Mouse Button
 
 Use `/SavePlot` or `/SavePlots` to create a .png file visualizing dynamic time warping offsets for each frame
 
 Use `/Debug` to show additional debug messages at the console
 
 By default, the processing options will be included in the alignment stats file (Dataset_stats.txt).
-This can be disabled with `/WO:False`
+* This can be disabled with `/WO:False` or `/WriteOptions:False`
 
 The processing options can be specified in a parameter file using `/ParamFile:Options.conf`
 * Define options using the format `ArgumentName=Value`
