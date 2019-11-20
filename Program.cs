@@ -53,6 +53,13 @@ namespace IMSDriftTimeAligner
             {
                 if (!parseResults.Success)
                 {
+                    Console.WriteLine();
+                    ConsoleMsgUtils.ShowWarning("Error processing the command line arguments");
+                    foreach (var item in parseResults.ParseErrors)
+                    {
+                        ConsoleMsgUtils.ShowWarning(item.Message);
+                    }
+
                     Thread.Sleep(1500);
                     return -1;
                 }

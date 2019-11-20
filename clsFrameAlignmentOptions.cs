@@ -303,7 +303,7 @@ namespace IMSDriftTimeAligner
 
                     if (string.IsNullOrWhiteSpace(BaseFrameList))
                     {
-                        Console.WriteLine("{0,-40} {1}", " Base Frame Start:", BaseFrameStart);
+                        Console.WriteLine(" {0,-40} {1}", "Base Frame Start:", BaseFrameStart);
                         if (BaseFrameEnd > 0)
                         {
                             Console.WriteLine(" {0,-40} {1}", "Base Frame End:", BaseFrameEnd);
@@ -378,6 +378,7 @@ namespace IMSDriftTimeAligner
                         Console.WriteLine(" {0,-40} {1}", "Maximum m/z:", "Highest observed m/z (no filter)");
                     }
                 }
+
             }
 
             Console.WriteLine(" {0,-40} {1}", "Scans to smooth:", ScanSmoothCount);

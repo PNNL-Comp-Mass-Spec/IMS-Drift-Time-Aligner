@@ -1945,6 +1945,10 @@ namespace IMSDriftTimeAligner
                         writer.UpdateGlobalStats();
 
                     }
+
+                    Console.WriteLine();
+                    OnStatusEvent("Processing Complete; created file " + PathUtils.CompactPathString(outputFile.FullName, 100));
+                    OnStatusEvent("See also the stats file:          " + PathUtils.CompactPathString(statsFilePath, 100));
                 }
 
                 return true;
