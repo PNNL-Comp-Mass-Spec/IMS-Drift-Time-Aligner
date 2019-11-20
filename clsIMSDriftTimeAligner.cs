@@ -3,10 +3,12 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Text;
 using NDtw;
 using NDtw.Preprocessing;
 using OxyPlot;
 using OxyPlot.Wpf;
+using PRISM;
 using UIMFLibrary;
 using LinearAxis = OxyPlot.LinearAxis;
 using LineSeries = OxyPlot.LineSeries;
@@ -30,6 +32,8 @@ namespace IMSDriftTimeAligner
         #endregion
 
         #region "Classwide variables"
+
+        private string mAverageScanShiftHeader;
 
         private bool mSmoothedBaseFrameDataWritten;
 
@@ -214,6 +218,7 @@ namespace IMSDriftTimeAligner
                 double[] baseFrameData;
                 double[] comparisonFrameData;
                 int scanStart;
+                int scanEnd;
 
                 // Keys are the old scan number and values are the new scan number
                 Dictionary<int, int> frameScanAlignmentMap;
@@ -224,7 +229,7 @@ namespace IMSDriftTimeAligner
                     frameScanAlignmentMap = new Dictionary<int, int>();
 
                     scanStart = baseFrameScans.First().Scan;
-                    var scanEnd = baseFrameScans.Last().Scan;
+                    scanEnd = baseFrameScans.Last().Scan;
 
                     // Populate the arrays, storing TIC values in the appropriate index of baseFrameData and comparisonFrameData
                     baseFrameData = GetTICValues(outputDirectory, BASE_FRAME_DESCRIPTION, scanStart, scanEnd, baseFrameScans);
@@ -235,7 +240,7 @@ namespace IMSDriftTimeAligner
                 {
 
                     scanStart = Math.Min(nonzeroScans1.First(), nonzeroScans2.First());
-                    var scanEnd = Math.Max(nonzeroScans1.Last(), nonzeroScans2.Last());
+                    scanEnd = Math.Max(nonzeroScans1.Last(), nonzeroScans2.Last());
 
                     // Populate the arrays, storing TIC values in the appropriate index of baseFrameData and comparisonFrameData
                     baseFrameData = GetTICValues(outputDirectory, BASE_FRAME_DESCRIPTION, scanStart, scanEnd, baseFrameScans);
@@ -253,7 +258,7 @@ namespace IMSDriftTimeAligner
                         frameScanAlignmentMap = AlignFrameDataDTW(
                             comparisonFrameNum, comparisonFrameData,
                             baseFrameData, scanNumsInFrame,
-                            statsWriter, scanStart,
+                            statsWriter, scanStart, scanEnd,
                             datasetName,
                             outputDirectory);
                     }
@@ -289,6 +294,7 @@ namespace IMSDriftTimeAligner
         /// <param name="scanNumsInFrame">Full list of scan numbers in the frame (since frameScans might be filtered)</param>
         /// <param name="statsWriter">Stats file writer</param>
         /// <param name="scanStart">First scan of the data in comparisonFrameData (and also baseFrameData)</param>
+        /// <param name="scanEnd">Last scan of the data in comparisonFrameData (and also baseFrameData)</param>
         /// <param name="datasetName"></param>
         /// <param name="outputDirectory">Output directory</param>
         /// <returns>Dictionary where keys are the old scan number and values are the new scan number</returns>
@@ -299,6 +305,7 @@ namespace IMSDriftTimeAligner
             IEnumerable<int> scanNumsInFrame,
             TextWriter statsWriter,
             int scanStart,
+            int scanEnd,
             string datasetName,
             FileSystemInfo outputDirectory)
         {
@@ -344,11 +351,6 @@ namespace IMSDriftTimeAligner
 
                 // The alignment path will range from 0 to baseDataToUse.Length - 1
                 var alignmentPath = dtwAligner.GetPath();
-
-                var statsLine = string.Format("{0,-8} {1,-8:#,##0}", comparisonFrameNum, cost);
-                statsWriter.WriteLine(statsLine.Trim());
-
-                Console.WriteLine("Frame {0}, Dynamic Time Warping cost: {1:0}", comparisonFrameNum, cost);
 
                 // Populate frameScanAlignmentMap
 
@@ -516,7 +518,12 @@ namespace IMSDriftTimeAligner
 
                 var optimizedOffsetsBySourceScan = OptimizeOffsetsUsingPeaks(comparisonFrameData, scanStart, offsetsBySourceScanSmoothed, searcher);
 
-                // Populate frameScanAlignmentMap
+                // Initialize a dictionary for keeping track of average scan shift by percentile
+                // Keys are percentile, values are the list of offsets for the scans in that percentile
+                var offsetsByPercentile = new Dictionary<int, List<int>>();
+                var scanCountInFrame = Math.Max(1, scanEnd - scanStart);
+
+                // Populate frameScanAlignmentMap and offsetsByPercentile
                 foreach (var scanNumber in scanNumsInFrame)
                 {
                     var offset = GetOffsetForSourceScan(scanNumber, optimizedOffsetsBySourceScan, searcher);
@@ -524,21 +531,45 @@ namespace IMSDriftTimeAligner
 
                     frameScanAlignmentMap.Add(scanNumber, targetScan);
 
+                    var percentile = 10 * (int)Math.Round((scanNumber - scanStart) / (double)scanCountInFrame * 10, 0);
 
+                    if (offsetsByPercentile.TryGetValue(percentile, out var offsetList))
                     {
-                    }
-                    {
-                    }
-
-
-
-
-                    {
+                        offsetList.Add(offset);
                     }
                     else
                     {
+                        offsetsByPercentile.Add(percentile, new List<int> { offset });
                     }
+                }
 
+                var statsLine = new StringBuilder();
+
+                string costFormatString;
+                if (cost < 10)
+                    costFormatString = "{1,-8:0.00}";
+                else if (cost < 100)
+                    costFormatString = "{1,-8:0.0}";
+                else
+                    costFormatString = "{1,-8:#,##0}";
+
+                statsLine.Append(string.Format("{0,-8} " + costFormatString, comparisonFrameNum, cost));
+
+                for (var percentile = 10; percentile <= 90; percentile += 10)
+                {
+                    if (offsetsByPercentile.TryGetValue(percentile, out var offsetList))
+                    {
+                        statsLine.Append(string.Format(" {0,-6:0}", offsetList.Average()));
+                    }
+                    else
+                    {
+                        statsLine.Append(string.Format(" {0,-6:0}", 0));
+                    }
+                }
+
+                OnStatusEvent("  " + mAverageScanShiftHeader);
+                OnStatusEvent("  " + statsLine.ToString().Trim());
+                statsWriter.WriteLine(statsLine.ToString().Trim());
 
                 if (Options.VisualizeDTW || Options.SaveDTWPlots)
                 {
@@ -1859,13 +1890,20 @@ namespace IMSDriftTimeAligner
 
                         if (Options.AlignmentMethod == FrameAlignmentOptions.AlignmentMethods.DynamicTimeWarping)
                         {
-                            statsWriter.WriteLine("{0,-8} {1,-8}", "Frame", "Cost");
+                            mAverageScanShiftHeader = string.Format("{0,-8} {1,-8} {2,-6} {3,-6} {4,-6} {5,-6} {6,-6} {7,-6} {8,-6} {9,-6} {10,-6}",
+                                                                    "Frame", "Cost", "10%", "20%", "30%", "40%", "50%", "60%", "70%", "80%", "90%");
+
+                            statsWriter.WriteLine("{0,-8} {1,-8} {2,-14} ", "", "", "Average scan shift by drift time scan percentile");
+                            statsWriter.WriteLine(mAverageScanShiftHeader);
+
+                            Console.WriteLine();
+                            OnStatusEvent("For each frame, will display the average scan shift by drift time scan percentile");
                         }
                         else
                         {
+                            mAverageScanShiftHeader = string.Empty;
                             statsWriter.WriteLine("{0,-8} {1,-6} {2,-8}", "Frame", "Shift", "Best RSquared");
                         }
-
 
                         if (writer.HasLegacyParameterTables)
                             writer.ValidateLegacyHPFColumnsExist();
