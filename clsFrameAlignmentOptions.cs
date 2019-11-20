@@ -12,7 +12,7 @@ namespace IMSDriftTimeAligner
         /// <summary>
         /// Program date
         /// </summary>
-        public const string PROGRAM_DATE = "November 13, 2019";
+        public const string PROGRAM_DATE = "November 19, 2019";
 
         /// <summary>
         /// Default frame selection mode
@@ -104,8 +104,8 @@ namespace IMSDriftTimeAligner
             "Frame to stop processing at (Set FrameStart and FrameEnd to 0 to process all frames)")]
         public int FrameEnd { get; set; }
 
-        [Option("i", "input", ArgPosition = 1, HelpShowsDefault = false, HelpText =
-            "Input file path (UIMF File)")]
+        [Option("i", "input", ArgPosition = 1, HelpShowsDefault = false, IsFilePath=true,
+            HelpText = "Input file path (UIMF File)")]
         public string InputFilePath { get; set; }
 
         [Option("o", "output", ArgPosition = 2, HelpShowsDefault = false, HelpText =
