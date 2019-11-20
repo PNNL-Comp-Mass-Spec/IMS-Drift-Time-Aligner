@@ -68,10 +68,10 @@ namespace IMSDriftTimeAligner
         #region "Properties"
 
         [Option("Align", DoNotListEnumValues = false, HelpShowsDefault = false, HelpText =
-            "Method for aligning the data for each frame to the base frame")]
+            "Method for aligning the data for each frame to the base frame; default is LinearRegression")]
         public AlignmentMethods AlignmentMethod { get; set; }
 
-        [Option("BaseFrame", "BaseFrameMode", HelpText =
+        [Option("BaseFrameMode", "BaseFrame", HelpText =
             "Method for selecting the base frame to align all the other frames to")]
         public BaseFrameSelectionModes BaseFrameSelectionMode { get; set; }
 
@@ -92,23 +92,19 @@ namespace IMSDriftTimeAligner
             "List of frames to use when the BaseFrameMode mode is 3 (UserSpecifiedFrameRange)")]
         public string BaseFrameList { get; set; }
 
-        [Option("Debug", HelpShowsDefault = false, HelpText =
-            "True to show additional debug messages at the console")]
-        public bool DebugMode { get; set; }
-
-        [Option("Start", "FrameStart", HelpShowsDefault = false, HelpText =
+        [Option("FrameStart", "Start", HelpShowsDefault = false, HelpText =
             "Frame to start processing at (0 to start at the first frame)")]
         public int FrameStart { get; set; }
 
-        [Option("End", "FrameEnd", HelpShowsDefault = false, HelpText =
+        [Option("FrameEnd", "End", HelpShowsDefault = false, HelpText =
             "Frame to stop processing at (Set FrameStart and FrameEnd to 0 to process all frames)")]
         public int FrameEnd { get; set; }
 
-        [Option("i", "input", ArgPosition = 1, HelpShowsDefault = false, IsInputFilePath=true,
+        [Option("InputFile", "InputFilePath", "i", "input", ArgPosition = 1, HelpShowsDefault = false, IsInputFilePath = true,
             HelpText = "Input file path (UIMF File)")]
         public string InputFilePath { get; set; }
 
-        [Option("o", "output", ArgPosition = 2, HelpShowsDefault = false, HelpText =
+        [Option("OutputFile", "OutputFilePath", "o", "output", ArgPosition = 2, HelpShowsDefault = false, HelpText =
             "Output file path")]
         public string OutputFilePath { get; set; }
 
@@ -120,8 +116,9 @@ namespace IMSDriftTimeAligner
             "Maximum Sakoe Chiba Shift, as a percentage of the number of points used for Dynamic Time Warping")]
         public double DTWSakoeChibaMaxShiftPercent { get; set; }
 
-        [Option("MaxShift", HelpText =
-            "Maximum number of scans that data in a frame is allowed to be shifted when aligning to the base frame data")]
+        [Option("MaxShift", HelpShowsDefault = true, HelpText =
+            "Maximum number of scans that data in a frame is allowed to be shifted when aligning to the base frame data; " +
+            "ignored if the alignment method is DynamicTimeWarping")]
         public int MaxShiftScans { get; set; }
 
         private double? mMinimumIntensityThresholdFraction;
@@ -182,14 +179,18 @@ namespace IMSDriftTimeAligner
         public bool AppendMergedFrame { get; set; }
 
         [Option("Plot", "Vis", HelpShowsDefault = false, HelpText =
-            "Visualize the dynamic time warping results for each aligned frame")]
+            "Visualize the dynamic time warping results for each aligned frame; shows interactive plots in a new window")]
         public bool VisualizeDTW { get; set; }
 
         [Option("SavePlot", "SavePlots", HelpShowsDefault = false, HelpText =
             "Save a dynamic time warping plot for each aligned frame")]
         public bool SaveDTWPlots { get; set; }
 
-        [Option("WO", "WriteOptions", HelpShowsDefault = true, HelpText =
+        [Option("Debug", HelpShowsDefault = false, HelpText =
+            "True to show additional debug messages at the console")]
+        public bool DebugMode { get; set; }
+
+        [Option("WriteOptions", "WO", HelpShowsDefault = true, HelpText =
             "Include the processing options at the start of the alignment stats file (Dataset_stats.txt)")]
         public bool WriteOptionsToStatsFile { get; set; }
 
