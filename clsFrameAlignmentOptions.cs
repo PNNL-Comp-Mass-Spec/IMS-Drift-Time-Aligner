@@ -288,7 +288,7 @@ namespace IMSDriftTimeAligner
                 Console.WriteLine(" {0,-40} {1}%", "Sakoe Chiba Max Shift:", StringUtilities.ValueToString(DTWSakoeChibaMaxShiftPercent, 3));
             }
 
-            Console.WriteLine(" {0,-40} {1} ({2})", "Base Frame Selection Mode:", BaseFrameSelectionMode, (int)BaseFrameSelectionMode);
+            Console.WriteLine(" {0,-40} {1} (mode {2})", "Base Frame Selection Mode:", BaseFrameSelectionMode, (int)BaseFrameSelectionMode);
 
             switch (BaseFrameSelectionMode)
             {

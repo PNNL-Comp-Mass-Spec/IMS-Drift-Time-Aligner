@@ -2103,7 +2103,7 @@ namespace IMSDriftTimeAligner
                     if (scanNumNew % 10 == 0 && DateTime.UtcNow.Subtract(lastProgressTime).TotalMilliseconds >= 1000)
                     {
                         lastProgressTime = DateTime.UtcNow;
-                        ReportMessage($"  storing scan {scanNumOldStart}");
+                        ReportMessage($"  storing scan {scanNumOldStart:#,##0}");
                     }
 
                     int[] targetScanIntensities = null;
