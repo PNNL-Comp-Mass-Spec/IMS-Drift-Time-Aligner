@@ -23,6 +23,7 @@ IMSDriftTimeAligner.exe
  [/DTWPoints:N] [/DTWShift:N]
  [/Vis] [/SavePlots]
  [/Debug] [/WO:False]
+ [/ParamFile] [/CreateParamFile]
 ```
 
 InputFilePath is a path to the UIMF file to process. Wildcards are also supported, for example *.uimf
@@ -102,6 +103,15 @@ Use `/Debug` to show additional debug messages at the console
 
 By default, the processing options will be included in the alignment stats file (Dataset_stats.txt).
 This can be disabled with `/WO:False`
+
+The processing options can be specified in a parameter file using `/ParamFile:Options.conf`
+* Define options using the format `ArgumentName=Value`
+* Lines starting with `#` or `;` will be treated as comments
+* Additional arguments on the command line can supplement or override the arguments in the parameter file
+
+Use `/CreateParamFile` to create an example parameter file
+* By default, the example parameter file content is shown at the console
+* To create a file named Options.conf, use `/CreataParamFile:Options.conf`
 
 ## Contacts
 
