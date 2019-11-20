@@ -837,17 +837,24 @@ namespace IMSDriftTimeAligner
             var binWidth = reader.GetGlobalParams().BinWidth;
             var lastProgressTime = DateTime.UtcNow;
 
-            foreach (var scanItem in mergedFrameScans)
+            var sortedKeys = mergedFrameScans.Keys.ToList();
+            sortedKeys.Sort();
+
+            var scansProcessed = 0;
+            var scanCountToStore = sortedKeys.Count;
+
+            foreach (var scanNumNew in sortedKeys)
             {
-                if (scanItem.Key % 10 == 0 && DateTime.UtcNow.Subtract(lastProgressTime).TotalMilliseconds >= 1000)
+                if (scanNumNew % 10 == 0 && DateTime.UtcNow.Subtract(lastProgressTime).TotalMilliseconds >= 1000)
                 {
                     lastProgressTime = DateTime.UtcNow;
-                    ReportMessage($"  storing scan {scanItem.Key}");
+                    var percentComplete = scansProcessed / (double)scanCountToStore * 100;
+                    ReportMessage($"  storing scan {scanNumNew:#,##0} ({percentComplete:0.0}% complete)");
                 }
 
-                var scanNumNew = scanItem.Key;
-                var intensities = scanItem.Value;
+                var intensities = mergedFrameScans[scanNumNew];
                 writer.InsertScan(mergedFrameNum, frameParams, scanNumNew, intensities, binWidth);
+                scansProcessed++;
             }
 
         }
