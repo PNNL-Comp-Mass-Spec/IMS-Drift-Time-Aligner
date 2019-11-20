@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Windows;
 using NDtw;
 using NDtw.Preprocessing;
 using OxyPlot;
@@ -681,14 +682,14 @@ namespace IMSDriftTimeAligner
                 if (ShowDebugMessages)
                 {
                     Console.WriteLine();
-                    ReportMessage("Top 10 offsets:");
-                    ReportMessage(string.Format("{0,-12}  {1}", "Offset_Scans", "R-Squared"));
+                    OnStatusEvent("Top 10 offsets:");
+                    OnStatusEvent(string.Format("{0,-12}  {1}", "Offset_Scans", "R-Squared"));
                     for (var i = 0; i < 10; i++)
                     {
                         if (i >= rankedOffsets.Count)
                             break;
 
-                        ReportMessage(string.Format("{0,4:##0}          {1:n6}", rankedOffsets[i].Key, rankedOffsets[i].Value));
+                        OnStatusEvent(string.Format("{0,4:##0}          {1:n6}", rankedOffsets[i].Key, rankedOffsets[i].Value));
                     }
                 }
 
@@ -707,7 +708,7 @@ namespace IMSDriftTimeAligner
                 var statsLine = string.Format("{0,-8} {1,-6} {2,-8:F5}", comparisonFrameNum, bestOffset, bestRSquared);
                 statsWriter.WriteLine(statsLine.Trim());
 
-                Console.WriteLine("  R-squared {0:F3}, shift {1} scans", bestRSquared, bestOffset);
+                OnStatusEvent(string.Format("  R-squared {0:F3}, shift {1} scans", bestRSquared, bestOffset));
 
             }
             catch (Exception ex)
@@ -778,7 +779,7 @@ namespace IMSDriftTimeAligner
             Dictionary<int, int[]> mergedFrameScans)
         {
             Console.WriteLine();
-            ReportMessage("Appending the merged frame data");
+            OnStatusEvent("Appending the merged frame data");
 
             var frameParams = reader.GetFrameParams(referenceFrameNum);
 
@@ -805,7 +806,7 @@ namespace IMSDriftTimeAligner
                 {
                     lastProgressTime = DateTime.UtcNow;
                     var percentComplete = scansProcessed / (double)scanCountToStore * 100;
-                    ReportMessage($"  storing scan {scanNumNew:#,##0} ({percentComplete:0.0}% complete)");
+                    OnStatusEvent($"  storing scan {scanNumNew:#,##0} ({percentComplete:0.0}% complete)");
                 }
 
                 var intensities = mergedFrameScans[scanNumNew];
@@ -1546,7 +1547,7 @@ namespace IMSDriftTimeAligner
                         backupFile.Delete();
 
                     File.Move(outputFile.FullName, backupFile.FullName);
-                    ReportMessage("Existing output file found; renamed to: " + backupFile.Name);
+                    OnStatusEvent("Existing output file found; renamed to: " + backupFile.Name);
                 }
                 else
                 {
@@ -1765,7 +1766,7 @@ namespace IMSDriftTimeAligner
 
                 mFrameScanStats.Clear();
 
-                ReportMessage(string.Format("Opening {0}\n in folder {1}", sourceFile.Name, sourceFile.Directory));
+                OnStatusEvent(string.Format("Opening {0}\n in folder {1}", sourceFile.Name, sourceFile.Directory));
                 var outputFile = InitializeOutputFile(sourceFile, outputFilePath);
 
                 if (outputFile == null)
@@ -1793,7 +1794,7 @@ namespace IMSDriftTimeAligner
                 {
                     reader.ErrorEvent += UIMFReader_ErrorEvent;
 
-                    ReportMessage("Cloning the .UIMF file");
+                    OnStatusEvent("Cloning the .UIMF file");
                     var success = CloneUimf(reader, sourceFile, outputFile);
                     if (!success)
                     {
@@ -1805,7 +1806,7 @@ namespace IMSDriftTimeAligner
 
                     var baseFrameList = GetBaseFrames(reader);
 
-                    ReportMessage("Retrieving base frame scan data");
+                    OnStatusEvent("Retrieving base frame scan data");
 
                     GetSummedFrameScans(reader, baseFrameList, out _, out var baseFrameScans);
 
@@ -1884,9 +1885,9 @@ namespace IMSDriftTimeAligner
 
                         Console.WriteLine();
                         if (baseFrameList.Count == 1)
-                            Console.WriteLine("Actual base frame: " + baseFrameList.First());
+                            OnStatusEvent("Actual base frame: " + baseFrameList.First());
                         else
-                            Console.WriteLine("Actual base frames: " + string.Join(",", baseFrameList));
+                            OnStatusEvent("Actual base frames: " + string.Join(",", baseFrameList));
 
                         if (Options.AlignmentMethod == FrameAlignmentOptions.AlignmentMethods.DynamicTimeWarping)
                         {
@@ -1983,7 +1984,7 @@ namespace IMSDriftTimeAligner
             )
         {
             Console.WriteLine();
-            ReportMessage($"Process frame {comparisonFrameNum}");
+            OnStatusEvent($"Process frame {comparisonFrameNum}");
 
             try
             {
@@ -2066,7 +2067,7 @@ namespace IMSDriftTimeAligner
                     if (scanNumNew % 10 == 0 && DateTime.UtcNow.Subtract(lastProgressTime).TotalMilliseconds >= 1000)
                     {
                         lastProgressTime = DateTime.UtcNow;
-                        ReportMessage($"  storing scan {scanNumOldStart:#,##0}");
+                        OnStatusEvent($"  storing scan {scanNumOldStart:#,##0}");
                     }
 
                     int[] targetScanIntensities = null;
@@ -2153,11 +2154,6 @@ namespace IMSDriftTimeAligner
             ErrorMessages.Add(message);
         }
 
-        private void ReportMessage(string message)
-        {
-            OnStatusEvent(message);
-        }
-
         private void ReportWarning(string message)
         {
             OnWarningEvent(message);
@@ -2221,7 +2217,7 @@ namespace IMSDriftTimeAligner
                         }
                         else
                         {
-                            Console.WriteLine("Warning, did not find scan {0} in offsetsBySourceScanSmoothed", sourceScan);
+                            OnWarningEvent(string.Format("Warning, did not find scan {0} in offsetsBySourceScanSmoothed", sourceScan));
                             offsetSmoothed = -1;
                             targetScanViaOffsetSmoothed = -1;
                         }
@@ -2237,8 +2233,9 @@ namespace IMSDriftTimeAligner
 
                                 if (warningCount <= 10 || warningCount % 100 == 0)
                                 {
-                                    Console.WriteLine("Warning, mismatch between expected target scan and frameScanAlignmentMap; {0} vs. {1}",
-                                                      targetScanToVerify, targetScanViaOffsetSmoothed);
+                                    OnWarningEvent(string.Format(
+                                                       "Warning, mismatch between expected target scan and frameScanAlignmentMap; {0} vs. {1}",
+                                                       targetScanToVerify, targetScanViaOffsetSmoothed));
                                 }
                             }
                         }
@@ -2309,13 +2306,13 @@ namespace IMSDriftTimeAligner
                     switch (scanShiftApplied)
                     {
                         case 0:
-                            ReportMessage($"Data in {frameDescription} will not be shifted");
+                            OnStatusEvent($"Data in {frameDescription} will not be shifted");
                             break;
                         case 1:
-                            ReportMessage($"Data in {frameDescription} will be shifted by 1 scan");
+                            OnStatusEvent($"Data in {frameDescription} will be shifted by 1 scan");
                             break;
                         default:
-                            ReportMessage($"Data in {frameDescription} will be shifted by {scanShiftApplied} scans");
+                            OnStatusEvent($"Data in {frameDescription} will be shifted by {scanShiftApplied} scans");
                             break;
                     }
 
