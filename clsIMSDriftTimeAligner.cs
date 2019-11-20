@@ -1766,7 +1766,7 @@ namespace IMSDriftTimeAligner
 
                 mFrameScanStats.Clear();
 
-                OnStatusEvent(string.Format("Opening {0}\n in folder {1}", sourceFile.Name, sourceFile.Directory));
+                OnStatusEvent(string.Format("Opening {0}\n in directory {1}", sourceFile.Name, sourceFile.Directory));
                 var outputFile = InitializeOutputFile(sourceFile, outputFilePath);
 
                 if (outputFile == null)
