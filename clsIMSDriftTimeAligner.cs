@@ -288,7 +288,7 @@ namespace IMSDriftTimeAligner
         /// <param name="baseFrameData">TIC values from the base frame</param>
         /// <param name="scanNumsInFrame">Full list of scan numbers in the frame (since frameScans might be filtered)</param>
         /// <param name="statsWriter">Stats file writer</param>
-        /// <param name="startScan">First scan of the data in comparisonFrameData (and also baseFrameData)</param>
+        /// <param name="scanStart">First scan of the data in comparisonFrameData (and also baseFrameData)</param>
         /// <param name="datasetName"></param>
         /// <param name="outputDirectory">Output directory</param>
         /// <returns>Dictionary where keys are the old scan number and values are the new scan number</returns>
@@ -298,7 +298,7 @@ namespace IMSDriftTimeAligner
             double[] baseFrameData,
             IEnumerable<int> scanNumsInFrame,
             TextWriter statsWriter,
-            int startScan,
+            int scanStart,
             string datasetName,
             FileSystemInfo outputDirectory)
         {
@@ -465,8 +465,8 @@ namespace IMSDriftTimeAligner
 
                 foreach (var alignedPoint in alignmentPathAllScans)
                 {
-                    var comparisonFrameScan = alignedPoint.Item1 + startScan;
-                    var baseFrameScan = alignedPoint.Item2 + startScan;
+                    var comparisonFrameScan = alignedPoint.Item1 + scanStart;
+                    var baseFrameScan = alignedPoint.Item2 + scanStart;
 
                     if (scanInfoFromDTW.TryGetValue(comparisonFrameScan, out var mappedValues))
                     {
@@ -514,7 +514,7 @@ namespace IMSDriftTimeAligner
                 var searcher = new clsBinarySearchFindNearest();
                 searcher.AddData(offsetsBySourceScanSmoothed);
 
-                var optimizedOffsetsBySourceScan = OptimizeOffsetsUsingPeaks(comparisonFrameData, startScan, offsetsBySourceScanSmoothed, searcher);
+                var optimizedOffsetsBySourceScan = OptimizeOffsetsUsingPeaks(comparisonFrameData, scanStart, offsetsBySourceScanSmoothed, searcher);
 
                 // Populate frameScanAlignmentMap
                 foreach (var scanNumber in scanNumsInFrame)
@@ -1619,13 +1619,13 @@ namespace IMSDriftTimeAligner
         /// Assure that all points in each peak get the same offset applied
         /// </summary>
         /// <param name="comparisonFrameData"></param>
-        /// <param name="startScan"></param>
+        /// <param name="scanStart"></param>
         /// <param name="offsetsBySourceScanSmoothed"></param>
         /// <param name="searcher"></param>
         /// <returns>Dictionary where keys are source scan numbers and values are the offset to apply</returns>
         private Dictionary<int, int> OptimizeOffsetsUsingPeaks(
             IReadOnlyList<double> comparisonFrameData,
-            int startScan,
+            int scanStart,
             IReadOnlyDictionary<int, int> offsetsBySourceScanSmoothed,
             clsBinarySearchFindNearest searcher)
         {
@@ -1653,7 +1653,7 @@ namespace IMSDriftTimeAligner
 
                 for (var i = 0; i < comparisonFrameData.Count - 1; i++)
                 {
-                    var sourceScan = i + startScan;
+                    var sourceScan = i + scanStart;
 
                     if (comparisonFrameData[i] < noiseThreshold)
                     {
@@ -1703,7 +1703,7 @@ namespace IMSDriftTimeAligner
                 if (comparisonFrameData.Count > 1)
                 {
                     // Process the final point
-                    var sourceScan = comparisonFrameData.Count - 1 + startScan;
+                    var sourceScan = comparisonFrameData.Count - 1 + scanStart;
 
                     if (insidePeak)
                     {
