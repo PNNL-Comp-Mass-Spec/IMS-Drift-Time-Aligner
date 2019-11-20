@@ -1999,10 +1999,10 @@ namespace IMSDriftTimeAligner
 
                 var datasetName = Path.GetFileNameWithoutExtension(outputFile.Name);
 
-                if (outputFile.Directory != null)
+                if (Options.DebugMode && outputFile.Directory != null)
                 {
-                    var frameDebugFile = new FileInfo(Path.Combine(outputFile.Directory.FullName,
-                                                                   datasetName + "_frame" + comparisonFrameNum + ".txt"));
+                    var debugFileName = string.Format("{0}_frame{1:00}.txt", datasetName, comparisonFrameNum);
+                    var frameDebugFile = new FileInfo(Path.Combine(outputFile.Directory.FullName, debugFileName));
 
                     WriteFrameScansDebugFile(frameScans, frameDebugFile);
                 }
