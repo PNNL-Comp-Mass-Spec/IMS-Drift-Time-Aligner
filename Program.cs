@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Reflection;
 using System.Threading;
 using PRISM;
@@ -54,21 +53,7 @@ namespace IMSDriftTimeAligner
             {
                 if (!parseResults.Success)
                 {
-                    var firstMessage = parseResults.ParseErrors.FirstOrDefault().Message;
-                    if (firstMessage.StartsWith("Created example parameter file") ||
-                        firstMessage.StartsWith("-CreateParamFile provided"))
-                    {
-                        // This is not an error
-                        // The user should have already been shown the default parameter file content (or the name of the parameter file)
-                        return 0;
-                    }
-
-                    ConsoleMsgUtils.ShowWarning("Error processing the command line arguments");
-                    foreach (var item in parseResults.ParseErrors)
-                    {
-                        ConsoleMsgUtils.ShowWarning(item.Message);
-                    }
-
+                    // Error messages should have already been shown to the user
                     Thread.Sleep(1500);
                     return -1;
                 }
