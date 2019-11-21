@@ -23,7 +23,7 @@ IMSDriftTimeAligner.exe
  [/DTWPoints:N] [/DTWShift:N]
  [/Vis] [/SavePlots]
  [/Debug] [/WO:False]
- [/ParamFile] [/CreateParamFile]
+ [/ParamFile:ParamFileName.conf] [/CreateParamFile]
 ```
 
 InputFilePath is a path to the UIMF file to process. Wildcards are also supported, for example *.uimf
