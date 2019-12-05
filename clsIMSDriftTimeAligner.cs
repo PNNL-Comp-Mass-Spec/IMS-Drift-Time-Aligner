@@ -2063,10 +2063,14 @@ namespace IMSDriftTimeAligner
                 // Write the scan to the output file if insertFrame is true
                 // Append the scan to mergedFrameScans if Options.AppendMergedFrame is true or Options.MergeFrames is true
 
-                foreach (var targetScanItem in targetScanSourceScans)
+                // Write the scans in ascending order
+                var targetScanSourceScanKeys = targetScanSourceScans.Keys.ToList();
+                targetScanSourceScanKeys.Sort();
+
+                foreach (var scanNumNew in targetScanSourceScanKeys)
                 {
-                    var scanNumOldStart = targetScanItem.Value.First();
-                    var scanNumNew = targetScanItem.Key;
+                    var oldScanNums = targetScanSourceScans[scanNumNew];
+                    var scanNumOldStart = oldScanNums.First();
 
                     if (scanNumNew % 10 == 0 && DateTime.UtcNow.Subtract(lastProgressTime).TotalMilliseconds >= 1000)
                     {
@@ -2076,7 +2080,7 @@ namespace IMSDriftTimeAligner
 
                     int[] targetScanIntensities = null;
 
-                    foreach (var scanNumOld in targetScanItem.Value)
+                    foreach (var scanNumOld in oldScanNums)
                     {
                         int[] intensities;
                         try
