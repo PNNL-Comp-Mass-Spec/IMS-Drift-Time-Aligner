@@ -114,7 +114,7 @@ The processing options can be specified in a parameter file using `/ParamFile:Op
 
 Use `/CreateParamFile` to create an example parameter file
 * By default, the example parameter file content is shown at the console
-* To create a file named Options.conf, use `/CreataParamFile:Options.conf`
+* To create a file named Options.conf, use `/CreateParamFile:Options.conf`
 
 ## Contacts
 
