@@ -93,7 +93,7 @@ namespace IMSDriftTimeAligner
 
                 int returnCode;
 
-                if (options.InputFilePath.Contains("*") || options.InputFilePath.Contains("?"))
+                if (options.PathHasWildcard(options.InputFilePath) || options.RecurseDirectories)
                 {
                     returnCode = ProcessFilesWildcard(processor, options);
                 }
@@ -120,17 +120,16 @@ namespace IMSDriftTimeAligner
         }
 
         /// <summary>
-        /// Process files matching the given file path spec
+        /// Process files matching the given file path spec, specified by options.InputFilePath
         /// </summary>
         /// <param name="processor"></param>
         /// <param name="options"></param>
         /// <returns>0 if success, error code if an error</returns>
+        /// <remarks>This method ignores options.OutputFilePath</remarks>
         private static int ProcessFilesWildcard(DriftTimeAlignmentEngine processor, FrameAlignmentOptions options)
         {
 
-            // FileSpec has a wildcard
-
-            var filesToProcess = PathUtils.FindFilesWildcard(options.InputFilePath);
+            var filesToProcess = PathUtils.FindFilesWildcard(options.InputFilePath, options.RecurseDirectories);
 
             var successCount = 0;
             var failureCount = 0;
@@ -148,13 +147,12 @@ namespace IMSDriftTimeAligner
                 foreach (var suffix in suffixesToSkip)
                 {
 
-                    if (string.IsNullOrWhiteSpace(options.OutputFilePath) && baseName.ToLower().EndsWith(suffix.ToLower()))
+                    if (baseName.ToLower().EndsWith(suffix.ToLower()))
                     {
                         Console.WriteLine();
                         Console.WriteLine("Skipping file with suffix {0}: {1}",
                                           suffix,
                                           PathUtils.CompactPathString(fileToProcess.FullName, 70));
-                        Console.WriteLine();
                         skipFile = true;
                         break;
                     }
@@ -169,7 +167,7 @@ namespace IMSDriftTimeAligner
                     Console.WriteLine();
                 }
 
-                var successOneFile = processor.ProcessFile(fileToProcess.FullName, options.OutputFilePath);
+                var successOneFile = processor.ProcessFile(fileToProcess.FullName, string.Empty);
 
                 if (successOneFile)
                 {
