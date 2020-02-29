@@ -12,7 +12,7 @@ namespace IMSDriftTimeAligner
         /// <summary>
         /// Program date
         /// </summary>
-        public const string PROGRAM_DATE = "December 5, 2019";
+        public const string PROGRAM_DATE = "February 28, 2020";
 
         /// <summary>
         /// Default frame selection mode
@@ -101,12 +101,16 @@ namespace IMSDriftTimeAligner
         public int FrameEnd { get; set; }
 
         [Option("InputFile", "InputFilePath", "i", "input", ArgPosition = 1, HelpShowsDefault = false, IsInputFilePath = true,
-            HelpText = "Input file path (UIMF File)")]
+            HelpText = "Input file path (UIMF File);\nsupports wildcards, e.g. *.uimf")]
         public string InputFilePath { get; set; }
 
         [Option("OutputFile", "OutputFilePath", "o", "output", ArgPosition = 2, HelpShowsDefault = false, HelpText =
-            "Output file path")]
+            "Output file path; ignored if the input file path has a wildcard or if /S was used (or a parameter file has Recurse=True)")]
         public string OutputFilePath { get; set; }
+
+        [Option("S", "Recurse", HelpShowsDefault = false, HelpText =
+            "Process files in the current directory and all subdirectories")]
+        public bool RecurseDirectories { get; set; }
 
         [Option("DTWPoints", "DTWMaxPoints", HelpShowsDefault = true, Min = 100, Max = 10000, HelpText =
             "Maximum number of points to use for Dynamic Time Warping")]
@@ -190,6 +194,10 @@ namespace IMSDriftTimeAligner
             "True to show additional debug messages at the console")]
         public bool DebugMode { get; set; }
 
+        [Option("Preview", HelpShowsDefault = false, HelpText =
+            "Preview the file (or files) that would be processed")]
+        public bool PreviewMode { get; set; }
+
         [Option("WriteOptions", "WO", HelpShowsDefault = true, HelpText =
             "Include the processing options at the start of the alignment stats file (Dataset_stats.txt)")]
         public bool WriteOptionsToStatsFile { get; set; }
@@ -272,10 +280,25 @@ namespace IMSDriftTimeAligner
         {
             Console.WriteLine("Options:");
 
-            Console.WriteLine(" {0,-15}: {1}", "Reading data from:", InputFilePath);
 
-            if (!string.IsNullOrWhiteSpace(OutputFilePath))
-                Console.WriteLine(" {0,-15} {1}", "Creating file:", OutputFilePath);
+            if (PathHasWildcard(InputFilePath))
+            {
+                Console.WriteLine(" {0,-40} {1}", "Finding files that match:", InputFilePath);
+                Console.WriteLine(" {0,-40} {1}", "Find files in subdirectories:", BoolToEnabledDisabled(RecurseDirectories));
+            }
+            else
+            {
+                Console.WriteLine(" {0,-15}: {1}", "Reading data from:", InputFilePath);
+
+                if (RecurseDirectories)
+                {
+                    Console.WriteLine(" {0,-40} {1}", "Also search subdirectories:", BoolToEnabledDisabled(RecurseDirectories));
+                }
+                else if (!string.IsNullOrWhiteSpace(OutputFilePath))
+                {
+                    Console.WriteLine(" {0,-15} {1}", "Creating file:", OutputFilePath);
+                }
+            }
 
             Console.WriteLine();
             Console.WriteLine(" {0,-40} {1}", "Alignment Method:", AlignmentMethod);
@@ -382,8 +405,6 @@ namespace IMSDriftTimeAligner
             }
 
             Console.WriteLine(" {0,-40} {1}", "Scans to smooth:", ScanSmoothCount);
-            if (DebugMode)
-                Console.WriteLine(" Showing debug messages");
 
             Console.WriteLine();
             if (MergeFrames)
@@ -403,7 +424,24 @@ namespace IMSDriftTimeAligner
             }
 
             Console.WriteLine();
+            if (DebugMode)
+                Console.WriteLine(" Showing debug messages");
 
+            if (PreviewMode)
+                Console.WriteLine(" Previewing files that would be processed");
+
+            Console.WriteLine();
+
+        }
+
+        /// <summary>
+        /// True if the path has a * or ?
+        /// </summary>
+        /// <param name="filePath"></param>
+        /// <returns></returns>
+        public bool PathHasWildcard(string filePath)
+        {
+            return filePath.Contains("*") || filePath.Contains("?");
         }
 
         /// <summary>
