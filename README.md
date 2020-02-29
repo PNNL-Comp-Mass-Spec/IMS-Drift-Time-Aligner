@@ -9,7 +9,7 @@ The IMS Drift Time Aligner is a console application, and must be run from the Wi
 
 ```
 IMSDriftTimeAligner.exe
- InputFilePath [/O:OutputFilePath] 
+ InputFilePath [/O:OutputFilePath] [/S]
  [/Merge] [/Append]
  [/Align:Mode]
  [/BaseFrameMode:N] [/BaseCount:N] 
@@ -22,14 +22,20 @@ IMSDriftTimeAligner.exe
  [/ITF:Fraction]
  [/DTWPoints:N] [/DTWShift:N]
  [/Vis] [/SavePlots]
- [/Debug] [/WO:False]
+ [/Debug] [/Preview] [/WO:False]
  [/ParamFile:ParamFileName.conf] [/CreateParamFile]
 ```
 
-InputFilePath is a path to the UIMF file to process. Wildcards are also supported, for example *.uimf
+InputFilePath is a path to the UIMF file to process.
+* Wildcards are also supported, for example *.uimf
 
 Use `/O` or `-O` to specify the output file path
 * By default the output file will be named InputFileName_new.uimf
+
+Use `/S` or `/Recurse` to find matching files in the current directory and subdirectories
+* Useful when using a wildcard to find UIMF files
+* `/O` is ignored when `/S` is provided
+  * Output files will be auto-named and will be created in the same directory as the input file
 
 Use `/Merge` or `-Merge` to specify that all of the aligned frames should be merged into a single frame by co-adding the data
 * When this argument is provided, the output file will only contain the merged frame
@@ -103,6 +109,9 @@ Use `/Vis` or `/Plot` to visualize the dynamic time warping results for each ali
 Use `/SavePlot` or `/SavePlots` to create a .png file visualizing dynamic time warping offsets for each frame
 
 Use `/Debug` to show additional debug messages at the console
+
+Use `/Preview` to preview the file (or files) that would be processed
+* Useful when using `/S`
 
 By default, the processing options will be included in the alignment stats file (Dataset_stats.txt).
 * This can be disabled with `/WO:False` or `/WriteOptions:False`
