@@ -7,6 +7,8 @@ echo.
 echo Copying files to %1
 
 xcopy IMSDriftTimeAligner.exe %1 /d /y /f
+xcopy IMSDriftTimeAligner.pdb %1 /d /y /f
+xcopy IMSDriftTimeAligner.xml %1 /d /y /f
 xcopy MathNet.Numerics.dll %1 /d /y /f
 xcopy NDtw.dll %1 /d /y /f
 xcopy NDtw.Visualization.Wpf.dll %1 /d /y /f
