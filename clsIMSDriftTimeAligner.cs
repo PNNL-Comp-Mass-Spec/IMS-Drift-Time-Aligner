@@ -1752,7 +1752,7 @@ namespace IMSDriftTimeAligner
 
                 if (optimizedOffsetsBySourceScan.TryGetValue(currentSourceScan, out var existingOffset))
                 {
-                    PRISM.ConsoleMsgUtils.ShowDebug("Skipping storing offset of {0} for scan {1} since already defined with an offset of {2}",
+                    ConsoleMsgUtils.ShowDebug("Skipping storing offset of {0} for scan {1} since already defined with an offset of {2}",
                                                     averageOffsetRounded, currentSourceScan, existingOffset);
                 }
                 else
@@ -1763,7 +1763,7 @@ namespace IMSDriftTimeAligner
 
             if (optimizedOffsetsBySourceScan.TryGetValue(sourceScan, out var existingOffset2))
             {
-                PRISM.ConsoleMsgUtils.ShowDebug("Skipping storing offset of {0} for scan {1} since already defined with an offset of {2}",
+                ConsoleMsgUtils.ShowDebug("Skipping storing offset of {0} for scan {1} since already defined with an offset of {2}",
                                                 averageOffsetRounded, sourceScan, existingOffset2);
             }
             else
