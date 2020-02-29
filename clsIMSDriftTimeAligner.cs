@@ -1530,7 +1530,9 @@ namespace IMSDriftTimeAligner
             }
 
             if (!outputFile.Exists)
+            {
                 return outputFile;
+            }
 
             try
             {
@@ -1544,14 +1546,42 @@ namespace IMSDriftTimeAligner
                     var backupFile = new FileInfo(backupFilePath);
 
                     if (backupFile.Exists)
-                        backupFile.Delete();
+                    {
+                        if (Options.PreviewMode)
+                        {
+                            OnWarningEvent("Preview delete: " + PathUtils.CompactPathString(backupFile.FullName, 100));
+                        }
+                        else
+                        {
+                            backupFile.Delete();
+                        }
+                    }
 
-                    File.Move(outputFile.FullName, backupFile.FullName);
-                    OnStatusEvent("Existing output file found; renamed to: " + backupFile.Name);
+                    if (Options.PreviewMode)
+                    {
+                        Console.WriteLine();
+                        OnStatusEvent(string.Format(
+                            "Preview rename, from: \n{0} to \n{1}",
+                            PathUtils.CompactPathString(outputFile.FullName, 100),
+                            PathUtils.CompactPathString(backupFile.FullName, 100)));
+                    }
+                    else
+                    {
+                        File.Move(outputFile.FullName, backupFile.FullName);
+                        OnStatusEvent("Existing output file found; renamed to: " + backupFile.Name);
+                    }
+
                 }
                 else
                 {
-                    outputFile.Delete();
+                    if (Options.PreviewMode)
+                    {
+                        OnWarningEvent("Preview delete: " + PathUtils.CompactPathString(outputFile.FullName, 100));
+                    }
+                    else
+                    {
+                        outputFile.Delete();
+                    }
                 }
 
                 return outputFile;
@@ -1766,7 +1796,12 @@ namespace IMSDriftTimeAligner
 
                 mFrameScanStats.Clear();
 
-                OnStatusEvent(string.Format("Opening {0}\n in directory {1}", sourceFile.Name, sourceFile.Directory));
+                if (!Options.PreviewMode)
+                {
+                    Console.WriteLine();
+                    OnStatusEvent(string.Format("Opening {0}\n in directory {1}", sourceFile.Name, sourceFile.Directory));
+                }
+
                 var outputFile = InitializeOutputFile(sourceFile, outputFilePath);
 
                 if (outputFile == null)
@@ -1781,11 +1816,40 @@ namespace IMSDriftTimeAligner
 
                     var debugDataFile = new FileInfo(Path.Combine(outputDirectoryPath, DEBUG_DATA_FILE));
                     if (debugDataFile.Exists)
-                        debugDataFile.Delete();
+                    {
+                        if (Options.PreviewMode)
+                        {
+                            OnStatusEvent("Preview delete: " + PathUtils.CompactPathString(debugDataFile.FullName, 100));
+                        }
+                        else
+                        {
+                            debugDataFile.Delete();
+                        }
+                    }
 
                     var dtwDebugDataFile = new FileInfo(Path.Combine(outputDirectoryPath, DTW_DEBUG_DATA_FILE));
                     if (dtwDebugDataFile.Exists)
-                        dtwDebugDataFile.Delete();
+                    {
+                        if (Options.PreviewMode)
+                        {
+                            OnStatusEvent("Preview delete: " + PathUtils.CompactPathString(dtwDebugDataFile.FullName, 100));
+                        }
+                        else
+                        {
+                            dtwDebugDataFile.Delete();
+                        }
+                    }
+                }
+
+                if (Options.PreviewMode)
+                {
+                    Console.WriteLine();
+                    OnStatusEvent(string.Format(
+                        "Preview processing \n{0} to create \n{1}",
+                        PathUtils.CompactPathString(sourceFile.FullName, 125),
+                        PathUtils.CompactPathString(outputFile.FullName, 125)));
+
+                    return true;
                 }
 
                 var statsFilePath = Path.Combine(outputFile.DirectoryName, Path.GetFileNameWithoutExtension(outputFile.Name) + "_stats.txt");
@@ -1943,7 +2007,6 @@ namespace IMSDriftTimeAligner
                         // Specifically, the frame count (tracked by NumFrames) and the
                         // maximum number of scans in any frame (tracked by PrescanTOFPulses)
                         writer.UpdateGlobalStats();
-
                     }
 
                     Console.WriteLine();

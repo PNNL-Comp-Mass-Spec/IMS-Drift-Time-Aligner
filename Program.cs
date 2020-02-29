@@ -163,8 +163,11 @@ namespace IMSDriftTimeAligner
                 if (skipFile)
                     continue;
 
-                ConsoleMsgUtils.ShowDebug("Processing " + PathUtils.CompactPathString(fileToProcess.FullName, 70));
-                Console.WriteLine();
+                if (!options.PreviewMode)
+                {
+                    ConsoleMsgUtils.ShowDebug("Processing " + PathUtils.CompactPathString(fileToProcess.FullName, 70));
+                    Console.WriteLine();
+                }
 
                 var successOneFile = processor.ProcessFile(fileToProcess.FullName, options.OutputFilePath);
 
