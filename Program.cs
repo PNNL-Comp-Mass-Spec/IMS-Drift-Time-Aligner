@@ -32,9 +32,8 @@ namespace IMSDriftTimeAligner
                               "to a base frame, adjusting the observed drift times of each frame " +
                               "to align with the base frame.",
 
-                ContactInfo = "Program written by Matthew Monroe for the Department of Energy" + Environment.NewLine +
-                              "(PNNL, Richland, WA) in 2017" +
-                              Environment.NewLine + Environment.NewLine +
+                ContactInfo = "Program written by Matthew Monroe for PNNL (Richland, WA) in 2017" +
+                              Environment.NewLine +
                               "E-mail: matthew.monroe@pnnl.gov or proteomics@pnnl.gov" + Environment.NewLine +
                               "Website: https://panomics.pnnl.gov/ or https://omics.pnl.gov",
 
