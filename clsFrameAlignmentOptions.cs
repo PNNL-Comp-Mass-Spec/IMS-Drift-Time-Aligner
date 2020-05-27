@@ -288,7 +288,7 @@ namespace IMSDriftTimeAligner
             }
             else
             {
-                Console.WriteLine(" {0,-15}: {1}", "Reading data from:", InputFilePath);
+                Console.WriteLine(" {0,-15} {1}", "Reading data from:", InputFilePath);
 
                 if (RecurseDirectories)
                 {
