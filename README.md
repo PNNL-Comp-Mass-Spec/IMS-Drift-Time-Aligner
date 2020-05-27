@@ -116,7 +116,7 @@ Use `/Preview` to preview the file (or files) that would be processed
 By default, the processing options will be included in the alignment stats file (Dataset_stats.txt).
 * This can be disabled with `/WO:False` or `/WriteOptions:False`
 
-The processing options can be specified in a parameter file using `/ParamFile:Options.conf`
+The processing options can be specified in a parameter file using `/ParamFile:Options.conf` or `/Conf:Options.conf`
 * Define options using the format `ArgumentName=Value`
 * Lines starting with `#` or `;` will be treated as comments
 * Additional arguments on the command line can supplement or override the arguments in the parameter file
