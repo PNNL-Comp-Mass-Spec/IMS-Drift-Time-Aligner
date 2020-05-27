@@ -68,7 +68,7 @@ namespace IMSDriftTimeAligner
         #region "Properties"
 
         [Option("Align", DoNotListEnumValues = false, HelpShowsDefault = false, HelpText =
-            "Method for aligning the data for each frame to the base frame; default is LinearRegression")]
+            "Method for aligning the data for each frame to the base frame; can be LinearRegression (default) or DynamicTimeWarping")]
         public AlignmentMethods AlignmentMethod { get; set; }
 
         [Option("BaseFrameMode", "BaseFrame", HelpText =
