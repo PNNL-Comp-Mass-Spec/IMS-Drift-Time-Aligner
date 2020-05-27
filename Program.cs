@@ -45,6 +45,8 @@ namespace IMSDriftTimeAligner
                 }
             };
 
+            parser.AddParamFileKey("Conf");
+
             var parseResults = parser.ParseArgs(args);
             var options = parseResults.ParsedResults;
 
@@ -103,7 +105,9 @@ namespace IMSDriftTimeAligner
                 }
 
                 if (returnCode == 0)
+                {
                     return 0;
+                }
 
                 Thread.Sleep(1500);
                 return returnCode;
