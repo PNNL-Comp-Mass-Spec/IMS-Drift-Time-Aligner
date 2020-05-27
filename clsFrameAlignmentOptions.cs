@@ -108,7 +108,7 @@ namespace IMSDriftTimeAligner
             "Output file path; ignored if the input file path has a wildcard or if /S was used (or a parameter file has Recurse=True)")]
         public string OutputFilePath { get; set; }
 
-        [Option("S", "Recurse", HelpShowsDefault = false, HelpText =
+        [Option("Recurse", "S", HelpShowsDefault = false, HelpText =
             "Process files in the current directory and all subdirectories")]
         public bool RecurseDirectories { get; set; }
 
