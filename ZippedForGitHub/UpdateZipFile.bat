@@ -1,0 +1,3 @@
+"C:\Program Files\7-Zip\7z.exe" a IMSDriftTimeAligner.zip         ..\bin\Options.conf ..\bin\IMSDriftTimeAligner.exe ..\bin\MathNet.Numerics.dll ..\bin\NDtw.dll ..\bin\NDtw.Visualization.Wpf.dll ..\bin\OxyPlot.dll ..\bin\OxyPlot.Wpf.dll ..\bin\OxyPlot.Xps.dll ..\bin\PRISM.dll ..\bin\System.Data.SQLite.dll ..\bin\UIMFLibrary.dll ..\Data\20180608_14_He_Mix4_p2p53_2p43_40kh_12v_1c_s750_1_aligned_DTW.uimf ..\Data\20180608_14_He_Mix4_p2p53_2p43_40kh_12v_1c_s750_1_aligned_DTW_stats.txt ..\Data\20180608_14_He_Mix4_p2p53_2p43_40kh_12v_1c_s750_1_aligned_stats.txt ..\Data\ProcessData.bat ..\Data\20180608_14_He_Mix4_p2p53_2p43_40kh_12v_1c_s750_1.uimf ..\Data\20180608_14_He_Mix4_p2p53_2p43_40kh_12v_1c_s750_1_aligned.uimf ..\README.md ..\RevisionHistory.txt 
+
+pause
