@@ -192,6 +192,10 @@ namespace IMSDriftTimeAligner
             "Save a dynamic time warping plot for each aligned frame")]
         public bool SaveDTWPlots { get; set; }
 
+        [Option("SavePlotData", HelpShowsDefault = false, HelpText =
+            "Create tab-delimited text files of the dynamic time warping plot data")]
+        public bool SavePlotData { get; set; }
+
         [Option("Debug", HelpShowsDefault = false, HelpText =
             "True to show additional debug messages at the console")]
         public bool DebugMode { get; set; }
@@ -308,6 +312,7 @@ namespace IMSDriftTimeAligner
             {
                 Console.WriteLine(" {0,-40} {1}", "Visualize the DTW path:", BoolToEnabledDisabled(VisualizeDTW));
                 Console.WriteLine(" {0,-40} {1}", "Save DTW plot for each frame:", BoolToEnabledDisabled(SaveDTWPlots));
+                Console.WriteLine(" {0,-40} {1}", "Save DTW plot data text files:", BoolToEnabledDisabled(SavePlotData));
 
                 Console.WriteLine(" {0,-40} {1}", "Max points for DTW:", DTWMaxPoints);
 

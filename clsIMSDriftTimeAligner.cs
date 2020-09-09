@@ -11,6 +11,7 @@ using OxyPlot;
 using OxyPlot.Wpf;
 using PRISM;
 using UIMFLibrary;
+using DataPointSeries = OxyPlot.DataPointSeries;
 using LinearAxis = OxyPlot.LinearAxis;
 using LineSeries = OxyPlot.LineSeries;
 
@@ -574,7 +575,7 @@ namespace IMSDriftTimeAligner
                 OnStatusEvent("  " + statsLine.ToString().Trim());
                 statsWriter.WriteLine(statsLine.ToString().Trim());
 
-                if (Options.VisualizeDTW || Options.SaveDTWPlots)
+                if (Options.VisualizeDTW || Options.SaveDTWPlots || Options.SavePlotData)
                 {
                     VisualizeDTWAlignment(comparisonFrameNum, comparisonFrameData,
                                           scanStart, datasetName, outputDirectory,
@@ -816,6 +817,15 @@ namespace IMSDriftTimeAligner
                 scansProcessed++;
             }
 
+        }
+
+        private void AppendSeriesXValues(ISet<double> xValues, IEnumerable<IDataPoint> offsetSeriesPoints)
+        {
+            foreach (var xValue in offsetSeriesPoints)
+            {
+                if (!xValues.Contains(xValue.X))
+                    xValues.Add(xValue.X);
+            }
         }
 
         private ScanInfo CloneScanInfo(ScanInfo sourceScanInfo)
@@ -2585,10 +2595,16 @@ namespace IMSDriftTimeAligner
                 visualizer.WindowState = WindowState.Minimized;
             }
 
+            var pngFilePath = Path.Combine(outputDirectory.FullName, datasetName + "_Frame" + comparisonFrameNum + ".png");
             if (Options.SaveDTWPlots)
             {
-                var outputFilePath = Path.Combine(outputDirectory.FullName, datasetName + "_Frame" + comparisonFrameNum + ".png");
-                PngExporter.Export(offsetPlot.PlotControl.ActualModel, outputFilePath, 1050, 650, OxyColors.White);
+                PngExporter.Export(offsetPlot.PlotControl.ActualModel, pngFilePath, 1050, 650, OxyColors.White);
+            }
+
+            if (Options.SavePlotData)
+            {
+                var offsetsDataFilePath = Path.ChangeExtension(pngFilePath, ".txt");
+                WriteDTWPlotData(offsetsDataFilePath, offsetSeries, smoothedOffsetSeries, optimizedOffsetSeries, ticSeries);
             }
 
             if (!Options.VisualizeDTW)
@@ -2607,6 +2623,33 @@ namespace IMSDriftTimeAligner
                 foreach (var item in query)
                 {
                     debugWriter.WriteLine("{0}\t{1}\t{2}\t{3}", item.Scan, item.DriftTime, item.TIC, item.BPI);
+                }
+            }
+        }
+
+        private void WriteDTWPlotData(
+            string offsetsDataFilePath,
+            DataPointSeries offsetSeries,
+            DataPointSeries smoothedOffsetSeries,
+            DataPointSeries optimizedOffsetSeries,
+            DataPointSeries ticSeries)
+        {
+            using (var writer = new StreamWriter(new FileStream(offsetsDataFilePath, FileMode.Create, FileAccess.Write)))
+            {
+                writer.WriteLine("{0}\t{1}\t{2}\t{3}\t{4}", "Scan", "Offset", "SmoothedOffset", "OptimizedOffset", "TIC");
+
+                var dataCount = offsetSeries.Points.Count;
+
+                for (var i = 0; i < dataCount; i++)
+                {
+                    writer.WriteLine(
+                        "{0:0}\t{1:0}\t{2:0}\t{3:0}\t{4:0}",
+                        offsetSeries.Points[i].X,
+                        offsetSeries.Points[i].Y,
+                        smoothedOffsetSeries.Points[i].Y,
+                        optimizedOffsetSeries.Points[i].Y,
+                        ticSeries.Points[i].Y
+                        );
                 }
             }
         }
