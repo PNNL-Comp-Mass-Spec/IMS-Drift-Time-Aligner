@@ -22,16 +22,5 @@ namespace IMSDriftTimeAligner
             NonZeroCount = 0;
             TIC = 0;
         }
-
-        /// <summary>
-        /// Constructor
-        /// </summary>
-        /// <param name="tic"></param>
-        /// <param name="nonZeroCount"></param>
-        public ScanStats(double tic, int nonZeroCount)
-        {
-            NonZeroCount = nonZeroCount;
-            TIC = tic;
-        }
     }
 }
