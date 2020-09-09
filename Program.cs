@@ -150,7 +150,7 @@ namespace IMSDriftTimeAligner
                 foreach (var suffix in suffixesToSkip)
                 {
 
-                    if (baseName.ToLower().EndsWith(suffix.ToLower()))
+                    if (baseName.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
                     {
                         Console.WriteLine();
                         Console.WriteLine("Skipping file with suffix {0}: {1}",
