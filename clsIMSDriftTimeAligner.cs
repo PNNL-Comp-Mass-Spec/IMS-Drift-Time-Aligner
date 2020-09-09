@@ -16,8 +16,10 @@ using LineSeries = OxyPlot.LineSeries;
 
 namespace IMSDriftTimeAligner
 {
-    class DriftTimeAlignmentEngine : PRISM.EventNotifier
+    class DriftTimeAlignmentEngine : EventNotifier
     {
+        // Ignore Spelling: Nums, bak, Func, Sakoe, Prescan
+
         #region "Constants"
 
         private const string DEBUG_DATA_FILE = "DebugData.txt";
@@ -32,7 +34,7 @@ namespace IMSDriftTimeAligner
 
         #endregion
 
-        #region "Classwide variables"
+        #region "Class wide variables"
 
         private string mAverageScanShiftHeader;
 
@@ -226,7 +228,7 @@ namespace IMSDriftTimeAligner
 
                 if (nonzeroScans1.Count == 0 || nonzeroScans2.Count == 0)
                 {
-                    // Either (or both) of the arrays have all zeroes; nothing to align
+                    // Either (or both) of the arrays have all zeros; nothing to align
                     frameScanAlignmentMap = new Dictionary<int, int>();
 
                     scanStart = baseFrameScans.First().Scan;
@@ -783,7 +785,7 @@ namespace IMSDriftTimeAligner
 
             var frameParams = reader.GetFrameParams(referenceFrameNum);
 
-            // Determine the the minimum and maximum scan numbers in the merged frame
+            // Determine the minimum and maximum scan numbers in the merged frame
             if (GetScanRange(mergedFrameScans.Keys, out var scanMin, out var scanMax))
             {
                 UpdateScanRange(frameParams, scanMin, scanMax);

@@ -38,6 +38,7 @@ namespace IMSDriftTimeAligner
         /// </summary>
         /// <param name="xValues"></param>
         /// <param name="yValues"></param>
+        // ReSharper disable once UnusedMember.Global
         public void AddData(List<double> xValues, List<double> yValues)
         {
             if (xValues.Count != yValues.Count)

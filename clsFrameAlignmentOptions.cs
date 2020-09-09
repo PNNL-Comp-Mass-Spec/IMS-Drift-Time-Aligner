@@ -9,10 +9,12 @@ namespace IMSDriftTimeAligner
     /// </summary>
     public class FrameAlignmentOptions
     {
+        // Ignore Spelling: Sakoe
+
         /// <summary>
         /// Program date
         /// </summary>
-        public const string PROGRAM_DATE = "May 26, 2020";
+        public const string PROGRAM_DATE = "September 8, 2020";
 
         /// <summary>
         /// Default frame selection mode
@@ -89,7 +91,7 @@ namespace IMSDriftTimeAligner
         public int BaseFrameEnd { get; set; }
 
         [Option("BaseFrameList", "BaseFrames", HelpShowsDefault = false, HelpText =
-            "List of frames to use when the BaseFrameMode mode is 3 (UserSpecifiedFrameRange)")]
+            "List of frames to use when the BaseFrameMode is 3 (UserSpecifiedFrameRange)")]
         public string BaseFrameList { get; set; }
 
         [Option("FrameStart", "Start", HelpShowsDefault = false, HelpText =
@@ -445,7 +447,7 @@ namespace IMSDriftTimeAligner
         }
 
         /// <summary>
-        /// Copy the options with a Memberwise Clone
+        /// Copy the options with a member-wise Clone
         /// </summary>
         /// <returns></returns>
         public FrameAlignmentOptions ShallowCopy()
