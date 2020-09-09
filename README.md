@@ -21,7 +21,7 @@ IMSDriftTimeAligner.exe
  [/MaxShift:N] [/Smooth:N]
  [/ITF:Fraction]
  [/DTWPoints:N] [/DTWShift:N]
- [/Vis] [/SavePlots]
+ [/Vis] [/SavePlots] [/SavePlotData]
  [/Debug] [/Preview] [/WO:False]
  [/ParamFile:ParamFileName.conf] [/CreateParamFile]
 ```
@@ -107,6 +107,8 @@ Use `/Vis` or `/Plot` to visualize the dynamic time warping results for each ali
 * Zooom out by double clicking with the middle mouse button; alternatively, double click with Ctrl + Alt + Left Mouse Button
 
 Use `/SavePlot` or `/SavePlots` to create a .png file visualizing dynamic time warping offsets for each frame
+
+Use `/SavePlotData` to save the dynamic time warping offset data (plus TIC values) to a separate tab-delimited text file for each frame
 
 Use `/Debug` to show additional debug messages at the console
 
