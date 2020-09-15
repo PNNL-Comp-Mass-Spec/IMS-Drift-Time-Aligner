@@ -16,7 +16,10 @@ using LineSeries = OxyPlot.LineSeries;
 
 namespace IMSDriftTimeAligner
 {
-    class DriftTimeAlignmentEngine : EventNotifier
+    /// <summary>
+    /// Drift time alignment engine
+    /// </summary>
+    public class DriftTimeAlignmentEngine : EventNotifier
     {
         // Ignore Spelling: Nums, bak, Func, Sakoe, Prescan
 
@@ -28,8 +31,14 @@ namespace IMSDriftTimeAligner
 
         private const string BASE_FRAME_DESCRIPTION = "Base frame";
 
+        /// <summary>
+        /// Suffix to add to output files
+        /// </summary>
         public const string OUTPUT_FILENAME_SUFFIX = "_new";
 
+        /// <summary>
+        /// Suffix to use when backing up a file by renaming ig
+        /// </summary>
         public const string BACKUP_FILENAME_SUFFIX = "_bak";
 
         #endregion
@@ -299,7 +308,7 @@ namespace IMSDriftTimeAligner
         /// <param name="datasetName"></param>
         /// <param name="outputDirectory">Output directory</param>
         /// <returns>Dictionary where keys are the old scan number and values are the new scan number</returns>
-        private Dictionary<int, int> AlignFrameDataDTW(
+        public Dictionary<int, int> AlignFrameDataDTW(
             int comparisonFrameNum,
             double[] comparisonFrameData,
             double[] baseFrameData,
