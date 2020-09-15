@@ -4,6 +4,7 @@ using System.IO;
 using System.Reflection;
 using System.Threading;
 using PRISM;
+using PRISM.Logging;
 
 namespace IMSDriftTimeAligner
 {
@@ -12,16 +13,20 @@ namespace IMSDriftTimeAligner
     /// adjusting the observed drift times of each frame to align with the base frame
     /// </summary>
     /// <remarks>
-    /// Written by Matthew Monroe for the Department of Energy (PNNL, Richland, WA)
-    ///
+    /// <para>
+    /// Written by Matthew Monroe for the Department of Energy (PNNL, Richland, WA)</para>
+    /// <para>
     /// E-mail: matthew.monroe@pnnl.gov or proteomics@pnnl.gov
     /// Website: https://panomics.pnnl.gov/ or https://omics.pnl.gov
+    /// </para>
     /// </remarks>
     internal static class Program
     {
         [STAThread]
         static int Main(string[] args)
         {
+            // Ignore Spelling: conf
+
             var asmName = typeof(Program).GetTypeInfo().Assembly.GetName();
             var exeName = Path.GetFileName(Assembly.GetExecutingAssembly().Location);       // Alternatively: System.AppDomain.CurrentDomain.FriendlyName
             var version = FrameAlignmentOptions.GetAppVersion();
