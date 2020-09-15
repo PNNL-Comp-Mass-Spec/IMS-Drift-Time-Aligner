@@ -89,10 +89,7 @@ namespace IMSDriftTimeAligner
             {
                 var commandLine = exeName + " " + string.Join(" ", args);
                 var processor = new DriftTimeAlignmentEngine(options, commandLine);
-
-                processor.ErrorEvent += Processor_ErrorEvent;
-                processor.StatusEvent += Processor_StatusEvent;
-                processor.WarningEvent += Processor_WarningEvent;
+                RegisterEvents(processor);
 
                 int returnCode;
 
@@ -201,18 +198,28 @@ namespace IMSDriftTimeAligner
 
         #region "Event handlers"
 
+        /// <summary>Use this method to chain events between classes</summary>
+        /// <param name="sourceClass"></param>
+        private static void RegisterEvents(IEventNotifier sourceClass)
+        {
+            // Ignore: sourceClass.DebugEvent += OnDebugEvent;
+            sourceClass.StatusEvent += OnStatusEvent;
+            sourceClass.ErrorEvent += OnErrorEvent;
+            sourceClass.WarningEvent += OnWarningEvent;
+            // Ignore: sourceClass.ProgressUpdate += OnProgressUpdate;
+        }
 
-        private static void Processor_ErrorEvent(string message, Exception ex)
+        private static void OnErrorEvent(string message, Exception ex)
         {
             ConsoleMsgUtils.ShowError(message, ex);
         }
 
-        private static void Processor_StatusEvent(string message)
+        private static void OnStatusEvent(string message)
         {
             Console.WriteLine(message);
         }
 
-        private static void Processor_WarningEvent(string message)
+        private static void OnWarningEvent(string message)
         {
             ConsoleMsgUtils.ShowWarning(message);
         }
