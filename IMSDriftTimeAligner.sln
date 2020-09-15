@@ -5,6 +5,8 @@ VisualStudioVersion = 16.0.29503.13
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IMSDriftTimeAligner", "IMSDriftTimeAligner.csproj", "{3CF3678F-CDA4-4916-B719-57AFF34F1DEA}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IMSDriftTimeAligner_UnitTests", "UnitTests\IMSDriftTimeAligner_UnitTests.csproj", "{ECA4B0F8-89CD-4441-9C74-CA240C0FC0F6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{3CF3678F-CDA4-4916-B719-57AFF34F1DEA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3CF3678F-CDA4-4916-B719-57AFF34F1DEA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3CF3678F-CDA4-4916-B719-57AFF34F1DEA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{ECA4B0F8-89CD-4441-9C74-CA240C0FC0F6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ECA4B0F8-89CD-4441-9C74-CA240C0FC0F6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ECA4B0F8-89CD-4441-9C74-CA240C0FC0F6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ECA4B0F8-89CD-4441-9C74-CA240C0FC0F6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
