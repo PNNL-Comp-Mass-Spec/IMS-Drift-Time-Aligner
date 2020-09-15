@@ -3,6 +3,9 @@
 This program processes IMS data in a UIMF file to align all frames to a base frame, 
 adjusting the observed drift times of each frame to align with the base frame.
 
+The input file can also be a tab-delimited text file with two columns of data to align.
+Intensity values in the first column will be aligned to intensity values in the second column.
+
 ## Console Switches
 
 The IMS Drift Time Aligner is a console application, and must be run from the Windows command prompt.
@@ -26,8 +29,9 @@ IMSDriftTimeAligner.exe
  [/ParamFile:ParamFileName.conf] [/CreateParamFile]
 ```
 
-InputFilePath is a path to the UIMF file to process.
-* Wildcards are also supported, for example *.uimf
+InputFilePath is a path to the UIMF or tab-delimited file to process
+* Wildcards are also supported, for example *.uimf or *.txt
+* Text files should be tab-delimited with two intensity values per row
 
 Use `/O` or `-O` to specify the output file path
 * By default the output file will be named InputFileName_new.uimf
@@ -89,7 +93,7 @@ prior to aligning each frame to the base frame;
 * Default is `/Smooth:7`
  
 Use `/ITF` to define the value to multiply the maximum TIC value by to determine an intensity threshold, 
-below which intensity values will be set to 0.
+below which intensity values will be set to 0
 * Defaults to 0.10  (aka 10% of the max) for `/Align:0`  (Linear Regression)
 * Defaults to 0.025 (aka 2.5% of the max) for `/Align:1` (Dynamic Time Warping)
 
@@ -115,7 +119,7 @@ Use `/Debug` to show additional debug messages at the console
 Use `/Preview` to preview the file (or files) that would be processed
 * Useful when using `/S`
 
-By default, the processing options will be included in the alignment stats file (Dataset_stats.txt).
+By default, the processing options will be included in the alignment stats file (Dataset_stats.txt)
 * This can be disabled with `/WO:False` or `/WriteOptions:False`
 
 The processing options can be specified in a parameter file using `/ParamFile:Options.conf` or `/Conf:Options.conf`
