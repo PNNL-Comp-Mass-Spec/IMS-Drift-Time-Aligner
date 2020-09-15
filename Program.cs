@@ -30,7 +30,9 @@ namespace IMSDriftTimeAligner
             {
                 ProgramInfo = "This program processes IMS data in a UIMF file to align all frames " +
                               "to a base frame, adjusting the observed drift times of each frame " +
-                              "to align with the base frame.",
+                              "to align with the base frame. The input file can alternatively be " +
+                              "a tab-delimited text file with two columns of data to align. " +
+                              "Intensity values in the first column will be aligned to intensity values in the second column.",
 
                 ContactInfo = "Program written by Matthew Monroe for PNNL (Richland, WA) in 2017" +
                               Environment.NewLine +

@@ -1758,6 +1758,12 @@ namespace IMSDriftTimeAligner
             }
         }
 
+        /// <summary>
+        /// Process the UIMF file to align data
+        /// </summary>
+        /// <param name="inputFilePath"></param>
+        /// <param name="outputFilePath"></param>
+        /// <returns></returns>
         public bool ProcessFile(string inputFilePath, string outputFilePath)
         {
 
@@ -1774,6 +1780,12 @@ namespace IMSDriftTimeAligner
                 {
                     ReportError("Invalid output file path: " + outputFilePath);
                     return false;
+                }
+
+                if (Path.GetExtension(inputFilePath).Equals(".txt", StringComparison.OrdinalIgnoreCase))
+                {
+                    var success = ProcessTabDelimitedTextFile(inputFilePath, outputFilePath);
+                    return success;
                 }
 
                 mSmoothedBaseFrameDataWritten = false;
@@ -1951,6 +1963,153 @@ namespace IMSDriftTimeAligner
             catch (Exception ex)
             {
                 ReportError("Error in ProcessFile", ex);
+                return false;
+            }
+        }
+
+        private bool ProcessTabDelimitedTextFile(string inputFilePath, string outputFilePath)
+        {
+            try
+            {
+                var inputFile = new FileInfo(inputFilePath);
+
+                DirectoryInfo outputDirectory;
+                if (string.IsNullOrWhiteSpace(outputFilePath))
+                {
+                    outputDirectory = inputFile.Directory;
+                }
+                else
+                {
+                    var outputFile = new FileInfo(outputFilePath);
+                    outputDirectory = outputFile.Directory;
+                }
+
+                Console.WriteLine("Loading " + inputFile.FullName);
+
+                if (outputDirectory == null)
+                {
+                    ConsoleMsgUtils.ShowWarning("Unable to determine the output directory");
+                    return false;
+                }
+                Console.WriteLine("Output directory: " + outputDirectory.FullName);
+
+                var baseFrameData = new List<double>();
+                var comparisonFrameData = new List<double>();
+
+                using (var reader = new StreamReader(new FileStream(inputFile.FullName, FileMode.Open, FileAccess.ReadWrite)))
+                {
+                    var lineCount = 0;
+                    while (!reader.EndOfStream)
+                    {
+                        lineCount++;
+                        var dataLine = reader.ReadLine();
+                        if (string.IsNullOrWhiteSpace(dataLine))
+                            continue;
+
+                        var dataValues = dataLine.Split('\t');
+                        if (dataValues.Length < 2)
+                        {
+                            Console.WriteLine("Skipping line {0} since it does not have 2 columns", lineCount);
+                            continue;
+                        }
+
+                        if (!double.TryParse(dataValues[0], out var dataPointA))
+                        {
+                            Console.WriteLine("Value in column 1 of line {0} is not numeric; skipping", lineCount);
+                            continue;
+                        }
+
+                        if (!double.TryParse(dataValues[1], out var dataPointB))
+                        {
+                            Console.WriteLine("Value in column 2 of line {0} is not numeric; skipping", lineCount);
+                            continue;
+                        }
+
+                        baseFrameData.Add(dataPointA);
+                        comparisonFrameData.Add(dataPointB);
+                    }
+                }
+
+                var scanNumsInFrame = new List<int>();
+                for (var i = 0; i < baseFrameData.Count; i++)
+                {
+                    scanNumsInFrame.Add(i + 1);
+                }
+
+                var scanStart = scanNumsInFrame.First();
+                var scanEnd = scanNumsInFrame.Last();
+
+                if (!outputDirectory.Exists)
+                {
+                    Console.WriteLine("Creating output directory at " + outputDirectory.FullName);
+                    outputDirectory.Create();
+                }
+
+                var datasetName = "TestSimpleAlignment";
+
+                var statsFile = new FileInfo(Path.Combine(outputDirectory.FullName, string.Format("DynamicTimeWarping_{0}.txt", datasetName)));
+                Console.WriteLine("Creating stats file at " + statsFile.FullName);
+
+                var pngFileInfo = new FileInfo(Path.Combine(outputDirectory.FullName, datasetName + "_Frame1.png"));
+
+                if (statsFile.Exists)
+                {
+                    statsFile.Delete();
+                }
+
+                if (pngFileInfo.Exists)
+                {
+                    pngFileInfo.Delete();
+                }
+
+                var success = true;
+
+                using (var statsWriter = new StatsWriter(statsFile.FullName, Options, string.Empty))
+                {
+                    RegisterEvents(statsWriter);
+
+                    statsWriter.WriteHeader();
+
+                    var frameScanAlignmentMap = AlignFrameDataDTW(
+                        1, comparisonFrameData.ToArray(),
+                        baseFrameData.ToArray(), scanNumsInFrame,
+                        statsWriter, scanStart, scanEnd,
+                        datasetName,
+                        outputDirectory);
+
+                    Console.WriteLine();
+
+                    statsFile.Refresh();
+                    if (!statsFile.Exists)
+                    {
+                        ConsoleMsgUtils.ShowWarning("The stats file was not created: " + statsFile.FullName);
+                        success = false;
+                    }
+                    else
+                    {
+                        Console.WriteLine("Stats file created at " + statsFile.FullName);
+                    }
+
+                    if (Options.SaveDTWPlots)
+                    {
+                        pngFileInfo.Refresh();
+                        if (!pngFileInfo.Exists)
+                        {
+                            ConsoleMsgUtils.ShowWarning("The plot file was not created: " + pngFileInfo.FullName);
+                            success = false;
+                        }
+                        else
+                        {
+                            Console.WriteLine("Plot file created at " + pngFileInfo.FullName);
+                        }
+                    }
+                }
+
+                return success;
+            }
+            catch (Exception ex)
+            {
+                ReportError("Error in ProcessTabDelimitedTextFile", ex);
                 return false;
             }
         }
