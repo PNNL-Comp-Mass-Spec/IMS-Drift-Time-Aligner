@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Windows;
 using NDtw;
 using NDtw.Preprocessing;
@@ -36,8 +35,6 @@ namespace IMSDriftTimeAligner
         #endregion
 
         #region "Class wide variables"
-
-        private string mAverageScanShiftHeader;
 
         private bool mSmoothedBaseFrameDataWritten;
 
@@ -208,7 +205,7 @@ namespace IMSDriftTimeAligner
             IReadOnlyList<ScanInfo> baseFrameScans,
             IReadOnlyList<ScanInfo> frameScans,
             IEnumerable<int> scanNumsInFrame,
-            TextWriter statsWriter,
+            StatsWriter statsWriter,
             string datasetName,
             FileSystemInfo outputDirectory)
         {
@@ -307,7 +304,7 @@ namespace IMSDriftTimeAligner
             double[] comparisonFrameData,
             double[] baseFrameData,
             IEnumerable<int> scanNumsInFrame,
-            TextWriter statsWriter,
+            StatsWriter statsWriter,
             int scanStart,
             int scanEnd,
             string datasetName,
@@ -318,7 +315,6 @@ namespace IMSDriftTimeAligner
 
             try
             {
-
                 double[] baseDataToUse;
                 double[] comparisonDataToUse;
                 bool dataIsCompressed;
@@ -402,7 +398,6 @@ namespace IMSDriftTimeAligner
                         }
                         else if (currentPoint.Item2 == nextPoint.Item2)
                         {
-
                             // Data like:
                             // ComparisonData  BaseFrameData
                             // 60              72
@@ -425,7 +420,6 @@ namespace IMSDriftTimeAligner
                             {
                                 alignmentPathAllScans.Add(new Tuple<int, int>(rescaledSourceScan + j, rescaledTargetScanStart));
                             }
-
                         }
                         else
                         {
@@ -457,7 +451,6 @@ namespace IMSDriftTimeAligner
                     // Add the final mapping point
                     var finalPoint = alignmentPath[alignmentPath.Length - 1];
                     alignmentPathAllScans.Add(new Tuple<int, int>(finalPoint.Item1 * sampleLength, finalPoint.Item2 * sampleLength));
-
                 }
                 else
                 {
@@ -547,56 +540,29 @@ namespace IMSDriftTimeAligner
                     }
                 }
 
-                var statsLine = new StringBuilder();
-
-                string costFormatString;
-                if (cost < 10)
-                    costFormatString = "{1,-8:0.00}";
-                else if (cost < 100)
-                    costFormatString = "{1,-8:0.0}";
-                else
-                    costFormatString = "{1,-8:#,##0}";
-
-                statsLine.Append(string.Format("{0,-8} " + costFormatString, comparisonFrameNum, cost));
-
-                for (var percentile = 10; percentile <= 90; percentile += 10)
-                {
-                    if (offsetsByPercentile.TryGetValue(percentile, out var offsetList))
-                    {
-                        statsLine.Append(string.Format(" {0,-6:0}", offsetList.Average()));
-                    }
-                    else
-                    {
-                        statsLine.Append(string.Format(" {0,-6:0}", 0));
-                    }
-                }
-
-                OnStatusEvent("  " + mAverageScanShiftHeader);
-                OnStatusEvent("  " + statsLine.ToString().Trim());
-                statsWriter.WriteLine(statsLine.ToString().Trim());
+                statsWriter.AppendStats(comparisonFrameNum, cost, offsetsByPercentile);
 
                 if (Options.VisualizeDTW || Options.SaveDTWPlots || Options.SavePlotData)
                 {
                     VisualizeDTWAlignment(comparisonFrameNum, comparisonFrameData,
-                                          scanStart, datasetName, outputDirectory,
-                                          offsetsBySourceScan,
-                                          offsetsBySourceScanSmoothed,
-                                          optimizedOffsetsBySourceScan,
-                                          dtwAligner,
-                                          baseDataToUse,
-                                          sakoeChibaMaxShift);
+                        scanStart, datasetName, outputDirectory,
+                        offsetsBySourceScan,
+                        offsetsBySourceScanSmoothed,
+                        optimizedOffsetsBySourceScan,
+                        dtwAligner,
+                        baseDataToUse,
+                        sakoeChibaMaxShift);
                 }
 
                 if (ShowDebugMessages)
                 {
                     SaveDynamicTimeWarpingDataForDebug(outputDirectory,
-                                                       "Frame " + comparisonFrameNum,
-                                                       cost, alignmentPath,
-                                                       consolidatedScanInfoFromDTW,
-                                                       offsetsBySourceScanSmoothed,
-                                                       frameScanAlignmentMap);
+                        "Frame " + comparisonFrameNum,
+                        cost, alignmentPath,
+                        consolidatedScanInfoFromDTW,
+                        offsetsBySourceScanSmoothed,
+                        frameScanAlignmentMap);
                 }
-
             }
             catch (Exception ex)
             {
@@ -622,7 +588,7 @@ namespace IMSDriftTimeAligner
             IReadOnlyList<double> comparisonFrameData,
             double[] baseFrameData,
             IEnumerable<int> scanNumsInFrame,
-            TextWriter statsWriter)
+            StatsWriter statsWriter)
         {
             // Keys are the old scan number and values are the new scan number
             var frameScanAlignmentMap = new Dictionary<int, int>();
@@ -708,8 +674,7 @@ namespace IMSDriftTimeAligner
                     }
                 }
 
-                var statsLine = string.Format("{0,-8} {1,-6} {2,-8:F5}", comparisonFrameNum, bestOffset, bestRSquared);
-                statsWriter.WriteLine(statsLine.Trim());
+                statsWriter.AppendStats(comparisonFrameNum, bestOffset, bestRSquared);
 
                 OnStatusEvent(string.Format("  R-squared {0:F3}, shift {1} scans", bestRSquared, bestOffset));
 
@@ -738,7 +703,7 @@ namespace IMSDriftTimeAligner
             IReadOnlyList<ScanInfo> baseFrameScans,
             IReadOnlyList<ScanInfo> frameScans,
             IReadOnlyList<int> scanNumsInFrame,
-            TextWriter statsWriter,
+            StatsWriter statsWriter,
             string datasetName,
             DirectoryInfo outputDirectory)
         {
@@ -1782,8 +1747,6 @@ namespace IMSDriftTimeAligner
             {
                 optimizedOffsetsBySourceScan.Add(sourceScan, averageOffsetRounded);
             }
-
-
         }
 
         public bool ProcessFile(string inputFilePath, string outputFilePath)
@@ -1916,48 +1879,11 @@ namespace IMSDriftTimeAligner
                     }
                     var mergedFrameScans = new Dictionary<int, int[]>();
 
-                    using (var statsWriter = new StreamWriter(new FileStream(statsFilePath, FileMode.Create, FileAccess.Write, FileShare.Read)))
+
+                    using (var statsWriter = new StatsWriter(statsFilePath, Options, CommandLine, baseFrameList))
                     using (var writer = new DataWriter(outputFile.FullName))
                     {
-                        statsWriter.AutoFlush = true;
-
-                        if (Options.WriteOptionsToStatsFile)
-                        {
-                            statsWriter.WriteLine(CommandLine);
-                            statsWriter.WriteLine();
-                            statsWriter.WriteLine("== Processing Options ==");
-                            statsWriter.WriteLine();
-                            statsWriter.WriteLine("AlignmentMethod=" + Options.AlignmentMethod);
-                            statsWriter.WriteLine("BaseFrameMode=" + Options.BaseFrameSelectionMode + " (" + (int)Options.BaseFrameSelectionMode + ")");
-                            statsWriter.WriteLine("BaseCount=" + Options.BaseFrameSumCount);
-                            statsWriter.WriteLine("BaseStart=" + Options.BaseFrameStart);
-                            statsWriter.WriteLine("BaseEnd=" + Options.BaseFrameEnd);
-                            statsWriter.WriteLine("BaseFrameList=" + Options.BaseFrameList);
-                            if (baseFrameList.Count == 1)
-                                statsWriter.WriteLine("ActualBaseFrameNum=" + baseFrameList.First());
-                            else
-                                statsWriter.WriteLine("ActualBaseFrameNums=" + string.Join(",", baseFrameList));
-
-                            statsWriter.WriteLine("FrameStart=" + Options.FrameStart);
-                            statsWriter.WriteLine("FrameEnd=" + Options.FrameEnd);
-                            statsWriter.WriteLine("MaxShift=" + Options.MaxShiftScans);
-                            if (Options.AlignmentMethod == FrameAlignmentOptions.AlignmentMethods.DynamicTimeWarping)
-                            {
-                                statsWriter.WriteLine("DynamicTimeWarpingMaxPoints=" + Options.DTWMaxPoints);
-                                statsWriter.WriteLine("DynamicTimeWarpingSakoeChibaMaxShiftPercent=" + Options.DTWSakoeChibaMaxShiftPercent);
-                            }
-                            statsWriter.WriteLine("MinimumIntensityThresholdFraction=" + Options.MinimumIntensityThresholdFraction);
-                            statsWriter.WriteLine("DriftScanFilterMin=" + Options.DriftScanFilterMin);
-                            statsWriter.WriteLine("DriftScanFilterMax=" + Options.DriftScanFilterMax);
-                            statsWriter.WriteLine("MzFilterMin=" + Options.MzFilterMin);
-                            statsWriter.WriteLine("MzFilterMax=" + Options.MzFilterMax);
-                            statsWriter.WriteLine("ScanSmoothCount=" + Options.ScanSmoothCount);
-                            statsWriter.WriteLine("MergeFrames=" + Options.MergeFrames);
-                            statsWriter.WriteLine("AppendMergedFrame=" + Options.AppendMergedFrame);
-                            statsWriter.WriteLine();
-                            statsWriter.WriteLine("== Alignment Stats ==");
-                            statsWriter.WriteLine();
-                        }
+                        RegisterEvents(statsWriter);
 
                         Console.WriteLine();
                         if (baseFrameList.Count == 1)
@@ -1965,22 +1891,7 @@ namespace IMSDriftTimeAligner
                         else
                             OnStatusEvent("Actual base frames: " + string.Join(",", baseFrameList));
 
-                        if (Options.AlignmentMethod == FrameAlignmentOptions.AlignmentMethods.DynamicTimeWarping)
-                        {
-                            mAverageScanShiftHeader = string.Format("{0,-8} {1,-8} {2,-6} {3,-6} {4,-6} {5,-6} {6,-6} {7,-6} {8,-6} {9,-6} {10,-6}",
-                                                                    "Frame", "Cost", "10%", "20%", "30%", "40%", "50%", "60%", "70%", "80%", "90%");
-
-                            statsWriter.WriteLine("{0,-8} {1,-8} {2,-14} ", "", "", "Average scan shift by drift time scan percentile");
-                            statsWriter.WriteLine(mAverageScanShiftHeader);
-
-                            Console.WriteLine();
-                            OnStatusEvent("For each frame, will display the average scan shift by drift time scan percentile");
-                        }
-                        else
-                        {
-                            mAverageScanShiftHeader = string.Empty;
-                            statsWriter.WriteLine("{0,-8} {1,-6} {2,-8}", "Frame", "Shift", "Best RSquared");
-                        }
+                        statsWriter.WriteHeader();
 
                         if (writer.HasLegacyParameterTables)
                             writer.ValidateLegacyHPFColumnsExist();
@@ -2057,7 +1968,7 @@ namespace IMSDriftTimeAligner
             int comparisonFrameNum,
             IReadOnlyList<ScanInfo> baseFrameScans,
             IDictionary<int, int[]> mergedFrameScans,
-            TextWriter statsWriter,
+            StatsWriter statsWriter,
             bool insertFrame,
             int nextFrameNumOutfile
             )
