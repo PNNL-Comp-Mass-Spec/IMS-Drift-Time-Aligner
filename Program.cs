@@ -49,7 +49,8 @@ namespace IMSDriftTimeAligner
                     exeName + " NamePrefix*.UIMF",
                     exeName + " DataFile.UIMF -Start:2",
                     exeName + " DataFile.UIMF -Start:2 -BaseFrame:5 -BaseCount:7"
-                }
+                },
+                ParamKeysFieldWidth = 25
             };
 
             parser.AddParamFileKey("Conf");
