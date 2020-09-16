@@ -1996,6 +1996,9 @@ namespace IMSDriftTimeAligner
                 var scanStart = scanNumsInFrame.First();
                 var scanEnd = scanNumsInFrame.Last();
 
+                var baseFrameDataProcessed = SmoothAndFilterData(baseFrameData, outputDirectory, BASE_FRAME_DESCRIPTION, scanStart);
+                var comparisonFrameDataProcessed = SmoothAndFilterData(comparisonFrameData, outputDirectory, "Comparison Frame", scanStart);
+
                 if (!outputDirectory.Exists)
                 {
                     Console.WriteLine("Creating output directory at " + outputDirectory.FullName);
@@ -2004,7 +2007,7 @@ namespace IMSDriftTimeAligner
 
                 var datasetName = "TestSimpleAlignment";
 
-                var statsFile = new FileInfo(Path.Combine(outputDirectory.FullName, string.Format("DynamicTimeWarping_{0}.txt", datasetName)));
+                var statsFile = new FileInfo(Path.Combine(outputDirectory.FullName, string.Format("{0}_{1}.txt", Options.AlignmentMethod.ToString(), datasetName)));
                 Console.WriteLine("Creating stats file at " + statsFile.FullName);
 
                 var pngFileInfo = new FileInfo(Path.Combine(outputDirectory.FullName, datasetName + "_Frame1.png"));
@@ -2027,12 +2030,21 @@ namespace IMSDriftTimeAligner
 
                     statsWriter.WriteHeader();
 
-                    var frameScanAlignmentMap = AlignFrameDataDTW(
-                        1, comparisonFrameData.ToArray(),
-                        baseFrameData.ToArray(), scanNumsInFrame,
-                        statsWriter, scanStart, scanEnd,
-                        datasetName,
-                        outputDirectory);
+                    if (Options.AlignmentMethod == FrameAlignmentOptions.AlignmentMethods.LinearRegression)
+                    {
+                        var frameScanAlignmentMap = AlignFrameDataLinearRegression(
+                            1, comparisonFrameDataProcessed,
+                            baseFrameDataProcessed, scanNumsInFrame, statsWriter);
+                    }
+                    else
+                    {
+                        var frameScanAlignmentMap = AlignFrameDataDTW(
+                            1, comparisonFrameDataProcessed,
+                            baseFrameDataProcessed, scanNumsInFrame,
+                            statsWriter, scanStart, scanEnd,
+                            datasetName,
+                            outputDirectory);
+                    }
 
                     Console.WriteLine();
 
@@ -2047,7 +2059,7 @@ namespace IMSDriftTimeAligner
                         Console.WriteLine("Stats file created at " + statsFile.FullName);
                     }
 
-                    if (Options.SaveDTWPlots)
+                    if (Options.AlignmentMethod == FrameAlignmentOptions.AlignmentMethods.DynamicTimeWarping && Options.SaveDTWPlots)
                     {
                         pngFileInfo.Refresh();
                         if (!pngFileInfo.Exists)
