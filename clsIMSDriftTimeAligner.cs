@@ -225,8 +225,8 @@ namespace IMSDriftTimeAligner
                 var nonzeroScans1 = (from item in baseFrameScans where item.TIC > 0 orderby item.Scan select item.Scan).ToList();
                 var nonzeroScans2 = (from item in frameScans where item.TIC > 0 orderby item.Scan select item.Scan).ToList();
 
-                double[] baseFrameData;
-                double[] comparisonFrameData;
+                List<double> baseFrameData;
+                List<double> comparisonFrameData;
                 int scanStart;
                 int scanEnd;
 
@@ -310,8 +310,8 @@ namespace IMSDriftTimeAligner
         /// <returns>Dictionary where keys are the old scan number and values are the new scan number</returns>
         public Dictionary<int, int> AlignFrameDataDTW(
             int comparisonFrameNum,
-            double[] comparisonFrameData,
-            double[] baseFrameData,
+            List<double> comparisonFrameData,
+            List<double> baseFrameData,
             IEnumerable<int> scanNumsInFrame,
             StatsWriter statsWriter,
             int scanStart,
@@ -329,11 +329,11 @@ namespace IMSDriftTimeAligner
                 bool dataIsCompressed;
                 int sampleLength;
 
-                if (baseFrameData.Length > Options.DTWMaxPoints)
+                if (baseFrameData.Count > Options.DTWMaxPoints)
                 {
                     // Compress the data to limit the size of the matrices used by the Dynamic Time Warping algorithm
 
-                    sampleLength = (int)Math.Ceiling(baseFrameData.Length / (double)Options.DTWMaxPoints);
+                    sampleLength = (int)Math.Ceiling(baseFrameData.Count / (double)Options.DTWMaxPoints);
 
                     baseDataToUse = CompressArrayBySumming(baseFrameData, sampleLength);
                     comparisonDataToUse = CompressArrayBySumming(comparisonFrameData, sampleLength);
@@ -341,8 +341,8 @@ namespace IMSDriftTimeAligner
                 }
                 else
                 {
-                    baseDataToUse = baseFrameData;
-                    comparisonDataToUse = comparisonFrameData;
+                    baseDataToUse = baseFrameData.ToArray();
+                    comparisonDataToUse = comparisonFrameData.ToArray();
                     dataIsCompressed = false;
                     sampleLength = 1;
                 }
@@ -595,7 +595,7 @@ namespace IMSDriftTimeAligner
         private Dictionary<int, int> AlignFrameDataLinearRegression(
             int comparisonFrameNum,
             IReadOnlyList<double> comparisonFrameData,
-            double[] baseFrameData,
+            List<double> baseFrameData,
             IEnumerable<int> scanNumsInFrame,
             StatsWriter statsWriter)
         {
@@ -613,7 +613,7 @@ namespace IMSDriftTimeAligner
 
                 while (true)
                 {
-                    var frameDataShifted = new double[baseFrameData.Length];
+                    var frameDataShifted = new double[baseFrameData.Count];
                     var targetIndex = 0;
 
                     for (var sourceIndex = offset; sourceIndex < comparisonFrameData.Count; sourceIndex++)
@@ -628,7 +628,7 @@ namespace IMSDriftTimeAligner
                             break;
                     }
 
-                    var coeff = MathNet.Numerics.LinearRegression.SimpleRegression.Fit(frameDataShifted, baseFrameData);
+                    var coeff = MathNet.Numerics.LinearRegression.SimpleRegression.Fit(frameDataShifted, baseFrameData.ToArray());
 
                     var intercept = coeff.Item1;
                     var slope = coeff.Item2;
@@ -1380,7 +1380,7 @@ namespace IMSDriftTimeAligner
         /// The data in frameScans may have missing scans, but the data in the returned array
         /// will have one point for every scan (0 for the scans that were missing)
         /// </remarks>
-        private double[] GetTICValues(
+        private List<double> GetTICValues(
             FileSystemInfo outputDirectory,
             string frameDescription,
             int scanStart,
