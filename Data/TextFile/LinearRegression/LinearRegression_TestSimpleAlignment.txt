@@ -1,0 +1,26 @@
+
+
+== Processing Options ==
+
+AlignmentMethod=LinearRegression
+BaseFrameMode=UserSpecifiedFrameRange (3)
+BaseCount=1
+BaseStart=0
+BaseEnd=0
+BaseFrameList=7
+FrameStart=0
+FrameEnd=0
+MaxShift=200
+MinimumIntensityThresholdFraction=0.1
+DriftScanFilterMin=0
+DriftScanFilterMax=0
+MzFilterMin=0
+MzFilterMax=0
+ScanSmoothCount=7
+MergeFrames=False
+AppendMergedFrame=True
+
+== Alignment Stats ==
+
+Frame    Shift  Best RSquared
+1        -50    0.41722
