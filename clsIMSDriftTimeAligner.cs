@@ -592,7 +592,7 @@ namespace IMSDriftTimeAligner
         /// <param name="scanNumsInFrame">Full list of scan numbers in the frame (since frameScans might be filtered)</param>
         /// <param name="statsWriter">Stats file writer</param>
         /// <returns>Dictionary where keys are the old scan number and values are the new scan number</returns>
-        private Dictionary<int, int> AlignFrameDataLinearRegression(
+        public Dictionary<int, int> AlignFrameDataLinearRegression(
             int comparisonFrameNum,
             IReadOnlyList<double> comparisonFrameData,
             List<double> baseFrameData,

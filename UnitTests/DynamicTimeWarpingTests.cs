@@ -16,6 +16,32 @@ namespace IMSDriftTimeAligner_UnitTests
         // Ignore Spelling: Sakoe
 
         /// <summary>
+        /// Load a tab-delimited file with two columns of data, then align the data using linear regression
+        /// </summary>
+        /// <param name="dataFileName"></param>
+        /// <param name="expectedOptimalShift">The expected optimal shift</param>
+        /// <param name="expectedBestRSquared">The expected best R-Squared value</param>
+        /// <remarks>
+        /// Plot generation requires a single-thread apartment, thus the use of ApartmentState.STA;
+        /// see also https://stackoverflow.com/a/35587531/1179467
+        /// </remarks>
+        [Test]
+        [Apartment(ApartmentState.STA)]
+        [TestCase("AlignmentTestData2.txt", -100, "0.99999")]
+        public void TestSimpleAlignmentLinearRegression(
+            string dataFileName,
+            double expectedOptimalShift,
+            string expectedBestRSquared)
+        {
+            TestSimpleAlignmentWork(
+                dataFileName,
+                FrameAlignmentOptions.AlignmentMethods.LinearRegression,
+                5,
+                expectedOptimalShift,
+                expectedBestRSquared);
+        }
+
+        /// <summary>
         /// Load a tab-delimited file with two columns of data, then align the data
         /// </summary>
         /// <param name="dataFileName"></param>
@@ -23,30 +49,61 @@ namespace IMSDriftTimeAligner_UnitTests
         /// Maximum Sakoe Chiba Shift, as a percentage of the number of points used for Dynamic Time Warping
         /// Should be a value between 0.01 and 100
         /// </param>
-        /// <param name="expectedCost"></param>
-        /// <param name="expectedAverageScanShifts"></param>
+        /// <param name="expectedCost">The expected alignment cost</param>
+        /// <param name="expectedAverageScanShifts">The expected average scan shift for each 10th percentile</param>
         /// <remarks>
         /// Plot generation requires a single-thread apartment, thus the use of ApartmentState.STA;
         /// see also https://stackoverflow.com/a/35587531/1179467
         /// </remarks>
         [Test]
         [Apartment(ApartmentState.STA)]
-        [TestCase("AlignmentTestData1.txt", 5, 19.2, "0", "43", "50", "72", "100", "100", "100", "100", "100")]
-        public void TestSimpleAlignment(string dataFileName, double dtwSakoeChibaMaxShiftPercent, double expectedCost, params string[] expectedAverageScanShifts)
+        [TestCase("AlignmentTestData1.txt", 5, 21.6, "0", "37", "50", "55", "99", "100",
+            "100", "100", "100")]
+        public void TestSimpleAlignmentDTW(
+            string dataFileName,
+            double dtwSakoeChibaMaxShiftPercent,
+            double expectedCost,
+            params string[] expectedAverageScanShifts)
+        {
+            TestSimpleAlignmentWork(
+                dataFileName,
+                FrameAlignmentOptions.AlignmentMethods.DynamicTimeWarping,
+                dtwSakoeChibaMaxShiftPercent,
+                expectedCost,
+                expectedAverageScanShifts);
+        }
+
+        public void TestSimpleAlignmentWork(
+            string dataFileName,
+            FrameAlignmentOptions.AlignmentMethods alignmentMethod,
+            double dtwSakoeChibaMaxShiftPercent,
+            double expectedCostOrShift,
+            params string[] expectedAverageScanShiftsOrBestRSquared)
         {
             try
             {
                 var expectedAverageScanShiftByDriftTimeScanPercentile = new List<int>();
+                double expectedBestRSquared;
 
-                foreach (var item in expectedAverageScanShifts)
+                if (alignmentMethod == FrameAlignmentOptions.AlignmentMethods.LinearRegression)
                 {
-                    if (!int.TryParse(item, out var scanShift))
+                    expectedBestRSquared = double.Parse(expectedAverageScanShiftsOrBestRSquared.First());
+                }
+                else
+                {
+                    foreach (var item in expectedAverageScanShiftsOrBestRSquared)
                     {
-                        Assert.Fail("Value in expectedAverageScanShifts is not an integer: " + item);
+                        if (!int.TryParse(item, out var scanShift))
+                        {
+                            Assert.Fail("Value in expectedAverageScanShiftsOrBestRSquared is not an integer: " + item);
+                        }
+
+                        expectedAverageScanShiftByDriftTimeScanPercentile.Add(scanShift);
                     }
 
-                    expectedAverageScanShiftByDriftTimeScanPercentile.Add(scanShift);
+                    expectedBestRSquared = 0;
                 }
+
                 var dataFile = FindUnitTestFile(dataFileName);
                 if (dataFile == null)
                     return;
@@ -99,7 +156,7 @@ namespace IMSDriftTimeAligner_UnitTests
 
                 var options = new FrameAlignmentOptions
                 {
-                    AlignmentMethod = FrameAlignmentOptions.AlignmentMethods.DynamicTimeWarping,
+                    AlignmentMethod = alignmentMethod,
                     DTWSakoeChibaMaxShiftPercent = dtwSakoeChibaMaxShiftPercent,
                     SaveDTWPlots = true,
                     SavePlotData = true
@@ -108,14 +165,20 @@ namespace IMSDriftTimeAligner_UnitTests
                 var alignmentEngine = new DriftTimeAlignmentEngine(options);
                 RegisterEvents(alignmentEngine);
 
-                var outputDirectory = new DirectoryInfo(Path.Combine(Path.GetTempPath(), "DynamicTimeWarpingTests"));
+                var outputDirectory = new DirectoryInfo(Path.Combine(Path.GetTempPath(), "DynamicTimeWarpingTests", alignmentMethod.ToString()));
                 if (!outputDirectory.Exists)
                 {
                     Console.WriteLine("Creating output directory at " + outputDirectory.FullName);
                     outputDirectory.Create();
                 }
 
-                var datasetName = "TestSimpleAlignment";
+                var baseFrameDataProcessed = alignmentEngine.SmoothAndFilterData(baseFrameData, outputDirectory, "Base frame", scanStart);
+                var comparisonFrameDataProcessed = alignmentEngine.SmoothAndFilterData(comparisonFrameData, outputDirectory, "Comparison Frame", scanStart);
+
+
+                var datasetName = alignmentMethod == FrameAlignmentOptions.AlignmentMethods.LinearRegression ?
+                                      "TestAlignmentLinearRegression" :
+                                      "TestAlignmentDTW";
 
                 var statsFile = new FileInfo(Path.Combine(outputDirectory.FullName, string.Format("DynamicTimeWarping_{0}.txt", datasetName)));
                 Console.WriteLine("Creating stats file at " + statsFile.FullName);
@@ -140,12 +203,24 @@ namespace IMSDriftTimeAligner_UnitTests
 
                     statsWriter.WriteHeader();
 
-                    var frameScanAlignmentMap = alignmentEngine.AlignFrameDataDTW(
-                        1, comparisonFrameData.ToArray(),
-                        baseFrameData.ToArray(), scanNumsInFrame,
-                        statsWriter, scanStart, scanEnd,
-                        datasetName,
-                        outputDirectory);
+                    Dictionary<int, int> frameScanAlignmentMap;
+                    if (options.AlignmentMethod == FrameAlignmentOptions.AlignmentMethods.LinearRegression)
+                    {
+                        frameScanAlignmentMap = alignmentEngine.AlignFrameDataLinearRegression(
+                            1, comparisonFrameDataProcessed,
+                            baseFrameDataProcessed, scanNumsInFrame, statsWriter);
+                    }
+                    else
+                    {
+
+                        frameScanAlignmentMap = alignmentEngine.AlignFrameDataDTW(
+                            1, comparisonFrameDataProcessed,
+                            baseFrameDataProcessed, scanNumsInFrame,
+                            statsWriter, scanStart, scanEnd,
+                            datasetName,
+                            outputDirectory);
+                    }
+
 
                     Console.WriteLine();
 
@@ -160,23 +235,28 @@ namespace IMSDriftTimeAligner_UnitTests
                         Console.WriteLine("Stats file created at " + statsFile.FullName);
                     }
 
-                    pngFileInfo.Refresh();
-                    if (!pngFileInfo.Exists)
+                    if (options.AlignmentMethod == FrameAlignmentOptions.AlignmentMethods.DynamicTimeWarping)
                     {
-                        ConsoleMsgUtils.ShowWarning("The plot file was not created: " + pngFileInfo.FullName);
-                        success = false;
-                    }
-                    else
-                    {
-                        Console.WriteLine("Plot file created at " + pngFileInfo.FullName);
+                        pngFileInfo.Refresh();
+                        if (!pngFileInfo.Exists)
+                        {
+                            ConsoleMsgUtils.ShowWarning("The plot file was not created: " + pngFileInfo.FullName);
+                            success = false;
+                        }
+                        else
+                        {
+                            Console.WriteLine("Plot file created at " + pngFileInfo.FullName);
+                        }
                     }
 
                     Console.WriteLine();
                     Console.WriteLine("{0,-15} {1,-12}", "Original Scan", "New Scan");
 
+                    var modDivisor = frameScanAlignmentMap.Keys.Count < 400 ? 10 : 100;
+
                     foreach (var keyName in (from item in frameScanAlignmentMap.Keys orderby item select item))
                     {
-                        if (keyName % 100 == 0)
+                        if (keyName % modDivisor == 0)
                         {
                             Console.WriteLine("{0,-15} {1,-12}", keyName, frameScanAlignmentMap[keyName]);
                         }
@@ -184,7 +264,13 @@ namespace IMSDriftTimeAligner_UnitTests
                 }
 
                 Console.WriteLine();
-                var validStats = ValidateStats(statsFile, expectedCost, expectedAverageScanShiftByDriftTimeScanPercentile);
+
+                bool validStats;
+                if (options.AlignmentMethod == FrameAlignmentOptions.AlignmentMethods.LinearRegression)
+                    validStats = ValidateStatsLinearRegression(statsFile, expectedCostOrShift, expectedBestRSquared);
+                else
+                    validStats = ValidateStatsDTW(statsFile, expectedCostOrShift, expectedAverageScanShiftByDriftTimeScanPercentile);
+
                 if (!validStats)
                     success = false;
 
@@ -226,7 +312,67 @@ namespace IMSDriftTimeAligner_UnitTests
         }
 
 
-        private bool ValidateStats(FileSystemInfo statsFile, double expectedCost, IReadOnlyList<int> expectedAverageScanShiftByDriftTimeScanPercentile)
+        private bool ValidateStatsLinearRegression(FileSystemInfo statsFile, double expectedShift, double expectedBestRSquared)
+        {
+            using (var reader = new StreamReader(new FileStream(statsFile.FullName, FileMode.Open, FileAccess.ReadWrite)))
+            {
+                while (!reader.EndOfStream)
+                {
+                    var dataLine = reader.ReadLine();
+                    if (string.IsNullOrWhiteSpace(dataLine))
+                        continue;
+
+                    if (!dataLine.StartsWith("Frame    Shift"))
+                        continue;
+
+                    if (reader.EndOfStream)
+                    {
+                        ConsoleMsgUtils.ShowWarning("Corrupt stats file; missing the stats line: " + statsFile.FullName);
+                        return false;
+                    }
+
+                    var statsLine = reader.ReadLine();
+
+                    if (string.IsNullOrWhiteSpace(statsLine))
+                    {
+                        ConsoleMsgUtils.ShowWarning("Corrupt stats file; empty stats line: " + statsFile.FullName);
+                        return false;
+                    }
+
+                    var dataColumnsWithSpaces = statsLine.Split(' ');
+                    var dataColumns = dataColumnsWithSpaces.Where(item => !string.IsNullOrWhiteSpace(item)).ToList();
+
+                    if (dataColumns.Count < 3)
+                    {
+                        ConsoleMsgUtils.ShowWarning("Corrupt stats file; stats line has less than 3 columns: " + statsFile.FullName);
+                        return false;
+                    }
+
+                    if (!double.TryParse(dataColumns[1], out var actualShift))
+                    {
+                        ConsoleMsgUtils.ShowWarning("Corrupt stats file; could not extract shift: " + statsFile.FullName);
+                        return false;
+                    }
+
+
+                    if (!double.TryParse(dataColumns[2], out var actualBestRSquared))
+                    {
+                        ConsoleMsgUtils.ShowWarning("Corrupt stats file; could not extract R-Squared: " + statsFile.FullName);
+                        return false;
+                    }
+
+                    Console.WriteLine("Scan shift applied: {0}", actualShift);
+                    Console.WriteLine("Best R-Squared: {0}", actualBestRSquared);
+
+                    Assert.AreEqual(expectedShift, actualShift, 0.05, "Scan shift mismatch");
+                    Assert.AreEqual(expectedBestRSquared, actualBestRSquared, 0.05, "R-Squared mismatch");
+                }
+            }
+
+            return true;
+        }
+
+        private bool ValidateStatsDTW(FileSystemInfo statsFile, double expectedCost, IReadOnlyList<int> expectedAverageScanShiftByDriftTimeScanPercentile)
         {
             using (var reader = new StreamReader(new FileStream(statsFile.FullName, FileMode.Open, FileAccess.ReadWrite)))
             {
