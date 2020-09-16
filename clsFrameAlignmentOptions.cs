@@ -14,7 +14,7 @@ namespace IMSDriftTimeAligner
         /// <summary>
         /// Program date
         /// </summary>
-        public const string PROGRAM_DATE = "September 14, 2020";
+        public const string PROGRAM_DATE = "September 15, 2020";
 
         /// <summary>
         /// Default frame selection mode
@@ -70,24 +70,26 @@ namespace IMSDriftTimeAligner
         #region "Properties"
 
         [Option("Align", DoNotListEnumValues = false, HelpShowsDefault = false, HelpText =
-            "Method for aligning the data for each frame to the base frame; can be LinearRegression (default) or DynamicTimeWarping")]
+            "Method for aligning the data for each frame to the base frame\n" +
+            "can be LinearRegression (default) or DynamicTimeWarping")]
         public AlignmentMethods AlignmentMethod { get; set; }
 
         [Option("BaseFrameMode", "BaseFrame", HelpText =
-            "Method for selecting the base frame to align all the other frames to")]
+            "Method for selecting the base frame to align all the other frames to\n" +
+            "Common modes: MidpointFrame, UserSpecifiedFrameRange, and SumMidNFrames")]
         public BaseFrameSelectionModes BaseFrameSelectionMode { get; set; }
 
         [Option("BaseCount", HelpText =
-            "Number of frames to use, or percentage of frames to use, when the BaseFrameSelection mode is NFrames or NPercent. " +
+            "Number of frames to use, or percentage of frames to use, when the BaseFrameSelection mode is NFrames or NPercent\n" +
             "When specifying a percentage, must be a value between 1 and 100")]
         public int BaseFrameSumCount { get; set; }
 
         [Option("BaseStart", HelpShowsDefault = false, HelpText =
-            "First frame to use when the BaseFrameSelection mode is 3 (UserSpecifiedFrameRange); ignored if -BaseFrameList is defined")]
+            "First frame to use when the BaseFrameSelection mode is 3 (UserSpecifiedFrameRange)\nIgnored if -BaseFrameList is defined")]
         public int BaseFrameStart { get; set; }
 
         [Option("BaseEnd", HelpShowsDefault = false, HelpText =
-            "Last frame to use when the BaseFrameSelection mode is 3 (UserSpecifiedFrameRange); ignored if -BaseFrameList is defined")]
+            "Last frame to use when the BaseFrameSelection mode is 3 (UserSpecifiedFrameRange)\nIgnored if -BaseFrameList is defined")]
         public int BaseFrameEnd { get; set; }
 
         [Option("BaseFrameList", "BaseFrames", HelpShowsDefault = false, HelpText =
@@ -102,11 +104,11 @@ namespace IMSDriftTimeAligner
             "Frame to stop processing at (Set FrameStart and FrameEnd to 0 to process all frames)")]
         public int FrameEnd { get; set; }
 
-        [Option("InputFile", "InputFilePath", "i", "input", ArgPosition = 1, HelpShowsDefault = false, IsInputFilePath = true,
+        [Option("InputFilePath", "InputFile", "i", "input", ArgPosition = 1, HelpShowsDefault = false, IsInputFilePath = true,
             HelpText = "Input file path (UIMF File);\nsupports wildcards, e.g. *.uimf")]
         public string InputFilePath { get; set; }
 
-        [Option("OutputFile", "OutputFilePath", "o", "output", ArgPosition = 2, HelpShowsDefault = false, HelpText =
+        [Option("OutputFilePath", "OutputFile", "o", "output", ArgPosition = 2, HelpShowsDefault = false, HelpText =
             "Output file path; ignored if the input file path has a wildcard or if /S was used (or a parameter file has Recurse=True)")]
         public string OutputFilePath { get; set; }
 
@@ -114,17 +116,17 @@ namespace IMSDriftTimeAligner
             "Process files in the current directory and all subdirectories")]
         public bool RecurseDirectories { get; set; }
 
-        [Option("DTWPoints", "DTWMaxPoints", HelpShowsDefault = true, Min = 100, Max = 10000, HelpText =
+        [Option("DTWMaxPoints", "DTWPoints", HelpShowsDefault = true, Min = 100, Max = 10000, HelpText =
             "Maximum number of points to use for Dynamic Time Warping")]
         public int DTWMaxPoints { get; set; }
 
-        [Option("DTWShift", "DTWMaxShift", "DTWMaxShiftPercent", HelpShowsDefault = true, Min = 0.01, Max = 100, HelpText =
+        [Option("DTWMaxShiftPercent", "DTWShift", "DTWMaxShift", HelpShowsDefault = true, Min = 0.01, Max = 100, HelpText =
             "Maximum Sakoe Chiba Shift, as a percentage of the number of points used for Dynamic Time Warping")]
         public double DTWSakoeChibaMaxShiftPercent { get; set; }
 
         [Option("MaxShift", HelpShowsDefault = true, HelpText =
-            "Maximum number of scans that data in a frame is allowed to be shifted when aligning to the base frame data; " +
-            "ignored if the alignment method is DynamicTimeWarping")]
+            "Maximum number of scans that data in a frame is allowed to be shifted when aligning to the base frame data\n" +
+            "Ignored if the alignment method is DynamicTimeWarping")]
         public int MaxShiftScans { get; set; }
 
         private double? mMinimumIntensityThresholdFraction;
@@ -143,9 +145,11 @@ namespace IMSDriftTimeAligner
             set => mMinimumIntensityThresholdFraction = value;
         }
 
-        [Option("ITF", "MinimumIntensityThresholdFraction", HelpShowsDefault = false, HelpText =
+        [Option("MinimumIntensityThresholdFraction", "ITF", HelpShowsDefault = false, HelpText =
             "Value to multiply the maximum TIC value by to determine an intensity threshold, " +
-            "below which intensity values will be set to 0.  Defaults to 0.1 (aka 10% of the max) for -Align:0 and 0.025 for -Align:1")]
+            "below which intensity values will be set to 0.\n" +
+            "Defaults to 0.1 (aka 10% of the max) for -Align:0 and 0.025 for -Align:1 " +
+            "(in parameter files, defaults to 0.1 for Align=LinearRegression and 0.025 for Align=DynamicTimeWarping)")]
         // ReSharper disable once UnusedMember.Global
         public double UserDefinedMinimumIntensityThresholdFraction
         {
@@ -153,42 +157,42 @@ namespace IMSDriftTimeAligner
             set => MinimumIntensityThresholdFraction = value;
         }
 
-        [Option("ScanMin", "MinScan", "DriftScanFilterMin", HelpShowsDefault = false, HelpText =
-                        "Optional minimum drift scan number to filter data by when obtaining data to align")]
+        [Option("DriftScanFilterMin", "ScanMin", "MinScan", HelpShowsDefault = false, HelpText =
+            "Optional minimum drift scan number to filter data by when obtaining data to align")]
         public int DriftScanFilterMin { get; set; }
 
-        [Option("ScanMax", "MaxScan", "DriftScanFilterMax", HelpShowsDefault = false, HelpText =
+        [Option("DriftScanFilterMax", "ScanMax", "MaxScan", HelpShowsDefault = false, HelpText =
             "Optional maximum drift scan number to filter data by when obtaining data to align")]
         public int DriftScanFilterMax { get; set; }
 
-        [Option("MzMin", "MinMZ", "MzFilterMin", HelpShowsDefault = false, HelpText =
+        [Option("MzFilterMin", "MzMin", "MinMZ", HelpShowsDefault = false, HelpText =
             "Optional minimum m/z to filter data by when obtaining data to align")]
         public int MzFilterMin { get; set; }
 
-        [Option("MzMax", "MaxMZ", "MzFilterMax", HelpShowsDefault = false, HelpText =
+        [Option("MzFilterMax", "MzMax", "MaxMZ", HelpShowsDefault = false, HelpText =
             "Optional maximum m/z to filter data by when obtaining data to align")]
         public int MzFilterMax { get; set; }
 
-        [Option("Smooth", "ScanSmoothCount", HelpText =
+        [Option("ScanSmoothCount", "Smooth", HelpText =
             "Number of points to use when smoothing TICs before aligning. " +
             "If 0 or 1; no smoothing is applied.")]
         public int ScanSmoothCount { get; set; }
 
-        [Option("Merge", "MergeFrames", HelpText =
+        [Option("MergeFrames", "Merge", HelpText =
             "When true, the output file will have a single, merged frame. " +
             "When false, the output file will have all of the original frames, with their IMS drift times aligned")]
         public bool MergeFrames { get; set; }
 
-        [Option("Append", "AppendMergedFrame", HelpText =
+        [Option("AppendMergedFrame", "Append", HelpText =
             "When true, a merged frame of data will be appended to the output file as a new frame " +
             "(ignored if option MergeFrames is true)")]
         public bool AppendMergedFrame { get; set; }
 
-        [Option("Plot", "Vis", HelpShowsDefault = false, HelpText =
+        [Option("VisualizeDTWResults", "Plot", "Vis", HelpShowsDefault = false, HelpText =
             "Visualize the dynamic time warping results for each aligned frame; shows interactive plots in a new window")]
         public bool VisualizeDTW { get; set; }
 
-        [Option("SavePlot", "SavePlots", HelpShowsDefault = false, HelpText =
+        [Option("SavePlots", "SavePlot", HelpShowsDefault = false, HelpText =
             "Save a dynamic time warping plot for each aligned frame")]
         public bool SaveDTWPlots { get; set; }
 
