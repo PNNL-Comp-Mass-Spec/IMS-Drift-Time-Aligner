@@ -716,6 +716,8 @@ namespace IMSDriftTimeAligner
             string datasetName,
             DirectoryInfo outputDirectory)
         {
+            if (!outputDirectory.Exists)
+                outputDirectory.Create();
 
             Dictionary<int, int> frameScanAlignmentMap;
 
@@ -1949,6 +1951,9 @@ namespace IMSDriftTimeAligner
                     return false;
                 }
                 Console.WriteLine("Output directory: " + outputDirectory.FullName);
+
+                if (!outputDirectory.Exists)
+                    outputDirectory.Create();
 
                 var baseFrameData = new List<double>();
                 var comparisonFrameData = new List<double>();
