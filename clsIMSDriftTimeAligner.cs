@@ -1445,51 +1445,8 @@ namespace IMSDriftTimeAligner
                 frameData[scan.Scan - scanStart] = scan.TIC;
             }
 
-            if (Options.ScanSmoothCount <= 1)
-            {
-                // Not using smoothing, but we may need to zero-out values below a threshold
-                ZeroValuesBelowThreshold(frameData);
-
-                return frameData;
-            }
-
-            // Apply a moving average smooth
-            var frameDataSmoothed = MathNet.Numerics.Statistics.Statistics.MovingAverage(frameData, Options.ScanSmoothCount).ToArray();
-
-            // The smoothing algorithm results in some negative values very close to 0 (like -4.07E-12)
-            // Change these to 0
-            for (var i = 0; i < frameDataSmoothed.Length; i++)
-            {
-                if (frameDataSmoothed[i] < 0)
-                    frameDataSmoothed[i] = 0;
-            }
-
-            ZeroValuesBelowThreshold(frameDataSmoothed);
-
-            if (!ShowDebugMessages)
-            {
-                return frameDataSmoothed;
-            }
-
-            var writeData = true;
-            if (frameDescription == BASE_FRAME_DESCRIPTION)
-            {
-                if (mSmoothedBaseFrameDataWritten)
-                {
-                    writeData = false;
-                }
-                else
-                {
-                    mSmoothedBaseFrameDataWritten = true;
-                }
-            }
-
-            if (writeData)
-            {
-                SaveSmoothedDataForDebug(outputDirectory, frameDescription, scanStart, frameData, frameDataSmoothed);
-            }
-
-            return frameDataSmoothed;
+            var frameDataToReturn = SmoothAndFilterData(frameData.ToList(), outputDirectory, frameDescription, scanStart);
+            return frameDataToReturn;
         }
 
         private FileInfo InitializeOutputFile(FileInfo sourceFile, string outputFilePath)
@@ -2534,6 +2491,63 @@ namespace IMSDriftTimeAligner
             {
                 ReportError("Error in SaveSmoothedDataForDebug", ex);
             }
+        }
+
+        /// <summary>
+        /// Smooth and/or filter the data in frameData, based on settings in Options
+        /// </summary>
+        /// <param name="frameData"></param>
+        /// <param name="outputDirectory"></param>
+        /// <param name="frameDescription"></param>
+        /// <param name="scanStart"></param>
+        /// <returns></returns>
+        public List<double> SmoothAndFilterData(List<double> frameData, FileSystemInfo outputDirectory, string frameDescription, int scanStart)
+        {
+            if (Options.ScanSmoothCount <= 1)
+            {
+                // Not using smoothing, but we may need to zero-out values below a threshold
+                ZeroValuesBelowThreshold(frameData);
+
+                return frameData;
+            }
+
+            // Apply a moving average smooth
+            var frameDataSmoothed = MathNet.Numerics.Statistics.Statistics.MovingAverage(frameData, Options.ScanSmoothCount).ToList();
+
+            // The smoothing algorithm results in some negative values very close to 0 (like -4.07E-12)
+            // Change these to 0
+            for (var i = 0; i < frameDataSmoothed.Count; i++)
+            {
+                if (frameDataSmoothed[i] < 0)
+                    frameDataSmoothed[i] = 0;
+            }
+
+            ZeroValuesBelowThreshold(frameDataSmoothed);
+
+            if (!ShowDebugMessages)
+            {
+                return frameDataSmoothed;
+            }
+
+            var writeData = true;
+            if (frameDescription == BASE_FRAME_DESCRIPTION)
+            {
+                if (mSmoothedBaseFrameDataWritten)
+                {
+                    writeData = false;
+                }
+                else
+                {
+                    mSmoothedBaseFrameDataWritten = true;
+                }
+            }
+
+            if (writeData)
+            {
+                SaveSmoothedDataForDebug(outputDirectory, frameDescription, scanStart, frameData, frameDataSmoothed);
+            }
+
+            return frameDataSmoothed;
         }
 
         private Dictionary<int, int> SmoothViaMovingAverage(Dictionary<int, int> dataToSmooth, int windowSize)
