@@ -1,0 +1,29 @@
+Options:
+ Reading data from: AlignmentTestData1.txt
+
+ Alignment Method:                        DynamicTimeWarping
+ Visualize the DTW path:                  Enabled
+ Save DTW plot for each frame:            Enabled
+ Save DTW plot data text files:           Disabled
+ Max points for DTW:                      7500
+ Sakoe Chiba Max Shift:                   5%
+ Base Frame Selection Mode:               SumMidNFrames (mode 5)
+ Base Frames to Sum:                      15
+
+ Maximum shift:                           150 scans
+ Minimum Intensity threshold Fraction:    0.002
+ Scans to smooth:                         7
+
+ The output file will have aligned frames
+
+
+Loading F:\Documents\Projects\DataMining\IMSDriftTimeAligner\Data\AlignmentTestData1.txt
+Output directory: F:\Documents\Projects\DataMining\IMSDriftTimeAligner\Data
+Creating stats file at F:\Documents\Projects\DataMining\IMSDriftTimeAligner\Data\DynamicTimeWarping_TestSimpleAlignment.txt
+
+For each frame, will display the average scan shift by drift time scan percentile
+  Frame    Cost     10%    20%    30%    40%    50%    60%    70%    80%    90%   
+  1        21.6     0      38     50     58     99     100    100    100    100
+
+Stats file created at F:\Documents\Projects\DataMining\IMSDriftTimeAligner\Data\DynamicTimeWarping_TestSimpleAlignment.txt
+Plot file created at F:\Documents\Projects\DataMining\IMSDriftTimeAligner\Data\TestSimpleAlignment_Frame1.png

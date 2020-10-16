@@ -1,10 +1,23 @@
-rem Option 1: use command line arguments
-..\bin\IMSDriftTimeAligner.exe 20180608_14_He_Mix4_p2p53_2p43_40kh_12v_1c_s750_1.uimf /BaseFrameMode:3 /BaseStart:35 /BaseEnd:35 /FrameStart:30 /FrameEnd:50 /Append /OutputFilePath:20180608_14_He_Mix4_p2p53_2p43_40kh_12v_1c_s750_1_aligned.uimf
+@echo off
+if exist ..\bin\IMSDriftTimeAligner.exe (set ExePath=..\bin\IMSDriftTimeAligner.exe) else (set ExePath=IMSDriftTimeAligner.exe)
 
-rem Option 2: use a parameter file
-..\bin\IMSDriftTimeAligner.exe 20180608_14_He_Mix4_p2p53_2p43_40kh_12v_1c_s750_1.uimf /ParamFile:AlignmentOptions_20180608_14_He_Mix4_p2p53_2p43.conf /OutputFilePath:20180608_14_He_Mix4_p2p53_2p43_40kh_12v_1c_s750_1_aligned_Paramfile.uimf
+echo Set options using command line arguments
+@echo on
+%ExePath% 20180608_14_He_Mix4_p2p53_2p43_40kh_12v_1c_s750_1.uimf /BaseFrameMode:3 /BaseStart:35 /BaseEnd:35 /FrameStart:30 /FrameEnd:50 /Append /OutputFilePath:20180608_14_He_Mix4_p2p53_2p43_40kh_12v_1c_s750_1_aligned.uimf | tee IMSDriftTimeAligner_ConsoleOutput_20180608_14_He_Mix4_p2p53_2p43_40kh_12v_1c_s750_1_CmdLine.txt
 
-..\bin\IMSDriftTimeAligner.exe 20180608_14_He_Mix4_p2p53_2p43_40kh_12v_1c_s750_1.uimf /ParamFile:AlignmentOptions_20180608_14_He_Mix4_p2p53_2p43_DTW.conf /OutputFilePath:20180608_14_He_Mix4_p2p53_2p43_40kh_12v_1c_s750_1_aligned_DTW.uimf
+@echo off
+echo Set options using a parameter file; linear alignment
+@echo on
+%ExePath% 20180608_14_He_Mix4_p2p53_2p43_40kh_12v_1c_s750_1.uimf /ParamFile:AlignmentOptions_20180608_14_He_Mix4_p2p53_2p43.conf /OutputFilePath:20180608_14_He_Mix4_p2p53_2p43_40kh_12v_1c_s750_1_aligned_Paramfile.uimf | tee IMSDriftTimeAligner_ConsoleOutput_20180608_14_He_Mix4_p2p53_2p43_40kh_12v_1c_s750_1_Linear.txt
+
+@echo off
+echo Set options using a parameter file; DTW
+@echo on
+%ExePath% 20180608_14_He_Mix4_p2p53_2p43_40kh_12v_1c_s750_1.uimf /ParamFile:AlignmentOptions_20180608_14_He_Mix4_p2p53_2p43_DTW.conf /OutputFilePath:20180608_14_He_Mix4_p2p53_2p43_40kh_12v_1c_s750_1_aligned_DTW.uimf   | tee IMSDriftTimeAligner_ConsoleOutput_20180608_14_He_Mix4_p2p53_2p43_40kh_12v_1c_s750_1_DTW.txt
+
+@echo off
+echo Demonstrate loading data from a text file
+@echo on
+%ExePath% AlignmentTestData1.txt /Align:1 /ITF:0.1 /Plot /SavePlot /ITF:0.002      | tee IMSDriftTimeAligner_ConsoleOutput_AlignmentTestData1_TextFile_DTW.txt
 
 pause
-

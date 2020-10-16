@@ -1,0 +1,95 @@
+Options:
+ Reading data from: 20180608_14_He_Mix4_p2p53_2p43_40kh_12v_1c_s750_1.uimf
+ Creating file:  20180608_14_He_Mix4_p2p53_2p43_40kh_12v_1c_s750_1_aligned_Paramfile.uimf
+
+ Alignment Method:                        LinearRegression
+ Base Frame Selection Mode:               UserSpecifiedFrameRange (mode 3)
+ Base Frame Start:                        35
+ Base Frame End:                          35
+
+ First frame to process:                  30
+ Last frame to process:                   50
+ Maximum shift:                           150 scans
+ Minimum Intensity threshold Fraction:    0.1
+ Scans to smooth:                         7
+
+ The output file will have aligned frames, plus a merged frame appended to the end
+
+
+
+Opening 20180608_14_He_Mix4_p2p53_2p43_40kh_12v_1c_s750_1.uimf
+ in directory F:\Documents\Projects\DataMining\IMSDriftTimeAligner\Data
+Existing output file found; renamed to: 20180608_14_He_Mix4_p2p53_2p43_40kh_12v_1c_s750_1_aligned_Paramfile_bak.uimf
+Cloning the .UIMF file
+Retrieving base frame scan data
+
+Actual base frame: 35
+
+Process frame 30
+  R-squared 0.994, shift -3 scans
+
+Process frame 31
+  R-squared 0.988, shift -3 scans
+
+Process frame 32
+  R-squared 0.990, shift -13 scans
+
+Process frame 33
+  R-squared 0.993, shift -2 scans
+
+Process frame 34
+  R-squared 0.982, shift -1 scans
+
+Process frame 35
+  R-squared 1.000, shift 0 scans
+
+Process frame 36
+  R-squared 0.984, shift 0 scans
+
+Process frame 37
+  R-squared 0.982, shift -8 scans
+
+Process frame 38
+  R-squared 0.968, shift 1 scans
+
+Process frame 39
+  R-squared 0.981, shift -1 scans
+
+Process frame 40
+  R-squared 0.991, shift -1 scans
+
+Process frame 41
+  R-squared 0.993, shift -1 scans
+
+Process frame 42
+  R-squared 0.990, shift -2 scans
+
+Process frame 43
+  R-squared 0.988, shift -7 scans
+
+Process frame 44
+  R-squared 0.990, shift 0 scans
+
+Process frame 45
+  R-squared 0.967, shift 0 scans
+
+Process frame 46
+  R-squared 0.980, shift 0 scans
+
+Process frame 47
+  R-squared 0.985, shift 1 scans
+
+Process frame 48
+  R-squared 0.992, shift -8 scans
+
+Process frame 49
+  R-squared 0.982, shift 1 scans
+
+Process frame 50
+  R-squared 0.970, shift 0 scans
+
+Appending the merged frame data
+  storing scan 1,140 (59.7% complete)
+
+Processing Complete; created file F:\...\IMSDriftTimeA..\Data\20180608_14_He_Mix4_p2p53_2p43_40kh_12v_1c_s750_1_aligned_Paramfile.uimf
+See also the stats file:          F:\...\IMSDrift..\Data\20180608_14_He_Mix4_p2p53_2p43_40kh_12v_1c_s750_1_aligned_Paramfile_stats.txt
