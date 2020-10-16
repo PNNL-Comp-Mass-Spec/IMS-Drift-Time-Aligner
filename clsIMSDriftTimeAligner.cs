@@ -37,7 +37,7 @@ namespace IMSDriftTimeAligner
         public const string OUTPUT_FILENAME_SUFFIX = "_new";
 
         /// <summary>
-        /// Suffix to use when backing up a file by renaming ig
+        /// Suffix to use when backing up a file by renaming it
         /// </summary>
         public const string BACKUP_FILENAME_SUFFIX = "_bak";
 
