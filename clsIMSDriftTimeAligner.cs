@@ -280,7 +280,7 @@ namespace IMSDriftTimeAligner
 
                 if (ShowDebugMessages)
                 {
-                    SaveFrameForDebug("Frame " + comparisonFrameNum,
+                    SaveAlignedData("Frame " + comparisonFrameNum,
                                       baseFrameData, comparisonFrameData, scanStart,
                                       frameScanAlignmentMap, outputDirectory);
                 }
@@ -1955,8 +1955,7 @@ namespace IMSDriftTimeAligner
                 if (!outputDirectory.Exists)
                     outputDirectory.Create();
 
-                var baseFrameData = new List<double>();
-                var comparisonFrameData = new List<double>();
+                var framesDataMap = new Dictionary<int, List<double>>();
 
                 using (var reader = new StreamReader(new FileStream(inputFile.FullName, FileMode.Open, FileAccess.ReadWrite)))
                 {
@@ -1975,25 +1974,37 @@ namespace IMSDriftTimeAligner
                             continue;
                         }
 
-                        if (!double.TryParse(dataValues[0], out var dataPointA))
+                        var lineState = (isValid: true, column: -1);
+                        for (int i = 0; i < dataValues.Count(); i++)
                         {
-                            Console.WriteLine("Value in column 1 of line {0} is not numeric; skipping", lineCount);
-                            continue;
+                            if (!double.TryParse(dataValues[i], out var dataPoint))
+                            {
+                                Console.WriteLine("Value in column {0} of line {1} is not numeric; skipping", lineState.column, lineCount);
+                                lineState = (false, i);
+                                break;
+                            }
+
+                            if (framesDataMap.TryGetValue(i, out var dataPointList))
+                            {
+                                dataPointList.Add(dataPoint);
+                            }
+                            else
+                            {
+                                framesDataMap.Add(i, new List<double> { dataPoint });
+                            }
                         }
 
-                        if (!double.TryParse(dataValues[1], out var dataPointB))
+                        if (!lineState.isValid)
                         {
-                            Console.WriteLine("Value in column 2 of line {0} is not numeric; skipping", lineCount);
+                            Console.WriteLine("Value in column {0} of line {1} is not numeric; skipping", lineState.column, lineCount);
+                            lineState = (true, -1);
                             continue;
                         }
-
-                        baseFrameData.Add(dataPointA);
-                        comparisonFrameData.Add(dataPointB);
                     }
                 }
 
                 var scanNumsInFrame = new List<int>();
-                for (var i = 0; i < baseFrameData.Count; i++)
+                for (var i = 0; i < framesDataMap[Options.BaseFrameStart].Count; i++)
                 {
                     scanNumsInFrame.Add(i + 1);
                 }
@@ -2001,8 +2012,18 @@ namespace IMSDriftTimeAligner
                 var scanStart = scanNumsInFrame.First();
                 var scanEnd = scanNumsInFrame.Last();
 
-                var baseFrameDataProcessed = SmoothAndFilterData(baseFrameData, outputDirectory, BASE_FRAME_DESCRIPTION, scanStart);
-                var comparisonFrameDataProcessed = SmoothAndFilterData(comparisonFrameData, outputDirectory, "Comparison Frame", scanStart);
+                var framesDataProcessedMap = new Dictionary<int, List<double>>();
+
+                foreach (var frameDataKvp in framesDataMap)
+                {
+                    var frame = frameDataKvp.Key;
+                    var frameData = frameDataKvp.Value;
+
+                    var description = (frame == Options.BaseFrameStart) ? BASE_FRAME_DESCRIPTION : $"Comparison Frame {frame}";
+                    var processedData = SmoothAndFilterData(frameData, outputDirectory, description, scanStart);
+
+                    framesDataProcessedMap.Add(frame, processedData);
+                } 
 
                 if (!outputDirectory.Exists)
                 {
@@ -2015,16 +2036,9 @@ namespace IMSDriftTimeAligner
                 var statsFile = new FileInfo(Path.Combine(outputDirectory.FullName, string.Format("{0}_{1}.txt", Options.AlignmentMethod.ToString(), datasetName)));
                 Console.WriteLine("Creating stats file at " + statsFile.FullName);
 
-                var pngFileInfo = new FileInfo(Path.Combine(outputDirectory.FullName, datasetName + "_Frame1.png"));
-
                 if (statsFile.Exists)
                 {
                     statsFile.Delete();
-                }
-
-                if (pngFileInfo.Exists)
-                {
-                    pngFileInfo.Delete();
                 }
 
                 var success = true;
@@ -2035,20 +2049,52 @@ namespace IMSDriftTimeAligner
 
                     statsWriter.WriteHeader();
 
-                    if (Options.AlignmentMethod == FrameAlignmentOptions.AlignmentMethods.LinearRegression)
+                    Dictionary<int, int> frameScanAlignmentMap = null;
+                    var baseFrameDataProcessed = framesDataProcessedMap[Options.BaseFrameStart];
+                    foreach (var processedFrameKvp in framesDataProcessedMap)
                     {
-                        var frameScanAlignmentMap = AlignFrameDataLinearRegression(
-                            1, comparisonFrameDataProcessed,
-                            baseFrameDataProcessed, scanNumsInFrame, statsWriter);
-                    }
-                    else
-                    {
-                        var frameScanAlignmentMap = AlignFrameDataDTW(
-                            1, comparisonFrameDataProcessed,
-                            baseFrameDataProcessed, scanNumsInFrame,
-                            statsWriter, scanStart, scanEnd,
-                            datasetName,
-                            outputDirectory);
+                        var comparisonFrameNum = processedFrameKvp.Key;
+                        var comparisonFrameDataProcessed = processedFrameKvp.Value;
+
+                        var pngFileInfo = new FileInfo(Path.Combine(outputDirectory.FullName, datasetName + $"_Frame{comparisonFrameNum}.png"));
+
+                        if (pngFileInfo.Exists)
+                        {
+                            pngFileInfo.Delete();
+                        }
+
+                        if (Options.AlignmentMethod == FrameAlignmentOptions.AlignmentMethods.LinearRegression)
+                        {
+                            frameScanAlignmentMap = AlignFrameDataLinearRegression(
+                                comparisonFrameNum, comparisonFrameDataProcessed,
+                                baseFrameDataProcessed, scanNumsInFrame, statsWriter);
+                        }
+                        else
+                        {
+                            frameScanAlignmentMap = AlignFrameDataDTW(
+                                comparisonFrameNum, comparisonFrameDataProcessed,
+                                baseFrameDataProcessed, scanNumsInFrame,
+                                statsWriter, scanStart, scanEnd,
+                                datasetName,
+                                outputDirectory);
+                        }
+
+                        SaveAlignedData("Frame" + comparisonFrameNum, baseFrameDataProcessed, comparisonFrameDataProcessed,
+                            scanStart, frameScanAlignmentMap, outputDirectory);
+
+                        if (Options.AlignmentMethod == FrameAlignmentOptions.AlignmentMethods.DynamicTimeWarping && Options.SaveDTWPlots)
+                        {
+                            pngFileInfo.Refresh();
+                            if (!pngFileInfo.Exists)
+                            {
+                                ConsoleMsgUtils.ShowWarning("The plot file was not created: " + pngFileInfo.FullName);
+                                success = false;
+                            }
+                            else
+                            {
+                                Console.WriteLine("Plot file created at " + pngFileInfo.FullName);
+                            }
+                        }
                     }
 
                     Console.WriteLine();
@@ -2062,20 +2108,6 @@ namespace IMSDriftTimeAligner
                     else
                     {
                         Console.WriteLine("Stats file created at " + statsFile.FullName);
-                    }
-
-                    if (Options.AlignmentMethod == FrameAlignmentOptions.AlignmentMethods.DynamicTimeWarping && Options.SaveDTWPlots)
-                    {
-                        pngFileInfo.Refresh();
-                        if (!pngFileInfo.Exists)
-                        {
-                            ConsoleMsgUtils.ShowWarning("The plot file was not created: " + pngFileInfo.FullName);
-                            success = false;
-                        }
-                        else
-                        {
-                            Console.WriteLine("Plot file created at " + pngFileInfo.FullName);
-                        }
                     }
                 }
 
@@ -2388,7 +2420,7 @@ namespace IMSDriftTimeAligner
             }
         }
 
-        private void SaveFrameForDebug(
+        private void SaveAlignedData(
             string frameDescription,
             IReadOnlyList<double> baseFrameData,
             IReadOnlyList<double> frameData,
@@ -2398,11 +2430,11 @@ namespace IMSDriftTimeAligner
         {
             try
             {
-                var debugDataFile = new FileInfo(Path.Combine(outputDirectory.FullName, DEBUG_DATA_FILE));
+                var debugDataFile = new FileInfo(Path.Combine(outputDirectory.FullName, $"OutputData{frameDescription}.txt"));
 
                 using (var writer = new StreamWriter(new FileStream(debugDataFile.FullName, FileMode.Append, FileAccess.Write, FileShare.ReadWrite)))
                 {
-                    writer.WriteLine(frameDescription);
+                    //writer.WriteLine(frameDescription);
 
                     // Construct a mapping of the existing indices in frameData to where the TIC value for that index would be shifted to using frameScanAlignmentMap
                     var targetIndex = new int[frameData.Count];
@@ -2452,7 +2484,7 @@ namespace IMSDriftTimeAligner
                             break;
                     }
 
-                    writer.WriteLine("ScanShift\t{0}\tscans", scanShiftApplied);
+                    //writer.WriteLine("ScanShift\t{0}\tscans", scanShiftApplied);
 
                     writer.WriteLine("{0}\t{1}\t{2}\t{3}", "Scan", "TIC_Base", "TIC_Compare_Offset", "TIC_Compare_Original");
 
