@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Reflection;
 using PRISM;
 
@@ -14,7 +15,7 @@ namespace IMSDriftTimeAligner
         /// <summary>
         /// Program date
         /// </summary>
-        public const string PROGRAM_DATE = "October 16, 2020";
+        public const string PROGRAM_DATE = "January 9, 2021";
 
         /// <summary>
         /// Default frame selection mode
@@ -74,7 +75,7 @@ namespace IMSDriftTimeAligner
             "can be LinearRegression (default) or DynamicTimeWarping")]
         public AlignmentMethods AlignmentMethod { get; set; }
 
-        [Option("BaseFrameMode", "BaseFrame", HelpText =
+        [Option("BaseFrameMode", "BaseFrame", HelpShowsDefault = true, HelpText =
             "Method for selecting the base frame to align all the other frames to\n" +
             "Common modes: MidpointFrame, UserSpecifiedFrameRange, and SumMidNFrames")]
         public BaseFrameSelectionModes BaseFrameSelectionMode { get; set; }
@@ -85,7 +86,9 @@ namespace IMSDriftTimeAligner
         public int BaseFrameSumCount { get; set; }
 
         [Option("BaseStart", HelpShowsDefault = false, HelpText =
-            "First frame to use when the BaseFrameSelection mode is 3 (UserSpecifiedFrameRange)\nIgnored if -BaseFrameList is defined")]
+            "First frame to use when the BaseFrameSelection mode is 3 (UserSpecifiedFrameRange). " +
+            "If the input file is a tab-delimited text file, use BaseStart to define the column number to use as the alignment base (the first column is column 1)\n" +
+            "Ignored if -BaseFrameList is defined")]
         public int BaseFrameStart { get; set; }
 
         [Option("BaseEnd", HelpShowsDefault = false, HelpText =
@@ -105,7 +108,7 @@ namespace IMSDriftTimeAligner
         public int FrameEnd { get; set; }
 
         [Option("InputFilePath", "InputFile", "i", "input", ArgPosition = 1, HelpShowsDefault = false, IsInputFilePath = true,
-            HelpText = "Input file path (UIMF File);\nsupports wildcards, e.g. *.uimf")]
+            HelpText = "Input file path (UIMF File or tab-delimited text file);\nsupports wildcards, e.g. *.uimf")]
         public string InputFilePath { get; set; }
 
         [Option("OutputFilePath", "OutputFile", "o", "output", ArgPosition = 2, HelpShowsDefault = false, HelpText =
@@ -200,6 +203,10 @@ namespace IMSDriftTimeAligner
             "Create tab-delimited text files of the dynamic time warping plot data")]
         public bool SavePlotData { get; set; }
 
+        [Option("DatasetName", "Dataset", HelpShowsDefault = false, HelpText =
+            "Dataset name (used for output file names)")]
+        public string DatasetName { get; set; }
+
         [Option("Debug", HelpShowsDefault = false, HelpText =
             "True to show additional debug messages at the console")]
         public bool DebugMode { get; set; }
@@ -290,25 +297,56 @@ namespace IMSDriftTimeAligner
         {
             Console.WriteLine("Options:");
 
+            string outputFileOrDirectoryDescription;
+            string outputFileOrDirectoryPath;
+
+            var cleanPath = InputFilePath.Replace('*', '_').Replace('?', '_');
+            bool inputFileIsTabDelimitedText;
 
             if (PathHasWildcard(InputFilePath))
             {
                 Console.WriteLine(" {0,-40} {1}", "Finding files that match:", InputFilePath);
                 Console.WriteLine(" {0,-40} {1}", "Find files in subdirectories:", BoolToEnabledDisabled(RecurseDirectories));
+                inputFileIsTabDelimitedText = Path.GetExtension(cleanPath).Equals(".txt", StringComparison.OrdinalIgnoreCase);
+                outputFileOrDirectoryDescription = "Output file:";
+                outputFileOrDirectoryPath = "Auto-named; stored in the same directory as each input file";
             }
             else
             {
-                Console.WriteLine(" {0,-15} {1}", "Reading data from:", InputFilePath);
+                Console.WriteLine(" {0,-20} {1}", "Reading data from:", InputFilePath);
+                inputFileIsTabDelimitedText = Path.GetExtension(cleanPath).Equals(".txt", StringComparison.OrdinalIgnoreCase);
 
                 if (RecurseDirectories)
                 {
-                    Console.WriteLine(" {0,-40} {1}", "Also search subdirectories:", BoolToEnabledDisabled(RecurseDirectories));
+                    Console.WriteLine(" {0,-20} {1}", "Also search subdirectories:", BoolToEnabledDisabled(RecurseDirectories));
                 }
-                else if (!string.IsNullOrWhiteSpace(OutputFilePath))
+
+                if (RecurseDirectories || string.IsNullOrWhiteSpace(OutputFilePath))
                 {
-                    Console.WriteLine(" {0,-15} {1}", "Creating file:", OutputFilePath);
+                    outputFileOrDirectoryDescription = "Output file:";
+                    outputFileOrDirectoryPath = "Auto-named; stored in the same directory as each input file";
+                }
+                else
+                {
+                    if (inputFileIsTabDelimitedText)
+                    {
+                        outputFileOrDirectoryDescription = "Output directory:";
+                        if (!Path.HasExtension(OutputFilePath))
+                        {
+                            OutputFilePath += @"\Placeholder.txt";
+                        }
+
+                        outputFileOrDirectoryPath = "Parent directory of " + OutputFilePath;
+                    }
+                    else
+                    {
+                        outputFileOrDirectoryDescription = "Output file:";
+                        outputFileOrDirectoryPath = OutputFilePath;
+                    }
                 }
             }
+
+            Console.WriteLine(" {0,-20} {1}", outputFileOrDirectoryDescription, outputFileOrDirectoryPath);
 
             Console.WriteLine();
             Console.WriteLine(" {0,-40} {1}", "Alignment Method:", AlignmentMethod);
@@ -323,46 +361,61 @@ namespace IMSDriftTimeAligner
                 Console.WriteLine(" {0,-40} {1}%", "Sakoe Chiba Max Shift:", StringUtilities.ValueToString(DTWSakoeChibaMaxShiftPercent, 3));
             }
 
-            Console.WriteLine(" {0,-40} {1} (mode {2})", "Base Frame Selection Mode:", BaseFrameSelectionMode, (int)BaseFrameSelectionMode);
 
-            switch (BaseFrameSelectionMode)
+            if (inputFileIsTabDelimitedText)
             {
-                case BaseFrameSelectionModes.FirstFrame:
-                case BaseFrameSelectionModes.MidpointFrame:
-                case BaseFrameSelectionModes.MaxTICFrame:
-                    // Only a single frame is chosen; do not show BaseFrameSumCount, BaseFrameStart, or BaseFrameEnd
-                    break;
+                Console.WriteLine(" {0,-40} {1}", "Input file type:", "Tab-delimited text");
 
-                case BaseFrameSelectionModes.UserSpecifiedFrameRange:
+                if (BaseFrameStart == 0)
+                    BaseFrameStart = 1;
 
-                    if (string.IsNullOrWhiteSpace(BaseFrameList))
-                    {
-                        Console.WriteLine(" {0,-40} {1}", "Base Frame Start:", BaseFrameStart);
-                        if (BaseFrameEnd > 0)
+                Console.WriteLine(" {0,-40} {1}", "Base Column to Align To:", BaseFrameStart);
+            }
+            else
+            {
+
+                Console.WriteLine(" {0,-40} {1} (mode {2})", "Base Frame Selection Mode:", BaseFrameSelectionMode, (int)BaseFrameSelectionMode);
+
+                switch (BaseFrameSelectionMode)
+                {
+                    case BaseFrameSelectionModes.FirstFrame:
+                    case BaseFrameSelectionModes.MidpointFrame:
+                    case BaseFrameSelectionModes.MaxTICFrame:
+                        // Only a single frame is chosen; do not show BaseFrameSumCount, BaseFrameStart, or BaseFrameEnd
+                        break;
+
+                    case BaseFrameSelectionModes.UserSpecifiedFrameRange:
+
+                        if (string.IsNullOrWhiteSpace(BaseFrameList))
                         {
-                            Console.WriteLine(" {0,-40} {1}", "Base Frame End:", BaseFrameEnd);
+                            Console.WriteLine(" {0,-40} {1}", "Base Frame Start:", BaseFrameStart);
+                            if (BaseFrameEnd > 0)
+                            {
+                                Console.WriteLine(" {0,-40} {1}", "Base Frame End:", BaseFrameEnd);
+                            }
+                            else
+                            {
+                                Console.WriteLine(" {0,-40} {1}", "Base Frame End:", "Last frame in file");
+                            }
                         }
                         else
                         {
-                            Console.WriteLine(" {0,-40} {1}", "Base Frame End:", "Last frame in file");
+                            Console.WriteLine(" {0,-40} {1}", "Base Frame List:", BaseFrameList);
                         }
-                    }
-                    else
-                    {
-                        Console.WriteLine(" {0,-40} {1}", "Base Frame List:", BaseFrameList);
-                    }
-                    break;
 
-                case BaseFrameSelectionModes.SumFirstNFrames:
-                case BaseFrameSelectionModes.SumMidNFrames:
-                    Console.WriteLine(" {0,-40} {1}", "Base Frames to Sum:", BaseFrameSumCount);
-                    break;
+                        break;
 
-                case BaseFrameSelectionModes.SumFirstNPercent:
-                case BaseFrameSelectionModes.SumMidNPercent:
-                    Console.WriteLine(" {0,-40} {1}%", "Base Frames to Sum:", BaseFrameSumCount);
-                    break;
+                    case BaseFrameSelectionModes.SumFirstNFrames:
+                    case BaseFrameSelectionModes.SumMidNFrames:
+                        Console.WriteLine(" {0,-40} {1}", "Base Frames to Sum:", BaseFrameSumCount);
+                        break;
 
+                    case BaseFrameSelectionModes.SumFirstNPercent:
+                    case BaseFrameSelectionModes.SumMidNPercent:
+                        Console.WriteLine(" {0,-40} {1}%", "Base Frames to Sum:", BaseFrameSumCount);
+                        break;
+
+                }
             }
 
             Console.WriteLine();
@@ -435,6 +488,11 @@ namespace IMSDriftTimeAligner
             }
 
             Console.WriteLine();
+
+            if (!string.IsNullOrWhiteSpace(DatasetName)) {
+                Console.WriteLine(" {0,-40} {1}", "Dataset Name:", DatasetName);
+            }
+
             if (DebugMode)
                 Console.WriteLine(" Showing debug messages");
 
