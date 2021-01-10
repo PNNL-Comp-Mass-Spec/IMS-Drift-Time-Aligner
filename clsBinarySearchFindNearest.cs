@@ -54,14 +54,12 @@ namespace IMSDriftTimeAligner
             AddData(xyValues);
         }
 
-
         /// <summary>
         /// Add data using a list of KeyValuePairs
         /// </summary>
         /// <param name="xyValues"></param>
         public void AddData(IEnumerable<KeyValuePair<double, double>> xyValues)
         {
-
             // Assure that the items are sorted ascending
             var query = (from item in xyValues orderby item.Key select item);
 
@@ -86,7 +84,6 @@ namespace IMSDriftTimeAligner
 
                 lastValue = valueToAdd;
             }
-
         }
 
         private IEnumerable<KeyValuePair<double, double>> ConvertParallelLists(IReadOnlyList<double> list1, IReadOnlyList<double> list2)
@@ -159,7 +156,6 @@ namespace IMSDriftTimeAligner
         /// <returns></returns>
         private double InterpolateY(double x1, double x2, double y1, double y2, double xValueToInterpolate)
         {
-
             var xDifference = x2 - x1;
 
             if (Math.Abs(xDifference) < double.Epsilon)
@@ -168,6 +164,5 @@ namespace IMSDriftTimeAligner
             var interpolatedValue = y1 + (y2 - y1) * ((xValueToInterpolate - x1) / xDifference);
             return interpolatedValue;
         }
-
     }
 }

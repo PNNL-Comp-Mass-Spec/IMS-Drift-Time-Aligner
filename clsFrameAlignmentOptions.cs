@@ -361,7 +361,6 @@ namespace IMSDriftTimeAligner
                 Console.WriteLine(" {0,-40} {1}%", "Sakoe Chiba Max Shift:", StringUtilities.ValueToString(DTWSakoeChibaMaxShiftPercent, 3));
             }
 
-
             if (inputFileIsTabDelimitedText)
             {
                 Console.WriteLine(" {0,-40} {1}", "Input file type:", "Tab-delimited text");
@@ -373,7 +372,6 @@ namespace IMSDriftTimeAligner
             }
             else
             {
-
                 Console.WriteLine(" {0,-40} {1} (mode {2})", "Base Frame Selection Mode:", BaseFrameSelectionMode, (int)BaseFrameSelectionMode);
 
                 switch (BaseFrameSelectionMode)
@@ -414,7 +412,6 @@ namespace IMSDriftTimeAligner
                     case BaseFrameSelectionModes.SumMidNPercent:
                         Console.WriteLine(" {0,-40} {1}%", "Base Frames to Sum:", BaseFrameSumCount);
                         break;
-
                 }
             }
 
@@ -465,7 +462,6 @@ namespace IMSDriftTimeAligner
                         Console.WriteLine(" {0,-40} {1}", "Maximum m/z:", "Highest observed m/z (no filter)");
                     }
                 }
-
             }
 
             Console.WriteLine(" {0,-40} {1}", "Scans to smooth:", ScanSmoothCount);
@@ -500,7 +496,6 @@ namespace IMSDriftTimeAligner
                 Console.WriteLine(" Previewing files that would be processed");
 
             Console.WriteLine();
-
         }
 
         /// <summary>

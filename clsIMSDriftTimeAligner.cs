@@ -218,7 +218,6 @@ namespace IMSDriftTimeAligner
             string datasetName,
             FileSystemInfo outputDirectory)
         {
-
             try
             {
                 // Determine the first and last scan number with non-zero TIC values
@@ -293,7 +292,6 @@ namespace IMSDriftTimeAligner
                 ReportError("Error in AlignFrameData", ex);
                 return new Dictionary<int, int>();
             }
-
         }
 
         /// <summary>
@@ -683,7 +681,6 @@ namespace IMSDriftTimeAligner
                 statsWriter.AppendStats(comparisonFrameNum, bestOffset, bestRSquared);
 
                 OnStatusEvent(string.Format("  R-squared {0:F3}, shift {1} scans", bestRSquared, bestOffset));
-
             }
             catch (Exception ex)
             {
@@ -731,10 +728,8 @@ namespace IMSDriftTimeAligner
                         "AlignmentMethod");
             }
 
-
             return frameScanAlignmentMap;
         }
-
 
         /// <summary>
         /// Append a new frame using merged frame data
@@ -789,7 +784,6 @@ namespace IMSDriftTimeAligner
                 writer.InsertScan(mergedFrameNum, frameParams, scanNumNew, intensities, binWidth);
                 scansProcessed++;
             }
-
         }
 
         private void AppendSeriesXValues(ISet<double> xValues, IEnumerable<IDataPoint> offsetSeriesPoints)
@@ -814,7 +808,6 @@ namespace IMSDriftTimeAligner
             };
 
             return clonedScanInfo;
-
         }
 
         /// <summary>
@@ -868,7 +861,6 @@ namespace IMSDriftTimeAligner
             double mzMin,
             double mzMax)
         {
-
             var key = "Frame" + sourceScanInfo.Frame + "_Scan" + sourceScanInfo.Scan;
 
             if (mFrameScanStats.TryGetValue(key, out var cachedScanStats))
@@ -920,7 +912,6 @@ namespace IMSDriftTimeAligner
             out List<int> scanNumsInFrame,
             out List<ScanInfo> frameScansSummed)
         {
-
             var scanMin = Options.DriftScanFilterMin;
             var scanMax = Options.DriftScanFilterMax;
             var scanFilterEnabled = scanMin > 0 || scanMax > 0;
@@ -940,7 +931,6 @@ namespace IMSDriftTimeAligner
 
             foreach (var sourceScanInfo in frameScansStart)
             {
-
                 var scanNumber = sourceScanInfo.Scan;
                 scanNumsInFrame.Add(scanNumber);
 
@@ -990,7 +980,6 @@ namespace IMSDriftTimeAligner
 
                 foreach (var sourceScanInfo in frameScans)
                 {
-
                     var scanNumber = sourceScanInfo.Scan;
 
                     if (scanFilterEnabled && (scanNumber < scanMin || scanNumber > scanMax))
@@ -1024,14 +1013,11 @@ namespace IMSDriftTimeAligner
                     {
                         scanData.Add(scanNumber, scanInfoToStore);
                     }
-
                 }
-
             }
 
             frameScansSummed.Clear();
             frameScansSummed.AddRange(from item in scanData orderby item.Key select item.Value);
-
         }
 
         /// <summary>
@@ -1243,13 +1229,11 @@ namespace IMSDriftTimeAligner
                         "Unrecognized value for BaseFrameSelectionMode");
             }
 
-
             return baseFrameList;
         }
 
         private static List<int> GetFrameRange(int frameStart, int frameEnd, int frameMin, int frameMax)
         {
-
             if (frameEnd < frameStart)
                 frameEnd = frameStart;
 
@@ -1450,7 +1434,6 @@ namespace IMSDriftTimeAligner
 
         private FileInfo InitializeOutputFile(FileInfo sourceFile, string outputFilePath)
         {
-
             if (string.IsNullOrWhiteSpace(outputFilePath))
             {
                 var outputFileName = Path.GetFileNameWithoutExtension(sourceFile.Name) + OUTPUT_FILENAME_SUFFIX + Path.GetExtension(sourceFile.Name);
@@ -1478,7 +1461,6 @@ namespace IMSDriftTimeAligner
 
             try
             {
-
                 if (outputFile.Directory != null)
                 {
                     var backupFilePath = Path.Combine(
@@ -1512,7 +1494,6 @@ namespace IMSDriftTimeAligner
                         File.Move(outputFile.FullName, backupFile.FullName);
                         OnStatusEvent("Existing output file found; renamed to: " + backupFile.Name);
                     }
-
                 }
                 else
                 {
@@ -1558,13 +1539,11 @@ namespace IMSDriftTimeAligner
             IReadOnlyDictionary<int, int> offsetsBySourceScanSmoothed,
             clsBinarySearchFindNearest searcher)
         {
-
             // Dictionary where keys are source scan numbers and values are the offset to apply
             var optimizedOffsetsBySourceScan = new Dictionary<int, int>();
 
             try
             {
-
                 // Set the noise threshold at 0.1% of the maximum intensity in comparisonFrameData
                 var noiseThreshold = comparisonFrameData.Max() * 0.001;
 
@@ -1625,7 +1604,6 @@ namespace IMSDriftTimeAligner
                             var offset = GetOffsetForSourceScan(sourceScan, offsetsBySourceScanSmoothed, searcher, false);
                             sourceScanOffsetsInPeak.Add(sourceScan, offset);
                         }
-
                     }
                 }
 
@@ -1652,7 +1630,6 @@ namespace IMSDriftTimeAligner
             }
 
             return optimizedOffsetsBySourceScan;
-
         }
 
         private void StoreAverageOffsetForScansInPeak(
@@ -1722,7 +1699,6 @@ namespace IMSDriftTimeAligner
         /// <returns></returns>
         public bool ProcessFile(string inputFilePath, string outputFilePath)
         {
-
             try
             {
                 var sourceFile = new FileInfo(inputFilePath);
@@ -1858,7 +1834,6 @@ namespace IMSDriftTimeAligner
                         return false;
                     }
                     var mergedFrameScans = new Dictionary<int, int[]>();
-
 
                     using (var statsWriter = new StatsWriter(statsFilePath, Options, CommandLine, baseFrameList))
                     using (var writer = new DataWriter(outputFile.FullName))
@@ -2359,9 +2334,7 @@ namespace IMSDriftTimeAligner
                     {
                         mergedFrameScans.Add(scanNumNew, targetScanIntensities);
                     }
-
                 }
-
             }
             catch (Exception ex)
             {
@@ -2466,12 +2439,9 @@ namespace IMSDriftTimeAligner
                                 }
                             }
                         }
-
                     }
                     writer.WriteLine();
-
                 }
-
             }
             catch (Exception ex)
             {
@@ -2525,7 +2495,6 @@ namespace IMSDriftTimeAligner
                         }
 
                         targetIndex[i] = scanNumNew - scanStart;
-
                     }
 
                     var highestScanShiftCount = scanShiftStats.Values.Max();
@@ -2564,7 +2533,6 @@ namespace IMSDriftTimeAligner
                     }
                     writer.WriteLine();
                 }
-
             }
             catch (Exception ex)
             {
@@ -2594,7 +2562,6 @@ namespace IMSDriftTimeAligner
                     }
                     writer.WriteLine();
                 }
-
             }
             catch (Exception ex)
             {
@@ -2868,7 +2835,6 @@ namespace IMSDriftTimeAligner
                 if (frameData[i] < intensityThreshold)
                     frameData[i] = 0;
             }
-
         }
 
         #endregion

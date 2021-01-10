@@ -81,7 +81,6 @@ namespace IMSDriftTimeAligner
                 }
 
                 options.OutputSetOptions();
-
             }
             catch (Exception e)
             {
@@ -117,7 +116,6 @@ namespace IMSDriftTimeAligner
 
                 Thread.Sleep(1500);
                 return returnCode;
-
             }
             catch (Exception ex)
             {
@@ -125,7 +123,6 @@ namespace IMSDriftTimeAligner
                 Thread.Sleep(1500);
                 return -1;
             }
-
         }
 
         /// <summary>
@@ -137,7 +134,6 @@ namespace IMSDriftTimeAligner
         /// <remarks>This method ignores options.OutputFilePath</remarks>
         private static int ProcessFilesWildcard(DriftTimeAlignmentEngine processor, FrameAlignmentOptions options)
         {
-
             var filesToProcess = PathUtils.FindFilesWildcard(options.InputFilePath, options.RecurseDirectories);
 
             var successCount = 0;
@@ -155,7 +151,6 @@ namespace IMSDriftTimeAligner
                 var skipFile = false;
                 foreach (var suffix in suffixesToSkip)
                 {
-
                     if (baseName.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
                     {
                         Console.WriteLine();
@@ -200,7 +195,6 @@ namespace IMSDriftTimeAligner
             }
 
             return -3;
-
         }
 
         #region "Event handlers"

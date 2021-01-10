@@ -175,7 +175,6 @@ namespace IMSDriftTimeAligner_UnitTests
                 var baseFrameDataProcessed = alignmentEngine.SmoothAndFilterData(baseFrameData, outputDirectory, "Base frame", scanStart);
                 var comparisonFrameDataProcessed = alignmentEngine.SmoothAndFilterData(comparisonFrameData, outputDirectory, "Comparison Frame", scanStart);
 
-
                 var datasetName = alignmentMethod == FrameAlignmentOptions.AlignmentMethods.LinearRegression ?
                                       "TestAlignmentLinearRegression" :
                                       "TestAlignmentDTW";
@@ -273,7 +272,6 @@ namespace IMSDriftTimeAligner_UnitTests
                     success = false;
 
                 Assert.True(success, "Processing error");
-
             }
             catch (Exception ex)
             {
@@ -308,7 +306,6 @@ namespace IMSDriftTimeAligner_UnitTests
 
             return null;
         }
-
 
         private bool ValidateStatsLinearRegression(FileSystemInfo statsFile, double expectedShift, double expectedBestRSquared)
         {
@@ -351,7 +348,6 @@ namespace IMSDriftTimeAligner_UnitTests
                         ConsoleMsgUtils.ShowWarning("Corrupt stats file; could not extract shift: " + statsFile.FullName);
                         return false;
                     }
-
 
                     if (!double.TryParse(dataColumns[2], out var actualBestRSquared))
                     {
