@@ -263,12 +263,15 @@ namespace IMSDriftTimeAligner
                     }
                     else if (Options.AlignmentMethod == FrameAlignmentOptions.AlignmentMethods.DynamicTimeWarping)
                     {
+                        var pngFileName = string.Format("{0}_Frame{1}.png", datasetName, comparisonFrameNum);
+                        var pngFileInfo = new FileInfo(Path.Combine(outputDirectory.FullName, pngFileName));
+
                         frameScanAlignmentMap = AlignFrameDataDTW(
                             comparisonFrameNum, comparisonFrameData,
                             baseFrameData, scanNumsInFrame,
                             statsWriter, scanStart, scanEnd,
-                            datasetName,
-                            outputDirectory);
+                            outputDirectory,
+                            pngFileInfo);
                     }
                     else
                     {
@@ -303,8 +306,8 @@ namespace IMSDriftTimeAligner
         /// <param name="statsWriter">Stats file writer</param>
         /// <param name="scanStart">First scan of the data in comparisonFrameData (and also baseFrameData)</param>
         /// <param name="scanEnd">Last scan of the data in comparisonFrameData (and also baseFrameData)</param>
-        /// <param name="datasetName"></param>
         /// <param name="outputDirectory">Output directory</param>
+        /// <param name="pngFileInfo">File info for the png file to create if plot file saving is enabled</param>
         /// <returns>Dictionary where keys are the old scan number and values are the new scan number</returns>
         public Dictionary<int, int> AlignFrameDataDTW(
             int comparisonFrameNum,
@@ -314,8 +317,8 @@ namespace IMSDriftTimeAligner
             StatsWriter statsWriter,
             int scanStart,
             int scanEnd,
-            string datasetName,
-            FileSystemInfo outputDirectory)
+            FileSystemInfo outputDirectory,
+            FileSystemInfo pngFileInfo)
         {
             // Keys are the old scan number and values are the new scan number (in the base frame)
             var frameScanAlignmentMap = new Dictionary<int, int>();
@@ -552,13 +555,14 @@ namespace IMSDriftTimeAligner
                 if (Options.VisualizeDTW || Options.SaveDTWPlots || Options.SavePlotData)
                 {
                     VisualizeDTWAlignment(comparisonFrameNum, comparisonFrameData,
-                        scanStart, datasetName, outputDirectory,
+                        scanStart,
                         offsetsBySourceScan,
                         offsetsBySourceScanSmoothed,
                         optimizedOffsetsBySourceScan,
                         dtwAligner,
                         baseDataToUse,
-                        sakoeChibaMaxShift);
+                        sakoeChibaMaxShift,
+                        pngFileInfo);
                 }
 
                 if (ShowDebugMessages)
@@ -2058,7 +2062,8 @@ namespace IMSDriftTimeAligner
                         var comparisonFrameNum = processedFrameKvp.Key;
                         var comparisonFrameDataProcessed = processedFrameKvp.Value;
 
-                        var pngFileInfo = new FileInfo(Path.Combine(outputDirectory.FullName, datasetName + $"_Frame{comparisonFrameNum}.png"));
+                        var pngFileName = string.Format("{0}_Column{1}.png", datasetName, comparisonColumnNum);
+                        var pngFileInfo = new FileInfo(Path.Combine(outputDirectory.FullName, pngFileName));
 
                         if (pngFileInfo.Exists)
                         {
@@ -2073,12 +2078,12 @@ namespace IMSDriftTimeAligner
                         }
                         else
                         {
-                            frameScanAlignmentMap = AlignFrameDataDTW(
-                                comparisonFrameNum, comparisonFrameDataProcessed,
-                                baseFrameDataProcessed, scanNumsInFrame,
-                                statsWriter, scanStart, scanEnd,
-                                datasetName,
-                                outputDirectory);
+                                columnScanAlignmentMap = AlignFrameDataDTW(
+                                    comparisonColumnNum, comparisonColumnDataProcessed,
+                                    baseColumnDataProcessed, scanNumsInColumn,
+                                    statsWriter, scanStart, scanEnd,
+                                    outputDirectory,
+                                    pngFileInfo);
                         }
 
                         SaveAlignedData("Frame" + comparisonFrameNum, baseFrameDataProcessed, comparisonFrameDataProcessed,
@@ -2642,14 +2647,13 @@ namespace IMSDriftTimeAligner
             int comparisonFrameNum,
             IReadOnlyList<double> comparisonFrameData,
             int scanStart,
-            string datasetName,
-            FileSystemInfo outputDirectory,
             Dictionary<int, int> offsetsBySourceScan,
             Dictionary<int, int> offsetsBySourceScanSmoothed,
             Dictionary<int, int> optimizedOffsetsBySourceScan,
             IDtw dtwAligner,
             IReadOnlyCollection<double> baseDataToUse,
-            int sakoeChibaMaxShift)
+            int sakoeChibaMaxShift,
+            FileSystemInfo pngFileInfo)
         {
             var offsetPlot = new PlotModel("Offset vs. drift time scan");
 
@@ -2740,15 +2744,14 @@ namespace IMSDriftTimeAligner
                 visualizer.WindowState = WindowState.Minimized;
             }
 
-            var pngFilePath = Path.Combine(outputDirectory.FullName, datasetName + "_Frame" + comparisonFrameNum + ".png");
             if (Options.SaveDTWPlots)
             {
-                PngExporter.Export(offsetPlot.PlotControl.ActualModel, pngFilePath, 1050, 650, OxyColors.White);
+                PngExporter.Export(offsetPlot.PlotControl.ActualModel, pngFileInfo.FullName, 1050, 650, OxyColors.White);
             }
 
             if (Options.SavePlotData)
             {
-                var offsetsDataFilePath = Path.ChangeExtension(pngFilePath, ".txt");
+                var offsetsDataFilePath = Path.ChangeExtension(pngFileInfo.FullName, ".txt");
                 WriteDTWPlotData(offsetsDataFilePath, offsetSeries, smoothedOffsetSeries, optimizedOffsetSeries, ticSeries);
             }
 

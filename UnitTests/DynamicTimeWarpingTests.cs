@@ -212,15 +212,13 @@ namespace IMSDriftTimeAligner_UnitTests
                     }
                     else
                     {
-
                         frameScanAlignmentMap = alignmentEngine.AlignFrameDataDTW(
                             1, comparisonFrameDataProcessed,
                             baseFrameDataProcessed, scanNumsInFrame,
                             statsWriter, scanStart, scanEnd,
-                            datasetName,
-                            outputDirectory);
+                            outputDirectory,
+                            pngFileInfo);
                     }
-
 
                     Console.WriteLine();
 
