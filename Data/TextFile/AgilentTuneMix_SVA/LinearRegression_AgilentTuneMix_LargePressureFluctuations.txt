@@ -1,0 +1,75 @@
+
+
+== Processing Options ==
+
+AlignmentMethod=LinearRegression
+BaseFrameMode=SumMidNFrames (5)
+BaseCount=15
+BaseStart=27
+BaseEnd=0
+BaseFrameList=
+FrameStart=0
+FrameEnd=0
+MaxShift=500
+MinimumIntensityThresholdFraction=0.1
+DriftScanFilterMin=0
+DriftScanFilterMax=0
+MzFilterMin=1632
+MzFilterMax=1638
+ScanSmoothCount=7
+MergeFrames=False
+AppendMergedFrame=False
+
+== Alignment Stats ==
+
+Frame    Shift  Best RSquared
+2        139    0.41888
+3        110    0.48844
+4        106    0.42968
+5        159    0.31988
+6        177    0.28353
+7        197    0.28509
+8        167    0.37617
+9        164    0.29485
+10       186    0.28591
+11       158    0.36059
+12       120    0.43694
+13       88     0.58809
+14       24     0.79816
+15       18     0.87073
+16       53     0.60014
+17       79     0.54026
+18       47     0.61717
+19       37     0.65754
+20       32     0.68444
+21       0      0.91219
+22       -28    0.64089
+23       -21    0.72091
+24       -17    0.74880
+25       8      0.96979
+26       6      0.97013
+27       0      1.00000
+28       -2     0.97321
+29       -39    0.55620
+30       -84    0.46547
+31       -88    0.48449
+32       -94    0.39941
+33       -141   0.30733
+34       -150   0.28688
+35       -153   0.26882
+36       -193   0.19142
+37       -192   0.23275
+38       -173   0.23122
+39       -219   0.14278
+40       -273   0.13138
+41       -265   0.15266
+42       -216   0.19077
+43       -183   0.25061
+44       -149   0.30491
+45       -120   0.37533
+46       -118   0.35639
+47       -130   0.32669
+48       -135   0.31998
+49       -139   0.28130
+50       -168   0.24484
+51       -149   0.30225
