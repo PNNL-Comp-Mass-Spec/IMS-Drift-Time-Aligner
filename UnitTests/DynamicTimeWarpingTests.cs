@@ -285,7 +285,7 @@ namespace IMSDriftTimeAligner_UnitTests
         private FileInfo FindUnitTestFile(string dataFileName)
         {
             var localDirPath = Path.Combine("..", "..", "Data");
-            var remoteDirPath = @"\\proto-2\UnitTest_Files\IMSDriftTimeAligner";
+            const string remoteDirPath = @"\\proto-2\UnitTest_Files\IMSDriftTimeAligner";
 
             var localFile = new FileInfo(Path.Combine(localDirPath, dataFileName));
 

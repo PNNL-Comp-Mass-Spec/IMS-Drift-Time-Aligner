@@ -613,7 +613,7 @@ namespace IMSDriftTimeAligner
 
                 var shiftPositive = true;
 
-                while (true)
+                do
                 {
                     var frameDataShifted = new double[baseFrameData.Count];
                     var targetIndex = 0;
@@ -649,13 +649,8 @@ namespace IMSDriftTimeAligner
                         offset = -offset;
                         shiftPositive = true;
                     }
-
-                    if (Math.Abs(offset) > Options.MaxShiftScans)
-                    {
-                        // Exit the while loop
-                        break;
-                    }
                 }
+                while (Math.Abs(offset) <= Options.MaxShiftScans);
 
                 var rankedOffsets = (from item in correlationByOffset orderby item.Value descending select item).ToList();
 
@@ -896,7 +891,7 @@ namespace IMSDriftTimeAligner
                     continue;
 
                 scanStats.TIC += intensityArray[i];
-                scanStats.NonZeroCount += 1;
+                scanStats.NonZeroCount++;
 
                 if (intensityArray[i] <= highestIntensity)
                     continue;
@@ -1471,7 +1466,7 @@ namespace IMSDriftTimeAligner
 
             var outputFile = new FileInfo(outputFilePath);
 
-            if (outputFile.Directory != null && !outputFile.Directory.Exists)
+            if (outputFile.Directory?.Exists == false)
             {
                 outputFile.Directory.Create();
             }
@@ -1849,12 +1844,15 @@ namespace IMSDriftTimeAligner
                         else
                         {
                             if (Options.BaseFrameStart > 0 || Options.BaseFrameEnd > 0)
+                            {
                                 ReportError(string.Format(
-                                                "Unable to define the base frame scans. Perhaps the base frame range is invalid (currently {0} to {1})",
-                                                Options.BaseFrameStart, Options.BaseFrameEnd));
+                                    "Unable to define the base frame scans. Perhaps the base frame range is invalid (currently {0} to {1})",
+                                    Options.BaseFrameStart, Options.BaseFrameEnd));
+                            }
                             else
+                            {
                                 ReportError("Unable to define the base frame scans; check the parameters");
-
+                            }
                         }
 
                         return false;

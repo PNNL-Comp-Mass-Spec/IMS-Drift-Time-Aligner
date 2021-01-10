@@ -23,7 +23,7 @@ namespace IMSDriftTimeAligner
     internal static class Program
     {
         [STAThread]
-        static int Main(string[] args)
+        private static int Main(string[] args)
         {
             // Ignore Spelling: conf
 

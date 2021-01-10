@@ -120,17 +120,17 @@ namespace IMSDriftTimeAligner
             else
                 costFormatString = "{1,-8:#,##0}";
 
-            statsLine.Append(string.Format("{0,-8} " + costFormatString, comparisonFrameNum, cost));
+            statsLine.AppendFormat("{0,-8} " + costFormatString, comparisonFrameNum, cost);
 
             for (var percentile = 10; percentile <= 90; percentile += 10)
             {
                 if (offsetsByPercentile.TryGetValue(percentile, out var offsetList))
                 {
-                    statsLine.Append(string.Format(" {0,-6:0}", offsetList.Average()));
+                    statsLine.AppendFormat(" {0,-6:0}", offsetList.Average());
                 }
                 else
                 {
-                    statsLine.Append(string.Format(" {0,-6:0}", 0));
+                    statsLine.AppendFormat(" {0,-6:0}", 0);
                 }
             }
 

@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace IMSDriftTimeAligner
 {
-    class clsBinarySearchFindNearest
+    internal class clsBinarySearchFindNearest
     {
         /// <summary>
         /// Tracks X and Y values
@@ -111,44 +111,40 @@ namespace IMSDriftTimeAligner
         {
             // Find the closest data point in mValueKeys
 
-            double closestY;
             var matchIndex = mValueKeys.BinarySearch(xValue);
 
             if (matchIndex >= 0)
             {
                 // Exact match was found
                 var resultIndex = mValueKeyIndices[matchIndex];
-                closestY = mXYMapping[resultIndex].Value;
+                return mXYMapping[resultIndex].Value;
             }
-            else
+
+            if (mValueKeyIndices.Count < 1)
             {
-                if (mValueKeyIndices.Count < 1)
-                {
-                    throw new Exception("Cannot interpolate the X value since mValueKeyIndices does not contain multiple entries");
-                }
-
-                var closestMatch = ~matchIndex - 1;
-                if (closestMatch < 0)
-                    closestMatch = 0;
-
-                if (closestMatch == mValueKeyIndices.Count - 1)
-                {
-                    // Matched the last entry in mValueKeyIndices
-                    // Decrement by one so that we can interpolate
-                    closestMatch--;
-                }
-                var resultIndex1 = mValueKeyIndices[closestMatch];
-                var resultIndex2 = mValueKeyIndices[closestMatch + 1];
-
-                var x1 = mXYMapping[resultIndex1].Key;
-                var x2 = mXYMapping[resultIndex2].Key;
-
-                var y1 = mXYMapping[resultIndex1].Value;
-                var y2 = mXYMapping[resultIndex2].Value;
-
-                closestY = InterpolateY(x1, x2, y1, y2, xValue);
+                throw new Exception("Cannot interpolate the X value since mValueKeyIndices does not contain multiple entries");
             }
 
+            var closestMatch = ~matchIndex - 1;
+            if (closestMatch < 0)
+                closestMatch = 0;
+
+            if (closestMatch == mValueKeyIndices.Count - 1)
+            {
+                // Matched the last entry in mValueKeyIndices
+                // Decrement by one so that we can interpolate
+                closestMatch--;
+            }
+            var resultIndex1 = mValueKeyIndices[closestMatch];
+            var resultIndex2 = mValueKeyIndices[closestMatch + 1];
+
+            var x1 = mXYMapping[resultIndex1].Key;
+            var x2 = mXYMapping[resultIndex2].Key;
+
+            var y1 = mXYMapping[resultIndex1].Value;
+            var y2 = mXYMapping[resultIndex2].Value;
+
+            var closestY = InterpolateY(x1, x2, y1, y2, xValue);
             return closestY;
         }
 
