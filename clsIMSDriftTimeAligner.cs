@@ -244,11 +244,9 @@ namespace IMSDriftTimeAligner
                     // Populate the arrays, storing TIC values in the appropriate index of baseFrameData and comparisonFrameData
                     baseFrameData = GetTICValues(outputDirectory, BASE_FRAME_DESCRIPTION, scanStart, scanEnd, baseFrameScans);
                     comparisonFrameData = GetTICValues(outputDirectory, "Frame " + comparisonFrameNum, scanStart, scanEnd, frameScans);
-
                 }
                 else
                 {
-
                     scanStart = Math.Min(nonzeroScans1.First(), nonzeroScans2.First());
                     scanEnd = Math.Max(nonzeroScans1.Last(), nonzeroScans2.Last());
 
@@ -1955,11 +1953,15 @@ namespace IMSDriftTimeAligner
                 if (!outputDirectory.Exists)
                     outputDirectory.Create();
 
-                var framesDataMap = new Dictionary<int, List<double>>();
+                // Keys in this dictionary are 1, 2, 3, etc. up to columnValues.Count
+                // Values are the data for the given column
+                var columnDataMap = new Dictionary<int, List<double>>();
 
                 using (var reader = new StreamReader(new FileStream(inputFile.FullName, FileMode.Open, FileAccess.ReadWrite)))
                 {
                     var lineCount = 0;
+                    var dataValues = new List<double>();
+
                     while (!reader.EndOfStream)
                     {
                         lineCount++;
@@ -1967,10 +1969,10 @@ namespace IMSDriftTimeAligner
                         if (string.IsNullOrWhiteSpace(dataLine))
                             continue;
 
-                        var dataValues = dataLine.Split('\t');
-                        if (dataValues.Length < 2)
+                        var columnValues = dataLine.Split('\t').ToList();
+                        if (columnValues.Count < 2)
                         {
-                            Console.WriteLine("Skipping line {0} since it does not have 2 columns", lineCount);
+                            Console.WriteLine("Skipping line {0} since it does not have 2 or more columns", lineCount);
                             continue;
                         }
 
@@ -2430,7 +2432,8 @@ namespace IMSDriftTimeAligner
         {
             try
             {
-                var debugDataFile = new FileInfo(Path.Combine(outputDirectory.FullName, $"OutputData{frameDescription}.txt"));
+                var debugFileName = string.Format("{0}.txt", frameDescription.Replace(" ", ""));
+                var debugDataFile = new FileInfo(Path.Combine(outputDirectory.FullName, debugFileName));
 
                 using (var writer = new StreamWriter(new FileStream(debugDataFile.FullName, FileMode.Append, FileAccess.Write, FileShare.ReadWrite)))
                 {
