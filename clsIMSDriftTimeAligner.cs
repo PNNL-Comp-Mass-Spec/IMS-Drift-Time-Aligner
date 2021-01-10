@@ -1980,56 +1980,86 @@ namespace IMSDriftTimeAligner
                             continue;
                         }
 
-                        var lineState = (isValid: true, column: -1);
-                        for (int i = 0; i < dataValues.Count(); i++)
+                        dataValues.Clear();
+                        var columnNumber = 0;
+                        foreach (var columnItem in columnValues)
                         {
-                            if (!double.TryParse(dataValues[i], out var dataPoint))
+                            columnNumber++;
+                            if (!double.TryParse(columnItem, out var columnValue))
                             {
-                                Console.WriteLine("Value in column {0} of line {1} is not numeric; skipping", lineState.column, lineCount);
-                                lineState = (false, i);
+                                Console.WriteLine("Value in column {0} of line {1} is not numeric; skipping this line", columnNumber, lineCount);
+                                dataValues.Clear();
                                 break;
                             }
 
-                            if (framesDataMap.TryGetValue(i, out var dataPointList))
+                            dataValues.Add(columnValue);
+                        }
+
+                        if (dataValues.Count < columnValues.Count)
+                        {
+                            continue;
+                        }
+
+                        for (var i = 0; i < dataValues.Count; i++)
+                        {
+                            if (columnDataMap.TryGetValue(i + 1, out var dataPointList))
                             {
-                                dataPointList.Add(dataPoint);
+                                dataPointList.Add(dataValues[i]);
                             }
                             else
                             {
-                                framesDataMap.Add(i, new List<double> { dataPoint });
+                                columnDataMap.Add(i + 1, new List<double> { dataValues[i] });
                             }
-                        }
-
-                        if (!lineState.isValid)
-                        {
-                            Console.WriteLine("Value in column {0} of line {1} is not numeric; skipping", lineState.column, lineCount);
-                            lineState = (true, -1);
-                            continue;
                         }
                     }
                 }
 
-                var scanNumsInFrame = new List<int>();
-                for (var i = 0; i < framesDataMap[Options.BaseFrameStart].Count; i++)
+                // Treat Options.BaseFrameStart as a 1-based column number
+                // However, if it is 0 (or negative), force it to 1
+                var alignmentBaseColumnNumber = Math.Max(1, Options.BaseFrameStart);
+
+                if (alignmentBaseColumnNumber > columnDataMap.Count)
                 {
-                    scanNumsInFrame.Add(i + 1);
+                    OnWarningEvent(string.Format(
+                        "Base column for alignment is out-of-range; should be between 1 and {0}, not {1}",
+                        columnDataMap.Count, alignmentBaseColumnNumber));
+
+                    return false;
                 }
 
-                var scanStart = scanNumsInFrame.First();
-                var scanEnd = scanNumsInFrame.Last();
-
-                var framesDataProcessedMap = new Dictionary<int, List<double>>();
-
-                foreach (var frameDataKvp in framesDataMap)
+                var scanNumsInColumn = new List<int>();
+                for (var i = 0; i < columnDataMap[alignmentBaseColumnNumber].Count; i++)
                 {
-                    var frame = frameDataKvp.Key;
-                    var frameData = frameDataKvp.Value;
+                    scanNumsInColumn.Add(i + 1);
+                }
 
-                    var description = (frame == Options.BaseFrameStart) ? BASE_FRAME_DESCRIPTION : $"Comparison Frame {frame}";
-                    var processedData = SmoothAndFilterData(frameData, outputDirectory, description, scanStart);
+                var scanStart = scanNumsInColumn.First();
+                var scanEnd = scanNumsInColumn.Last();
 
-                    framesDataProcessedMap.Add(frame, processedData);
-                } 
+                // Keys in this dictionary are 1, 2, 3, etc. up to columnValues.Count
+                // Values are the processed data for the given column
+                var columnDataProcessedMap = new Dictionary<int, List<double>>();
+                var columnsWithAllZeroes = new SortedSet<int>();
+
+                foreach (var columnDataKvp in columnDataMap)
+                {
+                    // The first column will have .Key = 1
+                    var columnNumber = columnDataKvp.Key;
+                    var columnData = columnDataKvp.Value;
+
+                    var description = (columnNumber == Options.BaseFrameStart) ? BASE_FRAME_DESCRIPTION : $"Comparison Column {columnNumber}";
+                    var processedData = SmoothAndFilterData(columnData, outputDirectory, description, scanStart);
+
+                    var positiveDataPoints = processedData.Count(dataPoint => dataPoint > 0);
+                    if (positiveDataPoints == 0)
+                    {
+                        OnWarningEvent(string.Format("Column {0} has no positive data points; it will not be aligned to the base column",
+                            columnNumber));
+                        columnsWithAllZeroes.Add(columnNumber);
+                    }
+
+                    columnDataProcessedMap.Add(columnNumber, processedData);
+                }
 
                 if (!outputDirectory.Exists)
                 {
@@ -2037,7 +2067,12 @@ namespace IMSDriftTimeAligner
                     outputDirectory.Create();
                 }
 
-                var datasetName = "TestSimpleAlignment";
+                if (string.IsNullOrWhiteSpace(Options.DatasetName))
+                {
+                    Options.DatasetName = Path.GetFileNameWithoutExtension(inputFile.Name);
+                }
+
+                var datasetName = Options.DatasetName.Replace(" ", "_");
 
                 var statsFile = new FileInfo(Path.Combine(outputDirectory.FullName, string.Format("{0}_{1}.txt", Options.AlignmentMethod.ToString(), datasetName)));
                 Console.WriteLine("Creating stats file at " + statsFile.FullName);
@@ -2055,12 +2090,11 @@ namespace IMSDriftTimeAligner
 
                     statsWriter.WriteHeader();
 
-                    Dictionary<int, int> frameScanAlignmentMap = null;
-                    var baseFrameDataProcessed = framesDataProcessedMap[Options.BaseFrameStart];
-                    foreach (var processedFrameKvp in framesDataProcessedMap)
+                    var baseColumnDataProcessed = columnDataProcessedMap[alignmentBaseColumnNumber];
+
+                    for (var comparisonColumnNum = 1; comparisonColumnNum <= columnDataProcessedMap.Count; comparisonColumnNum++)
                     {
-                        var comparisonFrameNum = processedFrameKvp.Key;
-                        var comparisonFrameDataProcessed = processedFrameKvp.Value;
+                        var comparisonColumnDataProcessed = columnDataProcessedMap[comparisonColumnNum];
 
                         var pngFileName = string.Format("{0}_Column{1}.png", datasetName, comparisonColumnNum);
                         var pngFileInfo = new FileInfo(Path.Combine(outputDirectory.FullName, pngFileName));
@@ -2070,26 +2104,46 @@ namespace IMSDriftTimeAligner
                             pngFileInfo.Delete();
                         }
 
-                        if (Options.AlignmentMethod == FrameAlignmentOptions.AlignmentMethods.LinearRegression)
+                        // Keys are the old scan number and values are the new scan number
+                        Dictionary<int, int> columnScanAlignmentMap;
+                        bool alignmentSkipped;
+                        if (columnsWithAllZeroes.Contains(comparisonColumnNum))
                         {
-                            frameScanAlignmentMap = AlignFrameDataLinearRegression(
-                                comparisonFrameNum, comparisonFrameDataProcessed,
-                                baseFrameDataProcessed, scanNumsInFrame, statsWriter);
+                            // Skip alignment of this column
+                            columnScanAlignmentMap = new Dictionary<int, int>();
+                            foreach (var item in scanNumsInColumn)
+                            {
+                                columnScanAlignmentMap.Add(item, item);
+                            }
+
+                            alignmentSkipped = true;
                         }
                         else
                         {
+                            if (Options.AlignmentMethod == FrameAlignmentOptions.AlignmentMethods.LinearRegression)
+                            {
+                                columnScanAlignmentMap = AlignFrameDataLinearRegression(
+                                    comparisonColumnNum, comparisonColumnDataProcessed,
+                                    baseColumnDataProcessed, scanNumsInColumn, statsWriter);
+                            }
+                            else
+                            {
                                 columnScanAlignmentMap = AlignFrameDataDTW(
                                     comparisonColumnNum, comparisonColumnDataProcessed,
                                     baseColumnDataProcessed, scanNumsInColumn,
                                     statsWriter, scanStart, scanEnd,
                                     outputDirectory,
                                     pngFileInfo);
+                            }
+                            alignmentSkipped = false;
                         }
 
-                        SaveAlignedData("Frame" + comparisonFrameNum, baseFrameDataProcessed, comparisonFrameDataProcessed,
-                            scanStart, frameScanAlignmentMap, outputDirectory);
+                        SaveAlignedData("Column " + comparisonColumnNum, baseColumnDataProcessed, comparisonColumnDataProcessed,
+                            scanStart, columnScanAlignmentMap, outputDirectory);
 
-                        if (Options.AlignmentMethod == FrameAlignmentOptions.AlignmentMethods.DynamicTimeWarping && Options.SaveDTWPlots)
+                        if (!alignmentSkipped &&
+                            Options.SaveDTWPlots &&
+                            Options.AlignmentMethod == FrameAlignmentOptions.AlignmentMethods.DynamicTimeWarping)
                         {
                             pngFileInfo.Refresh();
                             if (!pngFileInfo.Exists)
