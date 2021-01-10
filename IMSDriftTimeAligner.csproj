@@ -57,6 +57,7 @@
     <Compile Include="DTWVisualization.xaml.cs">
       <DependentUpon>DTWVisualization.xaml</DependentUpon>
     </Compile>
+    <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="StatsWriter.cs" />
