@@ -111,7 +111,7 @@ namespace IMSDriftTimeAligner
         /// <param name="frameNum"></param>
         /// <param name="baseFrameScans"></param>
         /// <param name="frameScans"></param>
-        /// <returns></returns>
+        /// <exception cref="NotImplementedException"></exception>
         [Obsolete("Not implemented")]
         private Dictionary<int, int> AlignFrameDataCOW(
             int frameNum,
