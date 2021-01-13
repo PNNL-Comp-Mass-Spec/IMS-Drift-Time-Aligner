@@ -1290,7 +1290,6 @@ namespace IMSDriftTimeAligner
         /// <param name="sourceScan">Scan number</param>
         /// <param name="offsetsBySourceScan">Dictionary where keys are scan numbers and values are the offset to use for that scan</param>
         /// <param name="searcher">Binary search helper</param>
-        /// <returns></returns>
         private int GetOffsetForSourceScan(
             int sourceScan,
             IReadOnlyDictionary<int, int> offsetsBySourceScan,
@@ -1316,7 +1315,6 @@ namespace IMSDriftTimeAligner
         /// When true, if a match is not found, return an interpolated value.
         /// When false, if a match is not found, return null
         /// </param>
-        /// <returns></returns>
         private int? GetOffsetForSourceScan(
             int sourceScan,
             IReadOnlyDictionary<int, int> offsetsBySourceScan,
@@ -1341,7 +1339,6 @@ namespace IMSDriftTimeAligner
         /// <param name="scanNumbers"></param>
         /// <param name="scanMin"></param>
         /// <param name="scanMax"></param>
-        /// <returns></returns>
         private bool GetScanRange(IReadOnlyCollection<int> scanNumbers, out int scanMin, out int scanMax)
         {
             scanMin = scanNumbers.Min();
@@ -1696,7 +1693,7 @@ namespace IMSDriftTimeAligner
         /// </summary>
         /// <param name="inputFilePath"></param>
         /// <param name="outputFilePath"></param>
-        /// <returns></returns>
+        /// <returns>True if successful, false if an error</returns>
         public bool ProcessFile(string inputFilePath, string outputFilePath)
         {
             try
@@ -2576,7 +2573,6 @@ namespace IMSDriftTimeAligner
         /// <param name="outputDirectory"></param>
         /// <param name="frameDescription"></param>
         /// <param name="scanStart"></param>
-        /// <returns></returns>
         public List<double> SmoothAndFilterData(List<double> frameData, FileSystemInfo outputDirectory, string frameDescription, int scanStart)
         {
             if (Options.ScanSmoothCount <= 1)

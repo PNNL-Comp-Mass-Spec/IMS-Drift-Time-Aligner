@@ -273,7 +273,6 @@ namespace IMSDriftTimeAligner
         /// Return Disabled if value is false
         /// </summary>
         /// <param name="value"></param>
-        /// <returns></returns>
         private static string BoolToEnabledDisabled(bool value)
         {
             return value ? "Enabled" : "Disabled";
@@ -282,7 +281,6 @@ namespace IMSDriftTimeAligner
         /// <summary>
         /// Get the program version
         /// </summary>
-        /// <returns></returns>
         public static string GetAppVersion()
         {
             var version = Assembly.GetExecutingAssembly().GetName().Version + " (" + PROGRAM_DATE + ")";
@@ -502,7 +500,6 @@ namespace IMSDriftTimeAligner
         /// True if the path has a * or ?
         /// </summary>
         /// <param name="filePath"></param>
-        /// <returns></returns>
         public bool PathHasWildcard(string filePath)
         {
             return filePath.Contains("*") || filePath.Contains("?");
@@ -511,7 +508,6 @@ namespace IMSDriftTimeAligner
         /// <summary>
         /// Copy the options with a member-wise Clone
         /// </summary>
-        /// <returns></returns>
         public FrameAlignmentOptions ShallowCopy()
         {
             // ReSharper disable once ArrangeThisQualifier
@@ -521,7 +517,6 @@ namespace IMSDriftTimeAligner
         /// <summary>
         /// Validate the options
         /// </summary>
-        /// <returns></returns>
         public bool ValidateArgs(out string errorMessage)
         {
             if (string.IsNullOrWhiteSpace(InputFilePath))

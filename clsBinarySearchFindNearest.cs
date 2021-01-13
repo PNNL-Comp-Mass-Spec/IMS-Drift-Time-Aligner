@@ -153,7 +153,6 @@ namespace IMSDriftTimeAligner
         /// <param name="y1"></param>
         /// <param name="y2"></param>
         /// <param name="xValueToInterpolate"></param>
-        /// <returns></returns>
         private double InterpolateY(double x1, double x2, double y1, double y2, double xValueToInterpolate)
         {
             var xDifference = x2 - x1;
