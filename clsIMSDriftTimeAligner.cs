@@ -282,7 +282,7 @@ namespace IMSDriftTimeAligner
                 {
                     SaveAlignedData("Frame " + comparisonFrameNum,
                                       baseFrameData, comparisonFrameData, scanStart,
-                                      frameScanAlignmentMap, outputDirectory);
+                                      frameScanAlignmentMap, outputDirectory, null);
                 }
 
                 return frameScanAlignmentMap;
@@ -2044,12 +2044,21 @@ namespace IMSDriftTimeAligner
 
                 var datasetName = Options.DatasetName.Replace(" ", "_");
 
-                var statsFile = new FileInfo(Path.Combine(outputDirectory.FullName, string.Format("{0}_{1}.txt", Options.AlignmentMethod.ToString(), datasetName)));
+                var statsFileName = string.Format("{0}_{1}.txt", Options.AlignmentMethod.ToString(), datasetName);
+                var statsFile = new FileInfo(Path.Combine(outputDirectory.FullName, statsFileName));
                 Console.WriteLine("Creating stats file at " + statsFile.FullName);
 
                 if (statsFile.Exists)
                 {
                     statsFile.Delete();
+                }
+
+                var crosstabFileName = string.Format("{0}_Crosstab.txt", datasetName);
+                var offsetCrosstabFile = new FileInfo(Path.Combine(outputDirectory.FullName, crosstabFileName));
+
+                if (offsetCrosstabFile.Exists)
+                {
+                    offsetCrosstabFile.Delete();
                 }
 
                 var success = true;
@@ -2109,7 +2118,7 @@ namespace IMSDriftTimeAligner
                         }
 
                         SaveAlignedData("Column " + comparisonColumnNum, baseColumnDataProcessed, comparisonColumnDataProcessed,
-                            scanStart, columnScanAlignmentMap, outputDirectory);
+                            scanStart, columnScanAlignmentMap, outputDirectory, offsetCrosstabFile);
 
                         if (!alignmentSkipped &&
                             Options.SaveDTWPlots &&
@@ -2474,6 +2483,8 @@ namespace IMSDriftTimeAligner
                 var debugFileName = string.Format("{0}.txt", dataSourceDescription.Replace(" ", string.Empty));
                 var debugDataFile = new FileInfo(Path.Combine(outputDirectory.FullName, debugFileName));
 
+                var offsetsByScan = new Dictionary<int, double>();
+
                 using (var writer = new StreamWriter(new FileStream(debugDataFile.FullName, FileMode.Append, FileAccess.Write, FileShare.ReadWrite)))
                 {
                     //writer.WriteLine(dataSourceDescription);
@@ -2543,8 +2554,14 @@ namespace IMSDriftTimeAligner
                     {
                         var actualScan = scanStart + i;
                         writer.WriteLine("{0}\t{1}\t{2}\t{3}", actualScan, baseData[i], frameOrColumnDataOffset[i], frameOrColumnData[i]);
+                        offsetsByScan.Add(actualScan, frameOrColumnDataOffset[i]);
                     }
                     writer.WriteLine();
+                }
+
+                if (offsetCrosstabFile != null)
+                {
+                    UpdateOffsetCrosstabFile(dataSourceDescription, offsetsByScan, offsetCrosstabFile);
                 }
             }
             catch (Exception ex)
@@ -2657,6 +2674,113 @@ namespace IMSDriftTimeAligner
             }
 
             return smoothedData;
+        }
+
+        private void UpdateOffsetCrosstabFile(string dataSourceDescription, Dictionary<int, double> offsetsByScan, FileSystemInfo offsetCrosstabFile)
+        {
+            try
+            {
+                offsetCrosstabFile.Refresh();
+                if (!offsetCrosstabFile.Exists)
+                {
+                    using (var writer = new StreamWriter(new FileStream(offsetCrosstabFile.FullName, FileMode.Create, FileAccess.Write, FileShare.ReadWrite)))
+                    {
+                        // Header line
+                        writer.WriteLine("{0}\t{1}", "Scan", dataSourceDescription);
+
+                        foreach (var item in (from item in offsetsByScan.Keys orderby item select item))
+                        {
+                            writer.WriteLine("{0}\t{1}", item, offsetsByScan[item]);
+                        }
+                    }
+
+                    return;
+                }
+
+                var existingOffsetsByScan = new Dictionary<int, string>();
+                var headerLine = string.Empty;
+                var existingDatasetCount = 0;
+
+                using (var reader = new StreamReader(new FileStream(offsetCrosstabFile.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
+                {
+                    var lineNumber = 0;
+                    while (!reader.EndOfStream)
+                    {
+                        lineNumber++;
+
+                        var dataLine = reader.ReadLine();
+                        if (string.IsNullOrWhiteSpace(dataLine))
+                            continue;
+
+                        if (string.IsNullOrWhiteSpace(headerLine))
+                        {
+                            headerLine = dataLine;
+                            var headers = headerLine.Split('\t');
+                            existingDatasetCount = headers.Length - 1;
+                            continue;
+                        }
+
+                        var lineParts = dataLine.Split(new[] { '\t' }, 2);
+
+                        if (lineParts.Length < 2)
+                        {
+                            ReportWarning(string.Format(
+                                "Line {0} should be tab-delimited with at least two columns; skipping: {1}",
+                                lineNumber, dataLine));
+                            continue;
+                        }
+
+                        if (!int.TryParse(lineParts[0], out var scanNumber))
+                        {
+                            ReportWarning(string.Format(
+                                "Integer not found in the first column of line {0} (which should be tab-delimited): {1}",
+                                lineNumber, dataLine));
+                            continue;
+                        }
+
+                        existingOffsetsByScan.Add(scanNumber, dataLine);
+                    }
+                }
+
+                // All of the keys in offsetsByScan should already be in existingOffsetsByScan
+                // But, for good measure, check for new ones
+                var missingKeys = existingOffsetsByScan.Keys.Except(offsetsByScan.Keys).ToList();
+
+                if (missingKeys.Count > 0)
+                {
+                    var placeholderColumnSource = new List<string>();
+                    for (var i = 0; i < existingDatasetCount; i++)
+                    {
+                        placeholderColumnSource.Add(string.Empty);
+                    }
+
+                    var placeholderColumnData = string.Join("\t", placeholderColumnSource);
+
+                    foreach (var missingKey in missingKeys)
+                    {
+                        var dataLine = string.Format("{0}\t{1}", missingKey, placeholderColumnData);
+                        existingOffsetsByScan.Add(missingKey, dataLine);
+                    }
+                }
+
+                using (var writer = new StreamWriter(new FileStream(offsetCrosstabFile.FullName, FileMode.Create, FileAccess.Write, FileShare.ReadWrite)))
+                {
+                    // Write the new header line
+                    writer.WriteLine("{0}\t{1}", headerLine, dataSourceDescription);
+
+                    foreach (var item in (from item in existingOffsetsByScan orderby item.Key select item))
+                    {
+                        if (offsetsByScan.TryGetValue(item.Key, out var dataValue))
+                            writer.WriteLine("{0}\t{1}", item.Value, dataValue);
+                        else
+                            writer.WriteLine("{0}\t{1}", item.Value, string.Empty);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                ReportError("Error in UpdateOffsetCrosstabFile", ex);
+            }
         }
 
         private void UpdateScanRange(FrameParams frameParams, int scanMin, int scanMax)
