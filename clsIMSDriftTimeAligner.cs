@@ -305,7 +305,7 @@ namespace IMSDriftTimeAligner
         /// <param name="scanStart">First scan of the data in comparisonFrameData (and also baseFrameData)</param>
         /// <param name="scanEnd">Last scan of the data in comparisonFrameData (and also baseFrameData)</param>
         /// <param name="outputDirectory">Output directory</param>
-        /// <param name="pngFileInfo">File info for the png file to create if plot file saving is enabled</param>
+        /// <param name="pngFileInfo">File info for the PNG file to create if plot file saving is enabled</param>
         /// <returns>Dictionary where keys are the old scan number and values are the new scan number</returns>
         public Dictionary<int, int> AlignFrameDataDTW(
             int comparisonFrameNum,
@@ -2126,6 +2126,8 @@ namespace IMSDriftTimeAligner
                                 Console.WriteLine("Plot file created at " + pngFileInfo.FullName);
                             }
                         }
+
+                        Console.WriteLine();
                     }
 
                     Console.WriteLine();
@@ -2517,13 +2519,13 @@ namespace IMSDriftTimeAligner
                     switch (scanShiftApplied)
                     {
                         case 0:
-                            OnStatusEvent($"Data in {frameDescription} will not be shifted");
+                            OnStatusEvent($"  Data in {dataSourceDescription} will not be shifted");
                             break;
                         case 1:
-                            OnStatusEvent($"Data in {frameDescription} will be shifted by 1 scan");
+                            OnStatusEvent($"  Data in {dataSourceDescription} will be shifted by 1 scan");
                             break;
                         default:
-                            OnStatusEvent($"Data in {frameDescription} will be shifted by {scanShiftApplied} scans");
+                            OnStatusEvent($"  Data in {dataSourceDescription} will be shifted by {scanShiftApplied} scans");
                             break;
                     }
 
@@ -2557,7 +2559,7 @@ namespace IMSDriftTimeAligner
             }
             catch (Exception ex)
             {
-                ReportError("Error in SaveFrameForDebug", ex);
+                ReportError("Error in SaveAlignedData", ex);
             }
         }
 
