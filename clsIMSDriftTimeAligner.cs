@@ -2446,13 +2446,28 @@ namespace IMSDriftTimeAligner
             }
         }
 
+        /// <summary>
+        /// Save the aligned data to a tab-delimited text file based on the frame or column name
+        /// Optionally also add a new column to the scan offset crosstab file
+        /// </summary>
+        /// <param name="dataSourceDescription">Frame number of column number</param>
+        /// <param name="baseData">Base frame or base column data</param>
+        /// <param name="frameOrColumnData">Data being aligned to the base data</param>
+        /// <param name="scanStart">Start scan</param>
+        /// <param name="scanAlignmentMap">Scan alignment map</param>
+        /// <param name="outputDirectory">Output directory</param>
+        /// <param name="offsetCrosstabFile">
+        /// When not null, append the data for this column to this scan offset crosstab file
+        /// This is only done when the input file is a tab-delimited text file
+        /// </param>
         private void SaveAlignedData(
-            string frameDescription,
-            IReadOnlyList<double> baseFrameData,
-            IReadOnlyList<double> frameData,
+            string dataSourceDescription,
+            IReadOnlyList<double> baseData,
+            IReadOnlyList<double> frameOrColumnData,
             int scanStart,
-            IReadOnlyDictionary<int, int> frameScanAlignmentMap,
-            FileSystemInfo outputDirectory)
+            IReadOnlyDictionary<int, int> scanAlignmentMap,
+            FileSystemInfo outputDirectory,
+            FileSystemInfo offsetCrosstabFile)
         {
             try
             {
@@ -2461,21 +2476,21 @@ namespace IMSDriftTimeAligner
 
                 using (var writer = new StreamWriter(new FileStream(debugDataFile.FullName, FileMode.Append, FileAccess.Write, FileShare.ReadWrite)))
                 {
-                    //writer.WriteLine(frameDescription);
+                    //writer.WriteLine(dataSourceDescription);
 
-                    // Construct a mapping of the existing indices in frameData to where the TIC value for that index would be shifted to using frameScanAlignmentMap
-                    var targetIndex = new int[frameData.Count];
+                    // Construct a mapping of the existing indices in frameOrColumnData to where the TIC value for that index would be shifted to using scanAlignmentMap
+                    var targetIndex = new int[frameOrColumnData.Count];
 
                     // This dictionary is a histogram of scan shifts
                     // Keys are the number of scans a source scan is shifted by
                     // Values are the number of source scans shifted by this amount
                     var scanShiftStats = new Dictionary<int, int>();
 
-                    for (var i = 0; i < frameData.Count; i++)
+                    for (var i = 0; i < frameOrColumnData.Count; i++)
                     {
                         var scanNumOld = scanStart + i;
 
-                        if (!frameScanAlignmentMap.TryGetValue(scanNumOld, out var scanNumNew))
+                        if (!scanAlignmentMap.TryGetValue(scanNumOld, out var scanNumNew))
                         {
                             targetIndex[i] = -1;
                             continue;
@@ -2514,19 +2529,20 @@ namespace IMSDriftTimeAligner
 
                     writer.WriteLine("{0}\t{1}\t{2}\t{3}", "Scan", "TIC_Base", "TIC_Compare_Offset", "TIC_Compare_Original");
 
-                    // Use the mapping in targetIndex to populate frameDataOffset
-                    var frameDataOffset = new double[frameData.Count];
-                    for (var i = 0; i < frameData.Count; i++)
+                    // Use the mapping in targetIndex to populate frameOrColumnDataOffset
+                    var frameOrColumnDataOffset = new double[frameOrColumnData.Count];
+                    for (var i = 0; i < frameOrColumnData.Count; i++)
                     {
-                        if (targetIndex[i] < 0 || targetIndex[i] >= frameData.Count)
+                        if (targetIndex[i] < 0 || targetIndex[i] >= frameOrColumnData.Count)
                             continue;
 
-                        frameDataOffset[targetIndex[i]] = frameData[i];
+                        frameOrColumnDataOffset[targetIndex[i]] = frameOrColumnData[i];
                     }
 
-                    for (var i = 0; i < frameData.Count; i++)
+                    for (var i = 0; i < frameOrColumnData.Count; i++)
                     {
-                        writer.WriteLine("{0}\t{1}\t{2}\t{3}", scanStart + i, baseFrameData[i], frameDataOffset[i], frameData[i]);
+                        var actualScan = scanStart + i;
+                        writer.WriteLine("{0}\t{1}\t{2}\t{3}", actualScan, baseData[i], frameOrColumnDataOffset[i], frameOrColumnData[i]);
                     }
                     writer.WriteLine();
                 }
