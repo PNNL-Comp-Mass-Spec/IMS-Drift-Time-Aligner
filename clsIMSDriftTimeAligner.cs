@@ -786,15 +786,6 @@ namespace IMSDriftTimeAligner
             }
         }
 
-        private void AppendSeriesXValues(ISet<double> xValues, IEnumerable<IDataPoint> offsetSeriesPoints)
-        {
-            foreach (var xValue in offsetSeriesPoints)
-            {
-                if (!xValues.Contains(xValue.X))
-                    xValues.Add(xValue.X);
-            }
-        }
-
         private ScanInfo CloneScanInfo(ScanInfo sourceScanInfo)
         {
             var clonedScanInfo = new ScanInfo(sourceScanInfo.Frame, sourceScanInfo.Scan)
