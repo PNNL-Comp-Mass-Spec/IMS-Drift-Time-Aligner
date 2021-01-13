@@ -149,7 +149,7 @@ namespace IMSDriftTimeAligner
                 AverageScanShiftHeader = string.Format("{0,-8} {1,-8} {2,-6} {3,-6} {4,-6} {5,-6} {6,-6} {7,-6} {8,-6} {9,-6} {10,-6}",
                     "Frame", "Cost", "10%", "20%", "30%", "40%", "50%", "60%", "70%", "80%", "90%");
 
-                Writer.WriteLine("{0,-8} {1,-8} {2,-14} ", "", "", "Average scan shift by drift time scan percentile");
+                Writer.WriteLine("{0,-8} {1,-8} {2,-14} ", string.Empty, string.Empty, "Average scan shift by drift time scan percentile");
                 Writer.WriteLine(AverageScanShiftHeader);
 
                 Console.WriteLine();

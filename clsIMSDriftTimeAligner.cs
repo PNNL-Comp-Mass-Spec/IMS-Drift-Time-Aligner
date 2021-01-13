@@ -2456,7 +2456,7 @@ namespace IMSDriftTimeAligner
         {
             try
             {
-                var debugFileName = string.Format("{0}.txt", frameDescription.Replace(" ", ""));
+                var debugFileName = string.Format("{0}.txt", dataSourceDescription.Replace(" ", string.Empty));
                 var debugDataFile = new FileInfo(Path.Combine(outputDirectory.FullName, debugFileName));
 
                 using (var writer = new StreamWriter(new FileStream(debugDataFile.FullName, FileMode.Append, FileAccess.Write, FileShare.ReadWrite)))
