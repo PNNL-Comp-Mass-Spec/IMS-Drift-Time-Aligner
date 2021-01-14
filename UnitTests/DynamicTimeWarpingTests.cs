@@ -200,7 +200,7 @@ namespace IMSDriftTimeAligner_UnitTests
                 {
                     RegisterEvents(statsWriter);
 
-                    statsWriter.WriteHeader();
+                    statsWriter.WriteHeader("Frame");
 
                     Dictionary<int, int> frameScanAlignmentMap;
                     if (options.AlignmentMethod == FrameAlignmentOptions.AlignmentMethods.LinearRegression)
@@ -212,6 +212,7 @@ namespace IMSDriftTimeAligner_UnitTests
                     else
                     {
                         frameScanAlignmentMap = alignmentEngine.AlignFrameDataDTW(
+                            "Frame 1",
                             1, comparisonFrameDataProcessed,
                             baseFrameDataProcessed, scanNumsInFrame,
                             statsWriter, scanStart, scanEnd,

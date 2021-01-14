@@ -249,9 +249,11 @@ namespace IMSDriftTimeAligner
                     scanStart = Math.Min(nonzeroScans1.First(), nonzeroScans2.First());
                     scanEnd = Math.Max(nonzeroScans1.Last(), nonzeroScans2.Last());
 
+                    var dataSourceDescription = "Frame " + comparisonFrameNum;
+
                     // Populate the arrays, storing TIC values in the appropriate index of baseFrameData and comparisonFrameData
                     baseFrameData = GetTICValues(outputDirectory, BASE_FRAME_DESCRIPTION, scanStart, scanEnd, baseFrameScans);
-                    comparisonFrameData = GetTICValues(outputDirectory, "Frame " + comparisonFrameNum, scanStart, scanEnd, frameScans);
+                    comparisonFrameData = GetTICValues(outputDirectory, dataSourceDescription, scanStart, scanEnd, frameScans);
 
                     if (Options.AlignmentMethod == FrameAlignmentOptions.AlignmentMethods.LinearRegression)
                     {
@@ -266,6 +268,7 @@ namespace IMSDriftTimeAligner
                         var pngFileInfo = new FileInfo(Path.Combine(outputDirectory.FullName, pngFileName));
 
                         frameScanAlignmentMap = AlignFrameDataDTW(
+                            "Frame",
                             comparisonFrameNum, comparisonFrameData,
                             baseFrameData, scanNumsInFrame,
                             statsWriter, scanStart, scanEnd,
@@ -297,6 +300,7 @@ namespace IMSDriftTimeAligner
         /// <summary>
         /// Align the TIC values in comparisonFrameData to baseFrameData
         /// </summary>
+        /// <param name="dataSourceDescription">Frame number or column number</param>
         /// <param name="comparisonFrameNum">Frame number (for logging purposes)</param>
         /// <param name="comparisonFrameData">TIC values from the comparison frame</param>
         /// <param name="baseFrameData">TIC values from the base frame</param>
@@ -308,6 +312,7 @@ namespace IMSDriftTimeAligner
         /// <param name="pngFileInfo">File info for the PNG file to create if plot file saving is enabled</param>
         /// <returns>Dictionary where keys are the old scan number and values are the new scan number</returns>
         public Dictionary<int, int> AlignFrameDataDTW(
+            string dataSourceDescription,
             int comparisonFrameNum,
             List<double> comparisonFrameData,
             List<double> baseFrameData,
@@ -552,7 +557,10 @@ namespace IMSDriftTimeAligner
 
                 if (Options.VisualizeDTW || Options.SaveDTWPlots || Options.SavePlotData)
                 {
-                    VisualizeDTWAlignment(comparisonFrameNum, comparisonFrameData,
+                    VisualizeDTWAlignment(
+                        dataSourceDescription,
+                        comparisonFrameNum,
+                        comparisonFrameData,
                         scanStart,
                         offsetsBySourceScan,
                         offsetsBySourceScanSmoothed,
@@ -1834,7 +1842,7 @@ namespace IMSDriftTimeAligner
                         else
                             OnStatusEvent("Actual base frames: " + string.Join(",", baseFrameList));
 
-                        statsWriter.WriteHeader();
+                        statsWriter.WriteHeader("Frame");
 
                         if (writer.HasLegacyParameterTables)
                             writer.ValidateLegacyHPFColumnsExist();
@@ -2058,7 +2066,7 @@ namespace IMSDriftTimeAligner
                 {
                     RegisterEvents(statsWriter);
 
-                    statsWriter.WriteHeader();
+                    statsWriter.WriteHeader("Column");
 
                     var baseColumnDataProcessed = columnDataProcessedMap[alignmentBaseColumnNumber];
 
@@ -2073,6 +2081,8 @@ namespace IMSDriftTimeAligner
                         {
                             pngFileInfo.Delete();
                         }
+
+                        var dataSourceDescription = "Column " + comparisonColumnNum;
 
                         // Keys are the old scan number and values are the new scan number
                         Dictionary<int, int> columnScanAlignmentMap;
@@ -2099,6 +2109,7 @@ namespace IMSDriftTimeAligner
                             else
                             {
                                 columnScanAlignmentMap = AlignFrameDataDTW(
+                                    "Column",
                                     comparisonColumnNum, comparisonColumnDataProcessed,
                                     baseColumnDataProcessed, scanNumsInColumn,
                                     statsWriter, scanStart, scanEnd,
@@ -2108,7 +2119,7 @@ namespace IMSDriftTimeAligner
                             alignmentSkipped = false;
                         }
 
-                        SaveAlignedData("Column " + comparisonColumnNum, baseColumnDataProcessed, comparisonColumnDataProcessed,
+                        SaveAlignedData(dataSourceDescription, baseColumnDataProcessed, comparisonColumnDataProcessed,
                             scanStart, columnScanAlignmentMap, outputDirectory, offsetCrosstabFile);
 
                         if (!alignmentSkipped &&
@@ -2452,7 +2463,7 @@ namespace IMSDriftTimeAligner
         /// Save the aligned data to a tab-delimited text file based on the frame or column name
         /// Optionally also add a new column to the scan offset crosstab file
         /// </summary>
-        /// <param name="dataSourceDescription">Frame number of column number</param>
+        /// <param name="dataSourceDescription">Frame number or column number</param>
         /// <param name="baseData">Base frame or base column data</param>
         /// <param name="frameOrColumnData">Data being aligned to the base data</param>
         /// <param name="scanStart">Start scan</param>
@@ -2796,6 +2807,7 @@ namespace IMSDriftTimeAligner
         }
 
         private void VisualizeDTWAlignment(
+            string dataSourceDescription,
             int comparisonFrameNum,
             IReadOnlyList<double> comparisonFrameData,
             int scanStart,
@@ -2881,8 +2893,9 @@ namespace IMSDriftTimeAligner
             var visualizer = new DTWVisualization
             {
                 Dtw = dtwAligner,
-                Description = string.Format("Frame {0} with {1} points; max shift: {2} points", comparisonFrameNum, baseDataToUse.Count,
-                                            sakoeChibaMaxShift),
+                Description = string.Format(
+                    "{0} {1} with {2} points; max shift: {3} points",
+                    dataSourceDescription, comparisonFrameNum, baseDataToUse.Count, sakoeChibaMaxShift),
                 OffsetPlot = offsetPlot
             };
 
