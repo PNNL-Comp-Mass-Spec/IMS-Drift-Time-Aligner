@@ -22,7 +22,7 @@ AppendMergedFrame=False
 
 == Alignment Stats ==
 
-Frame    Shift  Best RSquared
+Column   Shift  Best RSquared
 2        139    0.41888
 3        110    0.48844
 4        106    0.42968
