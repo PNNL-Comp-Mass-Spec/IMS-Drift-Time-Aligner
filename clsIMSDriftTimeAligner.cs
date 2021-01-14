@@ -1923,8 +1923,10 @@ namespace IMSDriftTimeAligner
                 }
                 OnStatusEvent("Output directory: " + outputDirectory.FullName);
 
-                if (!outputDirectory.Exists)
+                if (!outputDirectory.Exists && !Options.PreviewMode)
+                {
                     outputDirectory.Create();
+                }
 
                 // Keys in this dictionary are 1, 2, 3, etc. up to columnValues.Count
                 // Values are the data for the given column
@@ -2030,7 +2032,7 @@ namespace IMSDriftTimeAligner
                     columnDataProcessedMap.Add(columnNumber, processedData);
                 }
 
-                if (!outputDirectory.Exists)
+                if (!outputDirectory.Exists && !Options.PreviewMode)
                 {
                     OnStatusEvent("Creating output directory at " + outputDirectory.FullName);
                     outputDirectory.Create();
@@ -2045,9 +2047,17 @@ namespace IMSDriftTimeAligner
 
                 var statsFileName = string.Format("{0}_{1}.txt", Options.AlignmentMethod.ToString(), datasetName);
                 var statsFile = new FileInfo(Path.Combine(outputDirectory.FullName, statsFileName));
-                Console.WriteLine("Creating stats file at " + statsFile.FullName);
 
-                if (statsFile.Exists)
+                if (Options.PreviewMode)
+                {
+                    OnStatusEvent("Would create the stats file at " + PathUtils.CompactPathString(statsFile.FullName, 80));
+                }
+                else
+                {
+                    OnStatusEvent("Creating stats file at " + PathUtils.CompactPathString(statsFile.FullName, 80));
+                }
+
+                if (statsFile.Exists && !Options.PreviewMode)
                 {
                     statsFile.Delete();
                 }
@@ -2055,9 +2065,15 @@ namespace IMSDriftTimeAligner
                 var crosstabFileName = string.Format("{0}_Crosstab.txt", datasetName);
                 var offsetCrosstabFile = new FileInfo(Path.Combine(outputDirectory.FullName, crosstabFileName));
 
-                if (offsetCrosstabFile.Exists)
+                if (offsetCrosstabFile.Exists && !Options.PreviewMode)
                 {
                     offsetCrosstabFile.Delete();
+                }
+
+                OnStatusEvent(string.Format("Loaded {0} columns of data from {1}", columnDataProcessedMap.Count, inputFile.Name));
+                if (Options.PreviewMode)
+                {
+                    return true;
                 }
 
                 var success = true;
@@ -2077,7 +2093,7 @@ namespace IMSDriftTimeAligner
                         var pngFileName = string.Format("{0}_Column{1}.png", datasetName, comparisonColumnNum);
                         var pngFileInfo = new FileInfo(Path.Combine(outputDirectory.FullName, pngFileName));
 
-                        if (pngFileInfo.Exists)
+                        if (pngFileInfo.Exists && !Options.PreviewMode)
                         {
                             pngFileInfo.Delete();
                         }
