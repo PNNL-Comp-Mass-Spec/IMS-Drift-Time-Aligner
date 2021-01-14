@@ -1,6 +1,6 @@
 Options:
- Reading data from: 20180608_14_He_Mix4_p2p53_2p43_40kh_12v_1c_s750_1.uimf
- Creating file:  20180608_14_He_Mix4_p2p53_2p43_40kh_12v_1c_s750_1_aligned_DTW.uimf
+ Reading data from:   20180608_14_He_Mix4_p2p53_2p43_40kh_12v_1c_s750_1.uimf
+ Output file:         20180608_14_He_Mix4_p2p53_2p43_40kh_12v_1c_s750_1_aligned_DTW.uimf
 
  Alignment Method:                        DynamicTimeWarping
  Visualize the DTW path:                  Disabled
@@ -117,7 +117,7 @@ Process frame 50
   50       0.96     0      0      0      0      0      0      0      0      0
 
 Appending the merged frame data
-  storing scan 1,060 (53.2% complete)
+  storing scan 1,140 (58.9% complete)
 
 Processing Complete; created file F:\...\IMSDriftTimeAligner\Data\20180608_14_He_Mix4_p2p53_2p43_40kh_12v_1c_s750_1_aligned_DTW.uimf
 See also the stats file:          F:\...\IMSDriftTimeAl..\Data\20180608_14_He_Mix4_p2p53_2p43_40kh_12v_1c_s750_1_aligned_DTW_stats.txt

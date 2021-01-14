@@ -1,6 +1,6 @@
 Options:
- Reading data from: 20180608_14_He_Mix4_p2p53_2p43_40kh_12v_1c_s750_1.uimf
- Creating file:  20180608_14_He_Mix4_p2p53_2p43_40kh_12v_1c_s750_1_aligned_Paramfile.uimf
+ Reading data from:   20180608_14_He_Mix4_p2p53_2p43_40kh_12v_1c_s750_1.uimf
+ Output file:         20180608_14_He_Mix4_p2p53_2p43_40kh_12v_1c_s750_1_aligned_Paramfile.uimf
 
  Alignment Method:                        LinearRegression
  Base Frame Selection Mode:               UserSpecifiedFrameRange (mode 3)
@@ -89,7 +89,7 @@ Process frame 50
   R-squared 0.970, shift 0 scans
 
 Appending the merged frame data
-  storing scan 1,140 (59.7% complete)
+  storing scan 1,050 (53.2% complete)
 
 Processing Complete; created file F:\...\IMSDriftTimeA..\Data\20180608_14_He_Mix4_p2p53_2p43_40kh_12v_1c_s750_1_aligned_Paramfile.uimf
 See also the stats file:          F:\...\IMSDrift..\Data\20180608_14_He_Mix4_p2p53_2p43_40kh_12v_1c_s750_1_aligned_Paramfile_stats.txt
