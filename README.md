@@ -3,8 +3,10 @@
 This program processes IMS data in a UIMF file to align all frames to a base frame, 
 adjusting the observed drift times of each frame to align with the base frame.
 
-The input file can also be a tab-delimited text file with two columns of data to align.
-Intensity values in the first column will be aligned to intensity values in the second column.
+The input file can also be a tab-delimited text file with two or more columns of data to align.
+Intensity values in the second column will be aligned to intensity values in the first column.
+If additional columns of data are included, they will also be aligned to the first column.
+Optionally use
 
 ## Console Switches
 
@@ -31,7 +33,7 @@ IMSDriftTimeAligner.exe
 
 InputFilePath is a path to the UIMF or tab-delimited file to process
 * Wildcards are also supported, for example *.uimf or *.txt
-* Text files should be tab-delimited with two intensity values per row
+* Text files should be tab-delimited with two or more intensity values per row
 
 Use `/O` or `-O` to specify the output file path
 * By default the output file will be named InputFileName_new.uimf
@@ -71,7 +73,10 @@ Use `/BaseCount` to specify the number or frames or percent range to use when Fr
 * Default is `/BaseCount:15`
 
 Use `/BaseStart` and `/BaseEnd` to specify the range of frames to use as the base
-* Only valid when using `/BaseFrame:3` (aka UserSpecifiedFrameRange)
+* For .UIMF files, these are only valid when using `/BaseFrame:3` (aka UserSpecifiedFrameRange)
+* `/BaseStart` can also be used to specify which column in a tab-delimited text file is the base column for alignment
+  * The first column is column 1
+  * To define column 8 as the base column, use `BaseStart:8`
 
 Use `/BaseFrameList` to define a comma separated list of frame numbers to use as the base frame
 * Only valid when using `/BaseFrame:3` (aka UserSpecifiedFrameRange)
