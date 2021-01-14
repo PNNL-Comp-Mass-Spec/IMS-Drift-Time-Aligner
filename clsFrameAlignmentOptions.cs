@@ -364,7 +364,9 @@ namespace IMSDriftTimeAligner
                 Console.WriteLine(" {0,-40} {1}", "Input file type:", "Tab-delimited text");
 
                 if (BaseFrameStart == 0)
+                {
                     BaseFrameStart = 1;
+                }
 
                 Console.WriteLine(" {0,-40} {1}", "Base Column to Align To:", BaseFrameStart);
             }
@@ -463,25 +465,28 @@ namespace IMSDriftTimeAligner
             }
 
             Console.WriteLine(" {0,-40} {1}", "Scans to smooth:", ScanSmoothCount);
-
             Console.WriteLine();
-            if (MergeFrames)
+
+            if (!inputFileIsTabDelimitedText)
             {
-                Console.WriteLine(" The output file will have a single smoothed frame");
-            }
-            else
-            {
-                if (AppendMergedFrame)
+                if (MergeFrames)
                 {
-                    Console.WriteLine(" The output file will have aligned frames, plus a merged frame appended to the end");
+                    Console.WriteLine(" The output file will have a single smoothed frame");
                 }
                 else
                 {
-                    Console.WriteLine(" The output file will have aligned frames");
+                    if (AppendMergedFrame)
+                    {
+                        Console.WriteLine(" The output file will have aligned frames, plus a merged frame appended to the end");
+                    }
+                    else
+                    {
+                        Console.WriteLine(" The output file will have aligned frames");
+                    }
                 }
-            }
 
-            Console.WriteLine();
+                Console.WriteLine();
+            }
 
             if (!string.IsNullOrWhiteSpace(DatasetName)) {
                 Console.WriteLine(" {0,-40} {1}", "Dataset Name:", DatasetName);
