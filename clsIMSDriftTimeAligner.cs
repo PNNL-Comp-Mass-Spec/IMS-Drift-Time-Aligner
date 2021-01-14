@@ -1906,14 +1906,14 @@ namespace IMSDriftTimeAligner
                     outputDirectory = outputFile.Directory;
                 }
 
-                Console.WriteLine("Loading " + inputFile.FullName);
+                OnStatusEvent("Loading " + inputFile.FullName);
 
                 if (outputDirectory == null)
                 {
                     ConsoleMsgUtils.ShowWarning("Unable to determine the output directory");
                     return false;
                 }
-                Console.WriteLine("Output directory: " + outputDirectory.FullName);
+                OnStatusEvent("Output directory: " + outputDirectory.FullName);
 
                 if (!outputDirectory.Exists)
                     outputDirectory.Create();
@@ -1937,7 +1937,7 @@ namespace IMSDriftTimeAligner
                         var columnValues = dataLine.Split('\t').ToList();
                         if (columnValues.Count < 2)
                         {
-                            Console.WriteLine("Skipping line {0} since it does not have 2 or more columns", lineCount);
+                            OnStatusEvent(string.Format("Skipping line {0} since it does not have 2 or more columns", lineCount));
                             continue;
                         }
 
@@ -1948,7 +1948,7 @@ namespace IMSDriftTimeAligner
                             columnNumber++;
                             if (!double.TryParse(columnItem, out var columnValue))
                             {
-                                Console.WriteLine("Value in column {0} of line {1} is not numeric; skipping this line", columnNumber, lineCount);
+                                OnStatusEvent(string.Format("Value in column {0} of line {1} is not numeric; skipping this line", columnNumber, lineCount));
                                 dataValues.Clear();
                                 break;
                             }
@@ -2024,7 +2024,7 @@ namespace IMSDriftTimeAligner
 
                 if (!outputDirectory.Exists)
                 {
-                    Console.WriteLine("Creating output directory at " + outputDirectory.FullName);
+                    OnStatusEvent("Creating output directory at " + outputDirectory.FullName);
                     outputDirectory.Create();
                 }
 
@@ -2123,7 +2123,7 @@ namespace IMSDriftTimeAligner
                             }
                             else
                             {
-                                Console.WriteLine("Plot file created at " + pngFileInfo.FullName);
+                                OnStatusEvent("Plot file created at " + pngFileInfo.FullName);
                             }
                         }
 
@@ -2140,7 +2140,7 @@ namespace IMSDriftTimeAligner
                     }
                     else
                     {
-                        Console.WriteLine("Stats file created at " + statsFile.FullName);
+                        OnStatusEvent("Stats file created at " + statsFile.FullName);
                     }
                 }
 
