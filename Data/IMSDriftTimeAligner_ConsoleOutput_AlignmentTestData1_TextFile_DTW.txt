@@ -1,6 +1,6 @@
 Options:
- Reading data from:   AlignmentTestData1.txt
- Output file:         Auto-named; stored in the same directory as each input file
+ Reading data from:   TextFile\AlignmentTestData1.txt
+ Output directory:    Parent directory of .\Placeholder.txt
 
  Alignment Method:                        DynamicTimeWarping
  Visualize the DTW path:                  Enabled
@@ -16,7 +16,7 @@ Options:
  Scans to smooth:                         7
 
 
-Loading F:\Documents\Projects\DataMining\IMSDriftTimeAligner\Data\AlignmentTestData1.txt
+Loading F:\Documents\Projects\DataMining\IMSDriftTimeAligner\Data\TextFile\AlignmentTestData1.txt
 Output directory: F:\Documents\Projects\DataMining\IMSDriftTimeAligner\Data
 Creating stats file at F:\...\Data..\IMSDriftTimeAligner\Data\DynamicTimeWarping_AlignmentTestData1.txt
 Loaded 2 columns of data from AlignmentTestData1.txt
