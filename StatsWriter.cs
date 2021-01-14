@@ -154,7 +154,7 @@ namespace IMSDriftTimeAligner
 
                 Console.WriteLine();
                 OnStatusEvent(string.Format(
-                    "For each {0}, will display the average scan shift by drift time scan percentile", dataSourceDescription));
+                    "For each {0}, will display the average scan shift by drift time scan percentile", dataSourceDescription.ToLower()));
             }
             else
             {
