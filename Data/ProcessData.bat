@@ -20,6 +20,10 @@ echo Set options using a parameter file; DTW
 
 @echo off
 echo Demonstrate loading data from a text file
+
+if exist Column1.txt del Column1.txt
+if exist Column2.txt del Column2.txt
+
 @echo on
 %ExePath% TextFile\AlignmentTestData1.txt /Align:1 /ITF:0.1 /Plot /SavePlot /ITF:0.002  /O:.   | tee IMSDriftTimeAligner_ConsoleOutput_AlignmentTestData1_TextFile_DTW.txt
 
