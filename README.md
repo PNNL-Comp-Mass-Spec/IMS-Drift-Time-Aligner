@@ -76,7 +76,7 @@ Use `/BaseStart` and `/BaseEnd` to specify the range of frames to use as the bas
 * For .UIMF files, these are only valid when using `/BaseFrame:3` (aka UserSpecifiedFrameRange)
 * `/BaseStart` can also be used to specify which column in a tab-delimited text file is the base column for alignment
   * The first column is column 1
-  * To define column 8 as the base column, use `BaseStart:8`
+  * To define column 8 as the base column, use `/BaseStart:8`
 
 Use `/BaseFrameList` to define a comma separated list of frame numbers to use as the base frame
 * Only valid when using `/BaseFrame:3` (aka UserSpecifiedFrameRange)
