@@ -2565,7 +2565,7 @@ namespace IMSDriftTimeAligner
 
         private void SaveSmoothedDataForDebug(
             FileSystemInfo outputDirectory,
-            string frameDescription,
+            string frameOrColumnDescription,
             int scanStart,
             IReadOnlyList<double> frameData,
             IReadOnlyList<double> frameDataSmoothed)
@@ -2576,7 +2576,7 @@ namespace IMSDriftTimeAligner
 
                 using (var writer = new StreamWriter(new FileStream(debugDataFile.FullName, FileMode.Append, FileAccess.Write, FileShare.ReadWrite)))
                 {
-                    writer.WriteLine("Data smoothing comparison for " + frameDescription);
+                    writer.WriteLine("Data smoothing comparison for " + frameOrColumnDescription);
                     writer.WriteLine("{0}\t{1}\t{2}", "Scan", "TIC_Original", "TIC_Smoothed");
 
                     for (var i = 0; i < frameData.Count; i++)
@@ -2597,9 +2597,13 @@ namespace IMSDriftTimeAligner
         /// </summary>
         /// <param name="frameData"></param>
         /// <param name="outputDirectory"></param>
-        /// <param name="frameDescription"></param>
+        /// <param name="frameOrColumnDescription"></param>
         /// <param name="scanStart"></param>
-        public List<double> SmoothAndFilterData(List<double> frameData, FileSystemInfo outputDirectory, string frameDescription, int scanStart)
+        public List<double> SmoothAndFilterData(
+            List<double> frameData,
+            FileSystemInfo outputDirectory,
+            string frameOrColumnDescription,
+            int scanStart)
         {
             if (Options.ScanSmoothCount <= 1)
             {
@@ -2628,7 +2632,7 @@ namespace IMSDriftTimeAligner
             }
 
             var writeData = true;
-            if (frameDescription == BASE_FRAME_DESCRIPTION)
+            if (frameOrColumnDescription == BASE_FRAME_DESCRIPTION)
             {
                 if (mSmoothedBaseFrameDataWritten)
                 {
@@ -2642,7 +2646,7 @@ namespace IMSDriftTimeAligner
 
             if (writeData)
             {
-                SaveSmoothedDataForDebug(outputDirectory, frameDescription, scanStart, frameData, frameDataSmoothed);
+                SaveSmoothedDataForDebug(outputDirectory, frameOrColumnDescription, scanStart, frameData, frameDataSmoothed);
             }
 
             return frameDataSmoothed;
