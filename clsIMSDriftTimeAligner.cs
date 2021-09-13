@@ -2507,8 +2507,6 @@ namespace IMSDriftTimeAligner
 
                 using (var writer = new StreamWriter(new FileStream(debugDataFile.FullName, FileMode.Append, FileAccess.Write, FileShare.ReadWrite)))
                 {
-                    //writer.WriteLine(dataSourceDescription);
-
                     // Construct a mapping of the existing indices in frameOrColumnData to where the TIC value for that index would be shifted to using scanAlignmentMap
                     var targetIndex = new int[frameOrColumnData.Count];
 
@@ -2555,8 +2553,6 @@ namespace IMSDriftTimeAligner
                             OnStatusEvent($"  Data in {dataSourceDescription} will be shifted by {scanShiftApplied} scans");
                             break;
                     }
-
-                    //writer.WriteLine("ScanShift\t{0}\tscans", scanShiftApplied);
 
                     writer.WriteLine("{0}\t{1}\t{2}\t{3}", "Scan", "TIC_Base", "TIC_Compare_Offset", "TIC_Compare_Original");
 
