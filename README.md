@@ -6,7 +6,6 @@ adjusting the observed drift times of each frame to align with the base frame.
 The input file can also be a tab-delimited text file with two or more columns of data to align.
 Intensity values in the second column will be aligned to intensity values in the first column.
 If additional columns of data are included, they will also be aligned to the first column.
-Optionally use
 
 ## Console Switches
 
