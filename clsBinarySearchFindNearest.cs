@@ -10,17 +10,17 @@ namespace IMSDriftTimeAligner
         /// Tracks X and Y values
         /// </summary>
         /// <remarks>Sorted ascending on X</remarks>
-        private readonly List<KeyValuePair<double, double>> mXYMapping = new List<KeyValuePair<double, double>>();
+        private readonly List<KeyValuePair<double, double>> mXYMapping = new();
 
         /// <summary>
         /// This list is used to find the closest matching data point in mXYMapping based on an input X value
         /// </summary>
-        private readonly List<double> mValueKeys = new List<double>();
+        private readonly List<double> mValueKeys = new();
 
         /// <summary>
         /// This list is parallel to mValueKeys
         /// </summary>
-        private readonly List<int> mValueKeyIndices = new List<int>();
+        private readonly List<int> mValueKeyIndices = new();
 
         /// <summary>
         /// Add data using a dictionary where keys and values are integers
