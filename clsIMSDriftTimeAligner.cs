@@ -21,7 +21,7 @@ namespace IMSDriftTimeAligner
     /// </summary>
     public class DriftTimeAlignmentEngine : EventNotifier
     {
-        // Ignore Spelling: Nums, bak, Func, Sakoe, Prescan
+        // Ignore Spelling: bak, crosstab, Func, Nums, Prescan, Sakoe
 
         #region "Constants"
 
@@ -2471,7 +2471,7 @@ namespace IMSDriftTimeAligner
             }
             catch (Exception ex)
             {
-                ReportError("Error in SaveFrameForDebug", ex);
+                ReportError("Error in SaveDynamicTimeWarpingDataForDebug", ex);
             }
         }
 
