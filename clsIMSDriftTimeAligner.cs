@@ -1778,7 +1778,7 @@ namespace IMSDriftTimeAligner
 
                 var statsFilePath = Path.Combine(outputFile.DirectoryName, Path.GetFileNameWithoutExtension(outputFile.Name) + "_stats.txt");
 
-                using (var reader = new DataReader(sourceFile.FullName))
+                using var reader = new DataReader(sourceFile.FullName);
                 {
                     reader.ErrorEvent += UIMFReader_ErrorEvent;
 
@@ -1810,8 +1810,8 @@ namespace IMSDriftTimeAligner
                         if (Options.DriftScanFilterMin > 0 || Options.DriftScanFilterMax > 0)
                         {
                             ReportError(string.Format(
-                                            "Unable to define the base frame scans. Perhaps the drift scan range is invalid (currently {0} to {1})",
-                                            Options.DriftScanFilterMin, Options.DriftScanFilterMax));
+                                "Unable to define the base frame scans. Perhaps the drift scan range is invalid (currently {0} to {1})",
+                                Options.DriftScanFilterMin, Options.DriftScanFilterMax));
                         }
                         else
                         {
@@ -1862,9 +1862,10 @@ namespace IMSDriftTimeAligner
 
                         for (var frameNum = frameStart; frameNum <= frameEnd; frameNum++)
                         {
-                            ProcessFrame(reader, writer, outputFile,
-                                         frameNum, baseFrameScans, mergedFrameScans,
-                                         statsWriter, insertEachFrame, nextFrameNumOutfile);
+                            ProcessFrame(
+                                reader, writer, outputFile,
+                                frameNum, baseFrameScans, mergedFrameScans,
+                                statsWriter, insertEachFrame, nextFrameNumOutfile);
 
                             if (insertEachFrame)
                                 nextFrameNumOutfile++;
@@ -2409,65 +2410,64 @@ namespace IMSDriftTimeAligner
             {
                 var debugDataFile = new FileInfo(Path.Combine(outputDirectory.FullName, DTW_DEBUG_DATA_FILE));
 
-                using (var writer = new StreamWriter(new FileStream(debugDataFile.FullName, FileMode.Append, FileAccess.Write, FileShare.ReadWrite)))
-                {
-                    writer.WriteLine(frameDescription);
-                    writer.WriteLine();
-                    writer.WriteLine("Cost: {0:#,##0}", cost);
-                    writer.WriteLine();
-                    writer.WriteLine("Alignment path found using the Compressed Data:");
-                    writer.WriteLine("{0}\t{1}", "ComparisonData", "BaseData");
+                using var writer = new StreamWriter(new FileStream(debugDataFile.FullName, FileMode.Append, FileAccess.Write, FileShare.ReadWrite));
 
-                    foreach (var item in alignmentPath)
+                writer.WriteLine(frameDescription);
+                writer.WriteLine();
+                writer.WriteLine("Cost: {0:#,##0}", cost);
+                writer.WriteLine();
+                writer.WriteLine("Alignment path found using the Compressed Data:");
+                writer.WriteLine("{0}\t{1}", "ComparisonData", "BaseData");
+
+                foreach (var item in alignmentPath)
+                {
+                    writer.WriteLine("{0:0}\t{1:0}", item.Item1, item.Item2);
+                }
+
+                writer.WriteLine();
+                writer.WriteLine("Mapping from Comparison Data to Base Data, for all scans:");
+                writer.WriteLine("{0}\t{1}\t{2}\t{3}\t{4}", "SourceScan_ComparisonData", "TargetScan_BaseData", "Offset", "OffsetSmoothed", "TargetScan_via_OffsetSmoothed");
+
+                var warningCount = 0;
+
+                foreach (var item in consolidatedScanInfoFromDTW)
+                {
+                    var sourceScan = item.Key;
+                    var targetScan = item.Value;
+
+                    var offset = targetScan - sourceScan;
+                    int targetScanViaOffsetSmoothed;
+
+                    if (offsetsBySourceScanSmoothed.TryGetValue(sourceScan, out var offsetSmoothed))
                     {
-                        writer.WriteLine("{0:0}\t{1:0}", item.Item1, item.Item2);
+                        targetScanViaOffsetSmoothed = sourceScan + offsetSmoothed;
+                    }
+                    else
+                    {
+                        OnWarningEvent(string.Format("Warning, did not find scan {0} in offsetsBySourceScanSmoothed", sourceScan));
+                        offsetSmoothed = -1;
+                        targetScanViaOffsetSmoothed = -1;
                     }
 
-                    writer.WriteLine();
-                    writer.WriteLine("Mapping from Comparison Data to Base Data, for all scans:");
-                    writer.WriteLine("{0}\t{1}\t{2}\t{3}\t{4}", "SourceScan_ComparisonData", "TargetScan_BaseData", "Offset", "OffsetSmoothed", "TargetScan_via_OffsetSmoothed");
+                    writer.WriteLine("{0:0}\t{1}\t{2}\t{3}\t{4}", sourceScan, targetScan, offset, offsetSmoothed, targetScanViaOffsetSmoothed);
 
-                    var warningCount = 0;
-
-                    foreach (var item in consolidatedScanInfoFromDTW)
+                    // Note that frameScanAlignmentMap only has data for scans that have a detected ion
+                    if (frameScanAlignmentMap.TryGetValue(sourceScan, out var targetScanToVerify))
                     {
-                        var sourceScan = item.Key;
-                        var targetScan = item.Value;
-
-                        var offset = targetScan - sourceScan;
-                        int targetScanViaOffsetSmoothed;
-
-                        if (offsetsBySourceScanSmoothed.TryGetValue(sourceScan, out var offsetSmoothed))
+                        if (targetScanToVerify != targetScanViaOffsetSmoothed)
                         {
-                            targetScanViaOffsetSmoothed = sourceScan + offsetSmoothed;
-                        }
-                        else
-                        {
-                            OnWarningEvent(string.Format("Warning, did not find scan {0} in offsetsBySourceScanSmoothed", sourceScan));
-                            offsetSmoothed = -1;
-                            targetScanViaOffsetSmoothed = -1;
-                        }
+                            warningCount++;
 
-                        writer.WriteLine("{0:0}\t{1}\t{2}\t{3}\t{4}", sourceScan, targetScan, offset, offsetSmoothed, targetScanViaOffsetSmoothed);
-
-                        // Note that frameScanAlignmentMap only has data for scans that have a detected ion
-                        if (frameScanAlignmentMap.TryGetValue(sourceScan, out var targetScanToVerify))
-                        {
-                            if (targetScanToVerify != targetScanViaOffsetSmoothed)
+                            if (warningCount <= 10 || warningCount % 100 == 0)
                             {
-                                warningCount++;
-
-                                if (warningCount <= 10 || warningCount % 100 == 0)
-                                {
-                                    OnWarningEvent(string.Format(
-                                                       "Warning, mismatch between expected target scan and frameScanAlignmentMap; {0} vs. {1}",
-                                                       targetScanToVerify, targetScanViaOffsetSmoothed));
-                                }
+                                OnWarningEvent(string.Format(
+                                    "Warning, mismatch between expected target scan and frameScanAlignmentMap; {0} vs. {1}",
+                                    targetScanToVerify, targetScanViaOffsetSmoothed));
                             }
                         }
                     }
-                    writer.WriteLine();
                 }
+                writer.WriteLine();
             }
             catch (Exception ex)
             {
@@ -2597,17 +2597,17 @@ namespace IMSDriftTimeAligner
             {
                 var debugDataFile = new FileInfo(Path.Combine(outputDirectory.FullName, DEBUG_DATA_FILE));
 
-                using (var writer = new StreamWriter(new FileStream(debugDataFile.FullName, FileMode.Append, FileAccess.Write, FileShare.ReadWrite)))
-                {
-                    writer.WriteLine("Data smoothing comparison for " + frameOrColumnDescription);
-                    writer.WriteLine("{0}\t{1}\t{2}", "Scan", "TIC_Original", "TIC_Smoothed");
+                using var writer = new StreamWriter(new FileStream(debugDataFile.FullName, FileMode.Append, FileAccess.Write, FileShare.ReadWrite));
 
-                    for (var i = 0; i < frameData.Count; i++)
-                    {
-                        writer.WriteLine("{0}\t{1}\t{2}", scanStart + i, frameData[i], frameDataSmoothed[i]);
-                    }
-                    writer.WriteLine();
+                writer.WriteLine("Data smoothing comparison for " + frameOrColumnDescription);
+                writer.WriteLine("{0}\t{1}\t{2}", "Scan", "TIC_Original", "TIC_Smoothed");
+
+                for (var i = 0; i < frameData.Count; i++)
+                {
+                    writer.WriteLine("{0}\t{1}\t{2}", scanStart + i, frameData[i], frameDataSmoothed[i]);
                 }
+
+                writer.WriteLine();
             }
             catch (Exception ex)
             {
@@ -2703,15 +2703,14 @@ namespace IMSDriftTimeAligner
                 offsetCrosstabFile.Refresh();
                 if (!offsetCrosstabFile.Exists)
                 {
-                    using (var writer = new StreamWriter(new FileStream(offsetCrosstabFile.FullName, FileMode.Create, FileAccess.Write, FileShare.ReadWrite)))
-                    {
-                        // Header line
-                        writer.WriteLine("{0}\t{1}", "Scan", dataSourceDescription);
+                    using var writer = new StreamWriter(new FileStream(offsetCrosstabFile.FullName, FileMode.Create, FileAccess.Write, FileShare.ReadWrite));
 
-                        foreach (var item in (from item in offsetsByScan.Keys orderby item select item))
-                        {
-                            writer.WriteLine("{0}\t{1}", item, offsetsByScan[item]);
-                        }
+                    // Header line
+                    writer.WriteLine("{0}\t{1}", "Scan", dataSourceDescription);
+
+                    foreach (var item in (from item in offsetsByScan.Keys orderby item select item))
+                    {
+                        writer.WriteLine("{0}\t{1}", item, offsetsByScan[item]);
                     }
 
                     return;
@@ -2940,15 +2939,14 @@ namespace IMSDriftTimeAligner
 
         private void WriteFrameScansDebugFile(IEnumerable<ScanInfo> baseFrameScans, FileSystemInfo baseFrameFile)
         {
-            using (var debugWriter = new StreamWriter(new FileStream(baseFrameFile.FullName, FileMode.Create, FileAccess.Write)))
-            {
-                debugWriter.WriteLine("{0}\t{1}\t{2}\t{3}", "Scan", "DriftTime", "TIC", "BPI");
+            using var debugWriter = new StreamWriter(new FileStream(baseFrameFile.FullName, FileMode.Create, FileAccess.Write));
 
-                var query = (from item in baseFrameScans orderby item.Scan select item);
-                foreach (var item in query)
-                {
-                    debugWriter.WriteLine("{0}\t{1}\t{2}\t{3}", item.Scan, item.DriftTime, item.TIC, item.BPI);
-                }
+            debugWriter.WriteLine("{0}\t{1}\t{2}\t{3}", "Scan", "DriftTime", "TIC", "BPI");
+
+            var query = (from item in baseFrameScans orderby item.Scan select item);
+            foreach (var item in query)
+            {
+                debugWriter.WriteLine("{0}\t{1}\t{2}\t{3}", item.Scan, item.DriftTime, item.TIC, item.BPI);
             }
         }
 
@@ -2959,23 +2957,22 @@ namespace IMSDriftTimeAligner
             DataPointSeries optimizedOffsetSeries,
             DataPointSeries ticSeries)
         {
-            using (var writer = new StreamWriter(new FileStream(offsetsDataFilePath, FileMode.Create, FileAccess.Write)))
+            using var writer = new StreamWriter(new FileStream(offsetsDataFilePath, FileMode.Create, FileAccess.Write));
+
+            writer.WriteLine("{0}\t{1}\t{2}\t{3}\t{4}", "Scan", "Offset", "SmoothedOffset", "OptimizedOffset", "TIC");
+
+            var dataCount = offsetSeries.Points.Count;
+
+            for (var i = 0; i < dataCount; i++)
             {
-                writer.WriteLine("{0}\t{1}\t{2}\t{3}\t{4}", "Scan", "Offset", "SmoothedOffset", "OptimizedOffset", "TIC");
-
-                var dataCount = offsetSeries.Points.Count;
-
-                for (var i = 0; i < dataCount; i++)
-                {
-                    writer.WriteLine(
-                        "{0:0}\t{1:0}\t{2:0}\t{3:0}\t{4:0}",
-                        offsetSeries.Points[i].X,
-                        offsetSeries.Points[i].Y,
-                        smoothedOffsetSeries.Points[i].Y,
-                        optimizedOffsetSeries.Points[i].Y,
-                        ticSeries.Points[i].Y
-                        );
-                }
+                writer.WriteLine(
+                    "{0:0}\t{1:0}\t{2:0}\t{3:0}\t{4:0}",
+                    offsetSeries.Points[i].X,
+                    offsetSeries.Points[i].Y,
+                    smoothedOffsetSeries.Points[i].Y,
+                    optimizedOffsetSeries.Points[i].Y,
+                    ticSeries.Points[i].Y
+                );
             }
         }
 

@@ -310,58 +310,57 @@ namespace IMSDriftTimeAligner_UnitTests
 
         private bool ValidateStatsLinearRegression(FileSystemInfo statsFile, double expectedShift, double expectedBestRSquared)
         {
-            using (var reader = new StreamReader(new FileStream(statsFile.FullName, FileMode.Open, FileAccess.ReadWrite)))
+            using var reader = new StreamReader(new FileStream(statsFile.FullName, FileMode.Open, FileAccess.ReadWrite));
+
+            while (!reader.EndOfStream)
             {
-                while (!reader.EndOfStream)
+                var dataLine = reader.ReadLine();
+                if (string.IsNullOrWhiteSpace(dataLine))
+                    continue;
+
+                if (!dataLine.StartsWith("Frame    Shift"))
+                    continue;
+
+                if (reader.EndOfStream)
                 {
-                    var dataLine = reader.ReadLine();
-                    if (string.IsNullOrWhiteSpace(dataLine))
-                        continue;
-
-                    if (!dataLine.StartsWith("Frame    Shift"))
-                        continue;
-
-                    if (reader.EndOfStream)
-                    {
-                        ConsoleMsgUtils.ShowWarning("Corrupt stats file; missing the stats line: " + statsFile.FullName);
-                        return false;
-                    }
-
-                    var statsLine = reader.ReadLine();
-
-                    if (string.IsNullOrWhiteSpace(statsLine))
-                    {
-                        ConsoleMsgUtils.ShowWarning("Corrupt stats file; empty stats line: " + statsFile.FullName);
-                        return false;
-                    }
-
-                    var dataColumnsWithSpaces = statsLine.Split(' ');
-                    var dataColumns = dataColumnsWithSpaces.Where(item => !string.IsNullOrWhiteSpace(item)).ToList();
-
-                    if (dataColumns.Count < 3)
-                    {
-                        ConsoleMsgUtils.ShowWarning("Corrupt stats file; stats line has less than 3 columns: " + statsFile.FullName);
-                        return false;
-                    }
-
-                    if (!double.TryParse(dataColumns[1], out var actualShift))
-                    {
-                        ConsoleMsgUtils.ShowWarning("Corrupt stats file; could not extract shift: " + statsFile.FullName);
-                        return false;
-                    }
-
-                    if (!double.TryParse(dataColumns[2], out var actualBestRSquared))
-                    {
-                        ConsoleMsgUtils.ShowWarning("Corrupt stats file; could not extract R-Squared: " + statsFile.FullName);
-                        return false;
-                    }
-
-                    Console.WriteLine("Scan shift applied: {0}", actualShift);
-                    Console.WriteLine("Best R-Squared: {0}", actualBestRSquared);
-
-                    Assert.AreEqual(expectedShift, actualShift, 0.05, "Scan shift mismatch");
-                    Assert.AreEqual(expectedBestRSquared, actualBestRSquared, 0.05, "R-Squared mismatch");
+                    ConsoleMsgUtils.ShowWarning("Corrupt stats file; missing the stats line: " + statsFile.FullName);
+                    return false;
                 }
+
+                var statsLine = reader.ReadLine();
+
+                if (string.IsNullOrWhiteSpace(statsLine))
+                {
+                    ConsoleMsgUtils.ShowWarning("Corrupt stats file; empty stats line: " + statsFile.FullName);
+                    return false;
+                }
+
+                var dataColumnsWithSpaces = statsLine.Split(' ');
+                var dataColumns = dataColumnsWithSpaces.Where(item => !string.IsNullOrWhiteSpace(item)).ToList();
+
+                if (dataColumns.Count < 3)
+                {
+                    ConsoleMsgUtils.ShowWarning("Corrupt stats file; stats line has less than 3 columns: " + statsFile.FullName);
+                    return false;
+                }
+
+                if (!double.TryParse(dataColumns[1], out var actualShift))
+                {
+                    ConsoleMsgUtils.ShowWarning("Corrupt stats file; could not extract shift: " + statsFile.FullName);
+                    return false;
+                }
+
+                if (!double.TryParse(dataColumns[2], out var actualBestRSquared))
+                {
+                    ConsoleMsgUtils.ShowWarning("Corrupt stats file; could not extract R-Squared: " + statsFile.FullName);
+                    return false;
+                }
+
+                Console.WriteLine("Scan shift applied: {0}", actualShift);
+                Console.WriteLine("Best R-Squared: {0}", actualBestRSquared);
+
+                Assert.AreEqual(expectedShift, actualShift, 0.05, "Scan shift mismatch");
+                Assert.AreEqual(expectedBestRSquared, actualBestRSquared, 0.05, "R-Squared mismatch");
             }
 
             return true;
@@ -369,76 +368,75 @@ namespace IMSDriftTimeAligner_UnitTests
 
         private bool ValidateStatsDTW(FileSystemInfo statsFile, double expectedCost, IReadOnlyList<int> expectedAverageScanShiftByDriftTimeScanPercentile)
         {
-            using (var reader = new StreamReader(new FileStream(statsFile.FullName, FileMode.Open, FileAccess.ReadWrite)))
+            using var reader = new StreamReader(new FileStream(statsFile.FullName, FileMode.Open, FileAccess.ReadWrite));
+
+            while (!reader.EndOfStream)
             {
-                while (!reader.EndOfStream)
+                var dataLine = reader.ReadLine();
+                if (string.IsNullOrWhiteSpace(dataLine))
+                    continue;
+
+                if (!dataLine.StartsWith("Frame    Cost"))
+                    continue;
+
+                if (reader.EndOfStream)
                 {
-                    var dataLine = reader.ReadLine();
-                    if (string.IsNullOrWhiteSpace(dataLine))
-                        continue;
+                    ConsoleMsgUtils.ShowWarning("Corrupt stats file; missing the stats line: " + statsFile.FullName);
+                    return false;
+                }
+                var statsLine = reader.ReadLine();
 
-                    if (!dataLine.StartsWith("Frame    Cost"))
-                        continue;
+                if (string.IsNullOrWhiteSpace(statsLine))
+                {
+                    ConsoleMsgUtils.ShowWarning("Corrupt stats file; empty stats line: " + statsFile.FullName);
+                    return false;
+                }
 
-                    if (reader.EndOfStream)
+                var dataColumnsWithSpaces = statsLine.Split(' ');
+                var dataColumns = dataColumnsWithSpaces.Where(item => !string.IsNullOrWhiteSpace(item)).ToList();
+
+                if (!double.TryParse(dataColumns[1], out var cost))
+                {
+                    ConsoleMsgUtils.ShowWarning("Corrupt stats file; could not extract alignment cost: " + statsFile.FullName);
+                    return false;
+                }
+
+                var scanShiftByDriftTimeScanPercentile = new List<int>();
+                for (var i = 2; i < dataColumns.Count; i++)
+                {
+                    if (!int.TryParse(dataColumns[i], out var averageShift))
                     {
-                        ConsoleMsgUtils.ShowWarning("Corrupt stats file; missing the stats line: " + statsFile.FullName);
+                        ConsoleMsgUtils.ShowWarning("Corrupt stats file; {0} in column {1} is not numeric: {2}",
+                            dataColumns[i], i + 1, statsFile.FullName);
+
                         return false;
                     }
-                    var statsLine = reader.ReadLine();
 
-                    if (string.IsNullOrWhiteSpace(statsLine))
-                    {
-                        ConsoleMsgUtils.ShowWarning("Corrupt stats file; empty stats line: " + statsFile.FullName);
-                        return false;
-                    }
+                    scanShiftByDriftTimeScanPercentile.Add(averageShift);
+                }
 
-                    var dataColumnsWithSpaces = statsLine.Split(' ');
-                    var dataColumns = dataColumnsWithSpaces.Where(item => !string.IsNullOrWhiteSpace(item)).ToList();
+                Console.WriteLine("Alignment cost: {0}", cost);
 
-                    if (!double.TryParse(dataColumns[1], out var cost))
-                    {
-                        ConsoleMsgUtils.ShowWarning("Corrupt stats file; could not extract alignment cost: " + statsFile.FullName);
-                        return false;
-                    }
+                Assert.AreEqual(expectedCost, cost, 0.05, "Cost mismatch");
 
-                    var scanShiftByDriftTimeScanPercentile = new List<int>();
-                    for (var i = 2; i < dataColumns.Count; i++)
-                    {
-                        if (!int.TryParse(dataColumns[i], out var averageShift))
-                        {
-                            ConsoleMsgUtils.ShowWarning("Corrupt stats file; {0} in column {1} is not numeric: {2}",
-                                dataColumns[i], i + 1, statsFile.FullName);
+                if (expectedAverageScanShiftByDriftTimeScanPercentile.Count < scanShiftByDriftTimeScanPercentile.Count)
+                {
+                    Assert.Fail(
+                        "List expectedAverageScanShiftByDriftTimeScanPercentile should have {0} items but it actually has {1} items",
+                        scanShiftByDriftTimeScanPercentile.Count,
+                        expectedAverageScanShiftByDriftTimeScanPercentile.Count);
+                }
 
-                            return false;
-                        }
+                for (var i = 0; i < scanShiftByDriftTimeScanPercentile.Count; i++)
+                {
+                    var percentile = (i + 1) * 10;
 
-                        scanShiftByDriftTimeScanPercentile.Add(averageShift);
-                    }
+                    Console.WriteLine("Average scan shift for {0}th percentile: {1}", percentile, scanShiftByDriftTimeScanPercentile[i]);
 
-                    Console.WriteLine("Alignment cost: {0}", cost);
-
-                    Assert.AreEqual(expectedCost, cost, 0.05, "Cost mismatch");
-
-                    if (expectedAverageScanShiftByDriftTimeScanPercentile.Count < scanShiftByDriftTimeScanPercentile.Count)
-                    {
-                        Assert.Fail(
-                            "List expectedAverageScanShiftByDriftTimeScanPercentile should have {0} items but it actually has {1} items",
-                            scanShiftByDriftTimeScanPercentile.Count,
-                            expectedAverageScanShiftByDriftTimeScanPercentile.Count);
-                    }
-
-                    for (var i = 0; i < scanShiftByDriftTimeScanPercentile.Count; i++)
-                    {
-                        var percentile = (i + 1) * 10;
-
-                        Console.WriteLine("Average scan shift for {0}th percentile: {1}", percentile, scanShiftByDriftTimeScanPercentile[i]);
-
-                        Assert.AreEqual(
-                            expectedAverageScanShiftByDriftTimeScanPercentile[i],
-                            scanShiftByDriftTimeScanPercentile[i],
-                            "Average shift mismatch for {0}%", percentile);
-                    }
+                    Assert.AreEqual(
+                        expectedAverageScanShiftByDriftTimeScanPercentile[i],
+                        scanShiftByDriftTimeScanPercentile[i],
+                        "Average shift mismatch for {0}%", percentile);
                 }
             }
 
